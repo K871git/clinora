@@ -1,0 +1,158 @@
+/* ── Pharmacy full-screen transition overlay ──────────────────────────── */
+
+.pharma-lscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  animation: pharma-lscreen-in 0.22s ease-out forwards;
+}
+
+.pharma-lscreen--dark {
+  background: #0d1117;
+  --pharma-l-primary: #2dd4bf;
+  --pharma-l-track:   rgba(45, 212, 191, 0.1);
+  --pharma-l-text:    #dce7f3;
+  --pharma-l-sub:     rgba(220, 231, 243, 0.5);
+}
+
+.pharma-lscreen--light {
+  background: #edf2f8;
+  --pharma-l-primary: #0d9488;
+  --pharma-l-track:   rgba(13, 148, 136, 0.12);
+  --pharma-l-text:    #0f172a;
+  --pharma-l-sub:     rgba(15, 23, 42, 0.45);
+}
+
+@keyframes pharma-lscreen-in {
+  from { opacity: 0; transform: scale(1.015); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.pharma-lscreen--out {
+  animation: pharma-lscreen-out 0.32s ease-in forwards;
+}
+
+@keyframes pharma-lscreen-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.985); }
+}
+
+/* ── Ring SVG container ───────────────────────────────────────────────── */
+
+.pharma-lring-wrap {
+  position: relative;
+  width: 136px;
+  height: 136px;
+}
+
+.pharma-lring {
+  display: block;
+  overflow: visible;
+}
+
+/* Outer glow halo — static, very faint */
+.pharma-lhalo {
+  fill: none;
+  stroke: var(--pharma-l-track);
+  stroke-width: 1.5;
+}
+
+/* Main track — static faint ring */
+.pharma-ltrack {
+  fill: none;
+  stroke: var(--pharma-l-track);
+  stroke-width: 3.5;
+}
+
+/* Primary spinning arc */
+.pharma-larc {
+  fill: none;
+  stroke: var(--pharma-l-primary);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 82 231;
+  transform-origin: 68px 68px;
+  animation: pharma-arc-spin 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+/* Inner counter-rotating accent */
+.pharma-larc-inner {
+  fill: none;
+  stroke: var(--pharma-l-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 20 193;
+  transform-origin: 68px 68px;
+  opacity: 0.4;
+  animation: pharma-arc-spin-rev 1.9s linear infinite;
+}
+
+@keyframes pharma-arc-spin {
+  from { transform: rotate(-90deg); }
+  to   { transform: rotate(270deg); }
+}
+
+@keyframes pharma-arc-spin-rev {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+/* ── Center icon — positioned over the SVG ────────────────────────────── */
+
+.pharma-lcenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pharma-l-primary);
+  opacity: 0.7;
+}
+
+/* ── Text block ──────────────────────────────────────────────────────── */
+
+.pharma-ltext {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.pharma-lmsg {
+  font-family: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--pharma-l-text);
+}
+
+.pharma-lsub {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pharma-l-sub);
+  letter-spacing: 0.01em;
+}
+
+/* ── Decorative dots around the ring (static) ─────────────────────────── */
+
+.pharma-ldot {
+  fill: var(--pharma-l-primary);
+  opacity: 0.3;
+  animation: pharma-ldot-pulse 2.5s ease-in-out infinite;
+}
+
+.pharma-ldot:nth-child(2) { animation-delay: 0.4s; }
+.pharma-ldot:nth-child(3) { animation-delay: 0.8s; }
+.pharma-ldot:nth-child(4) { animation-delay: 1.2s; }
+
+@keyframes pharma-ldot-pulse {
+  0%, 100% { opacity: 0.2; r: 3; }
+  50%       { opacity: 0.55; r: 4; }
+}

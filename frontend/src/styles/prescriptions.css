@@ -1,0 +1,986 @@
+/* ─── Prescription list page ─────────────────────────────────────────────
+ * Import in PrescriptionsPage.jsx only.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════════
+   PAGE-LEVEL TABS (Prescriptions | Templates)
+   ══════════════════════════════════════════════════════════════════════ */
+
+.rx-page-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--clr-border);
+  padding-bottom: 0;
+}
+
+.rx-page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--clr-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.rx-page-tab:hover { color: var(--clr-text); }
+
+.rx-page-tab.active {
+  color: var(--clr-primary);
+  border-bottom-color: var(--clr-primary);
+}
+
+.rx-page-tab-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: var(--clr-surface-hover);
+  color: var(--clr-text-muted);
+  border: 1px solid var(--clr-border);
+}
+
+.rx-page-tab.active .rx-page-tab-count {
+  background: var(--clr-primary-subtle);
+  color: var(--clr-primary);
+  border-color: var(--clr-primary);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEMPLATE MANAGEMENT PANEL
+   ══════════════════════════════════════════════════════════════════════ */
+
+.tpl-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tpl-panel-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.tpl-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  height: 34px;
+  font-size: 0.8375rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: var(--clr-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tpl-upload-btn:hover:not(:disabled) {
+  background: var(--clr-primary-hover);
+  box-shadow: 0 2px 10px rgba(37,99,235,0.28);
+  transform: translateY(-1px);
+}
+
+.tpl-upload-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.tpl-upload-progress {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+  margin-left: 6px;
+}
+
+/* Grid of template cards */
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.tpl-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--clr-border);
+  background: var(--clr-surface);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tpl-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+
+.tpl-card.is-active {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
+}
+
+/* Thumbnail / icon area */
+.tpl-thumb {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: var(--clr-surface-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.tpl-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tpl-pdf-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--clr-text-muted);
+  opacity: 0.55;
+}
+
+.tpl-pdf-icon svg { width: 44px; height: 44px; }
+.tpl-pdf-icon span { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.tpl-active-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: var(--clr-primary);
+  color: #fff;
+}
+
+/* Card footer */
+.tpl-info {
+  padding: 10px 12px 6px;
+}
+
+.tpl-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--clr-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+
+.tpl-source {
+  font-size: 0.68rem;
+  color: var(--clr-text-muted);
+  text-transform: capitalize;
+}
+
+.tpl-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+.tpl-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s, border-color 0.13s;
+  white-space: nowrap;
+}
+
+.tpl-btn-set {
+  border: 1px solid var(--clr-primary);
+  background: transparent;
+  color: var(--clr-primary);
+}
+
+.tpl-btn-set:hover { background: var(--clr-primary-subtle); }
+.tpl-btn-set.is-active { background: var(--clr-primary); color: #fff; cursor: default; }
+
+.tpl-btn-del {
+  flex: 0 0 28px;
+  border: 1px solid var(--clr-border);
+  background: transparent;
+  color: var(--clr-text-muted);
+}
+
+.tpl-btn-del:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239,68,68,0.06);
+}
+
+/* Empty state */
+.tpl-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--clr-text-muted);
+}
+
+.tpl-empty svg { opacity: 0.3; margin-bottom: 12px; }
+.tpl-empty-title { font-size: 0.9375rem; font-weight: 600; color: var(--clr-text); margin-bottom: 6px; }
+.tpl-empty-desc  { font-size: 0.8125rem; line-height: 1.6; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════════════════════════════════════ */
+
+.rx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rx-header-left { display: flex; align-items: center; gap: 8px; }
+
+.rx-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rx-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1;
+}
+
+.rx-count-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  background: var(--clr-surface-hover);
+  border: 1px solid var(--clr-border);
+  padding: 2px 9px;
+  border-radius: 100px;
+}
+
+/* ── Date range dropdown ──────────────────────────────────────────────── */
+
+.rx-date-filter { position: relative; }
+
+.rx-date-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  height: 30px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 100px;
+  border: 1px solid var(--clr-border);
+  background: transparent;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+  white-space: nowrap;
+}
+
+.rx-date-btn:hover { background: var(--clr-surface-hover); color: var(--clr-text); }
+
+.rx-date-btn.active {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}
+
+.rx-date-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 150px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.14);
+  z-index: 200;
+  overflow: hidden;
+  padding: 4px 0;
+}
+
+.rx-date-item {
+  display: block;
+  width: 100%;
+  padding: 7px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--clr-text);
+  cursor: pointer;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+
+.rx-date-item:hover { background: var(--clr-surface-hover); }
+.rx-date-item.active { color: var(--clr-primary); }
+
+/* ── Status filter pills (header right side) ─────────────────────────── */
+
+.rx-status-filters {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.rx-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  height: 30px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 100px;
+  border: 1px solid var(--clr-border);
+  background: transparent;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rx-status-pill:hover {
+  background: var(--clr-surface-hover);
+  color: var(--clr-text);
+}
+
+.rx-status-pill.active {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+  color: #fff;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DATATABLES — PRODUCTION STYLING
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Wrapper ─────────────────────────────────────────────────────────── */
+
+.rx-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rx-table-wrap .dataTables_wrapper,
+.rx-table-wrap .dt-container {
+  color: var(--clr-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+/* ── Top bar: export buttons + search ─────────────────────────────────── */
+
+.rx-dt-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-wrap: wrap;
+}
+
+/* ── Export buttons ───────────────────────────────────────────────────── */
+
+.rx-dt-top .dt-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.rx-exp-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 5px 13px !important;
+  height: 32px !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  letter-spacing: 0 !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--clr-border) !important;
+  background: var(--clr-surface) !important;
+  color: var(--clr-text-muted) !important;
+  cursor: pointer !important;
+  transition: background 0.13s, border-color 0.13s, color 0.13s !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.rx-exp-btn:hover,
+.rx-exp-btn:active,
+.rx-exp-btn:focus {
+  background: var(--clr-surface-hover) !important;
+  border-color: var(--clr-primary) !important;
+  color: var(--clr-primary) !important;
+  box-shadow: none !important;
+}
+
+.rx-exp-btn--excel:hover,
+.rx-exp-btn--excel:active,
+.rx-exp-btn--excel:focus {
+  border-color: #16a34a !important;
+  color: #16a34a !important;
+}
+
+/* ── Search — DT2.x fix (label is no longer the input wrapper) ────────── */
+
+/* DT2.x: .dt-search contains label + input as siblings */
+.rx-dt-top .dt-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Hide the "Search:" text label (it's a sibling of the input in DT2.x) */
+.rx-dt-top .dt-search label {
+  font-size: 0;
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: absolute;
+}
+
+/* Icon anchored to the .dt-search container */
+.rx-dt-top .dt-search::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 18 18' fill='none' stroke='%2394a3b8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='5.5'/%3E%3Cpath d='M12.5 12.5l3 3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* DT1.x legacy: label wraps the input, icon on label */
+.rx-dt-top .dataTables_filter {
+  display: flex;
+  align-items: center;
+}
+
+.rx-dt-top .dataTables_filter label {
+  font-size: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.rx-dt-top .dataTables_filter label::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 18 18' fill='none' stroke='%2394a3b8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='5.5'/%3E%3Cpath d='M12.5 12.5l3 3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Input — shared between DT1.x and DT2.x */
+.rx-dt-top .dataTables_filter input,
+.rx-dt-top .dt-input {
+  width: 220px !important;
+  height: 32px !important;
+  padding: 0 12px 0 32px !important;
+  border: 1px solid var(--clr-border) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--clr-surface) !important;
+  color: var(--clr-text) !important;
+  font-size: 0.8125rem !important;
+  font-family: inherit !important;
+  outline: none !important;
+  transition: border-color 0.15s !important;
+  margin: 0 !important;
+}
+
+.rx-dt-top .dataTables_filter input:focus,
+.rx-dt-top .dt-input:focus { border-color: var(--clr-primary) !important; }
+
+.rx-dt-top .dataTables_filter input::placeholder,
+.rx-dt-top .dt-input::placeholder { color: var(--clr-text-muted) !important; }
+
+/* ── Table ────────────────────────────────────────────────────────────── */
+
+.rx-table-wrap .table {
+  --bs-table-bg:           var(--clr-surface);
+  --bs-table-color:        var(--clr-text);
+  --bs-table-border-color: var(--clr-border);
+  --bs-table-hover-bg:     var(--clr-surface-hover);
+  --bs-table-hover-color:  var(--clr-text);
+  --bs-table-striped-bg:   var(--clr-surface);
+  margin-bottom: 0 !important;
+}
+
+/* Column headers */
+.rx-table-wrap table.dataTable thead th,
+.rx-table-wrap table.dataTable thead td {
+  padding: 11px 14px !important;
+  font-size: 0.67rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--clr-text-muted) !important;
+  background: var(--clr-surface) !important;
+  border-bottom: 1px solid var(--clr-border) !important;
+  white-space: nowrap !important;
+}
+
+/* Sort arrows */
+.rx-table-wrap table.dataTable thead .sorting::before,
+.rx-table-wrap table.dataTable thead .sorting::after,
+.rx-table-wrap table.dataTable thead .sorting_asc::before,
+.rx-table-wrap table.dataTable thead .sorting_asc::after,
+.rx-table-wrap table.dataTable thead .sorting_desc::before,
+.rx-table-wrap table.dataTable thead .sorting_desc::after {
+  opacity: 0.3;
+  font-size: 0.65rem;
+}
+
+.rx-table-wrap table.dataTable thead .sorting_asc::after,
+.rx-table-wrap table.dataTable thead .sorting_desc::after { opacity: 0.9; }
+
+/* Body cells */
+.rx-table-wrap table.dataTable tbody tr td {
+  padding: 11px 14px !important;
+  font-size: 0.875rem !important;
+  color: var(--clr-text) !important;
+  background: var(--clr-surface) !important;
+  border-color: var(--clr-border) !important;
+  vertical-align: middle !important;
+}
+
+.rx-table-wrap table.dataTable tbody tr:hover td {
+  background: var(--clr-surface-hover) !important;
+}
+
+/* ── Bottom bar: length + info + pagination ───────────────────────────── */
+
+.rx-dt-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--clr-border);
+  flex-wrap: wrap;
+}
+
+.rx-dt-bottom > .dataTables_length,
+.rx-dt-bottom > .dt-length { order: 1; }
+
+.rx-dt-bottom > .dataTables_info,
+.rx-dt-bottom > .dt-info    { order: 2; }
+
+.rx-dt-bottom > .dataTables_paginate,
+.rx-dt-bottom > .dt-paging  { order: 3; margin-left: auto; }
+
+/* Length select */
+.rx-dt-bottom .dataTables_length,
+.rx-dt-bottom .dt-length {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+}
+
+.rx-dt-bottom .dataTables_length select,
+.rx-dt-bottom .dt-length select {
+  height: 28px !important;
+  padding: 0 8px !important;
+  border: 1px solid var(--clr-border) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--clr-surface) !important;
+  color: var(--clr-text) !important;
+  font-size: 0.8rem !important;
+  font-family: inherit !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+/* Info */
+.rx-dt-bottom .dataTables_info,
+.rx-dt-bottom .dt-info {
+  font-size: 0.8rem !important;
+  color: var(--clr-text-muted) !important;
+  padding: 0 !important;
+  white-space: nowrap;
+}
+
+/* Pagination */
+.rx-dt-bottom .pagination {
+  margin: 0 !important;
+  gap: 3px !important;
+  flex-wrap: nowrap !important;
+}
+
+.rx-dt-bottom .pagination .page-item .page-link {
+  border-radius: var(--radius-md) !important;
+  font-size: 0.8rem !important;
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  padding: 4px 10px !important;
+  height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  min-width: 28px !important;
+  justify-content: center !important;
+  color: var(--clr-text) !important;
+  background: var(--clr-surface) !important;
+  border: 1px solid var(--clr-border) !important;
+  transition: background 0.13s, border-color 0.13s !important;
+  line-height: 1 !important;
+}
+
+.rx-dt-bottom .pagination .page-item .page-link:hover {
+  background: var(--clr-surface-hover) !important;
+}
+
+.rx-dt-bottom .pagination .page-item.active .page-link {
+  background: var(--clr-primary) !important;
+  border-color: var(--clr-primary) !important;
+  color: #fff !important;
+}
+
+.rx-dt-bottom .pagination .page-item.disabled .page-link {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
+/* Older DT paginate class fallback */
+.rx-table-wrap .dataTables_paginate .paginate_button.current,
+.rx-table-wrap .dataTables_paginate .paginate_button.current:hover {
+  background: var(--clr-primary) !important;
+  border-color: var(--clr-primary) !important;
+  color: #fff !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PRESCRIPTION-SPECIFIC CELL STYLES
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Avatar */
+.rx-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.825rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Date cell */
+.rx-cell-date {
+  font-size: 0.8125rem;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Medicine cell wrapper */
+.rx-medicine-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Medicine badge (pill) */
+.rx-med-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: var(--clr-surface-hover);
+  color: var(--clr-text);
+  border: 1px solid var(--clr-border);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.rx-med-badge--lg {
+  font-size: 0.8125rem;
+  padding: 5px 12px;
+}
+
+/* Eye button */
+.rx-eye-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.13s, color 0.13s, border-color 0.13s;
+  vertical-align: middle;
+}
+
+.rx-eye-btn:hover {
+  background: var(--clr-surface-hover);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}
+
+/* Status badges */
+.rx-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.rx-badge--draft {
+  background: var(--clr-surface-hover);
+  color: var(--clr-text-muted);
+  border-color: var(--clr-border);
+}
+
+.rx-badge--sent {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.rx-badge--dispensing {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.rx-badge--done {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MEDICINE MODAL
+   ══════════════════════════════════════════════════════════════════════ */
+
+.rx-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1050;
+}
+
+.rx-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1055;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.rx-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.rx-modal-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.rx-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0;
+  transition: background 0.13s, color 0.13s;
+}
+
+.rx-modal-close:hover {
+  background: var(--clr-surface-hover);
+  color: var(--clr-text);
+}
+
+.rx-modal-body { padding: 16px; }
+
+.rx-modal-meds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ROW ACTION BUTTONS
+   ══════════════════════════════════════════════════════════════════════ */
+
+.rx-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.rx-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--clr-text-muted);
+  font-size: 0.71rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+}
+
+.rx-act-btn:hover {
+  background: var(--clr-surface-hover);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}
+
+.rx-act-btn--del:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DARK MODE
+   ══════════════════════════════════════════════════════════════════════ */
+
+html[data-theme="dark"] .rx-dt-top .dataTables_filter input,
+html[data-theme="dark"] .rx-dt-top .dt-input {
+  background: var(--clr-surface-hover) !important;
+}
+
+html[data-theme="dark"] .rx-dt-bottom .dataTables_length select,
+html[data-theme="dark"] .rx-dt-bottom .dt-length select {
+  background: var(--clr-surface-hover) !important;
+}
+
+html[data-theme="dark"] .rx-table-wrap .dataTables_paginate .paginate_button:not(.current) {
+  color: var(--clr-text) !important;
+  background: var(--clr-surface) !important;
+  border-color: var(--clr-border) !important;
+}
+
+html[data-theme="dark"] .rx-table-wrap .dataTables_paginate .paginate_button:not(.current):hover {
+  background: var(--clr-surface-hover) !important;
+  color: var(--clr-text) !important;
+}
+
+html[data-theme="dark"] .rx-badge--sent {
+  background: rgba(37, 99, 235, 0.12);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+html[data-theme="dark"] .rx-badge--dispensing {
+  background: rgba(234, 88, 12, 0.12);
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.25);
+}
+
+html[data-theme="dark"] .rx-badge--done {
+  background: rgba(5, 150, 105, 0.12);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.25);
+}
+
+html[data-theme="dark"] .rx-date-menu {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}

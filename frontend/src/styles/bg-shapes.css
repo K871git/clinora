@@ -1,0 +1,144 @@
+/* ─── Background shapes & ambient blobs ─────────────────────────────── */
+
+.bg-shapes {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── Ambient blob layer (no parallax — pure ambient glow) ─────────────── */
+.bg-blob-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  will-change: opacity;
+}
+
+/* Blob 1 — top-right anchor */
+.bg-blob-1 {
+  width: 700px;
+  height: 700px;
+  top: -18%;
+  right: -12%;
+  filter: blur(100px);
+}
+
+/* Blob 2 — bottom-left anchor */
+.bg-blob-2 {
+  width: 580px;
+  height: 580px;
+  bottom: -18%;
+  left: -10%;
+  filter: blur(90px);
+}
+
+/* Blob 3 — center accent */
+.bg-blob-3 {
+  width: 380px;
+  height: 380px;
+  top: 30%;
+  left: 38%;
+  filter: blur(110px);
+}
+
+/* Blob 4 — pharmacy only, top-left */
+.bg-blob-4 {
+  width: 320px;
+  height: 320px;
+  top: -8%;
+  left: -6%;
+  filter: blur(80px);
+}
+
+/* ── SVG parallax shapes ─────────────────────────────────────────────── */
+.bg-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  transition: transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── Doctor — LIGHT ──────────────────────────────────────────────────── */
+html[data-theme="light"] .bg-blob-1 {
+  background: radial-gradient(circle, rgba(37,99,235,0.30) 0%, transparent 65%);
+}
+html[data-theme="light"] .bg-blob-2 {
+  background: radial-gradient(circle, rgba(99,102,241,0.24) 0%, transparent 65%);
+}
+html[data-theme="light"] .bg-blob-3 {
+  background: radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 65%);
+}
+
+html[data-theme="light"] .bg-shapes .bg-p { color: #2563eb; opacity: 0.16; }
+html[data-theme="light"] .bg-shapes .bg-g { color: #16a34a; opacity: 0.14; }
+
+/* ── Doctor — DARK ───────────────────────────────────────────────────── */
+html[data-theme="dark"] .bg-blob-1 {
+  background: radial-gradient(circle, rgba(96,165,250,0.22) 0%, transparent 68%);
+}
+html[data-theme="dark"] .bg-blob-2 {
+  background: radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 68%);
+}
+html[data-theme="dark"] .bg-blob-3 {
+  background: radial-gradient(circle, rgba(52,211,153,0.10) 0%, transparent 68%);
+}
+
+html[data-theme="dark"] .bg-shapes .bg-p {
+  color: #60a5fa;
+  opacity: 0.22;
+  filter: drop-shadow(0 0 14px rgba(96,165,250,0.45));
+}
+html[data-theme="dark"] .bg-shapes .bg-g {
+  color: #34d399;
+  opacity: 0.18;
+  filter: drop-shadow(0 0 12px rgba(52,211,153,0.40));
+}
+
+/* ── Pharmacy — LIGHT ────────────────────────────────────────────────── */
+html[data-role="pharmacy"][data-theme="light"] .bg-blob-1 {
+  background: radial-gradient(circle, rgba(13,148,136,0.30) 0%, transparent 65%);
+}
+html[data-role="pharmacy"][data-theme="light"] .bg-blob-2 {
+  background: radial-gradient(circle, rgba(8,145,178,0.24) 0%, transparent 65%);
+}
+html[data-role="pharmacy"][data-theme="light"] .bg-blob-3 {
+  background: radial-gradient(circle, rgba(20,184,166,0.18) 0%, transparent 65%);
+}
+html[data-role="pharmacy"][data-theme="light"] .bg-blob-4 {
+  background: radial-gradient(circle, rgba(6,182,212,0.20) 0%, transparent 65%);
+}
+
+html[data-role="pharmacy"][data-theme="light"] .bg-shapes .bg-p { color: #0d9488; opacity: 0.17; }
+html[data-role="pharmacy"][data-theme="light"] .bg-shapes .bg-g { color: #0891b2; opacity: 0.14; }
+
+/* ── Pharmacy — DARK ─────────────────────────────────────────────────── */
+html[data-role="pharmacy"][data-theme="dark"] .bg-blob-1 {
+  background: radial-gradient(circle, rgba(45,212,191,0.22) 0%, transparent 68%);
+}
+html[data-role="pharmacy"][data-theme="dark"] .bg-blob-2 {
+  background: radial-gradient(circle, rgba(6,182,212,0.16) 0%, transparent 68%);
+}
+html[data-role="pharmacy"][data-theme="dark"] .bg-blob-3 {
+  background: radial-gradient(circle, rgba(13,148,136,0.10) 0%, transparent 68%);
+}
+html[data-role="pharmacy"][data-theme="dark"] .bg-blob-4 {
+  background: radial-gradient(circle, rgba(20,184,166,0.14) 0%, transparent 68%);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .bg-shapes .bg-p {
+  color: #2dd4bf;
+  opacity: 0.22;
+  filter: drop-shadow(0 0 16px rgba(45,212,191,0.50));
+}
+html[data-role="pharmacy"][data-theme="dark"] .bg-shapes .bg-g {
+  color: #06b6d4;
+  opacity: 0.18;
+  filter: drop-shadow(0 0 12px rgba(6,182,212,0.42));
+}
