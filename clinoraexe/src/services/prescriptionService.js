@@ -35,8 +35,5 @@ export async function getPrescriptionPdf(id) {
   return { data: null }
 }
 
-// Template methods — not applicable in desktop app
-export function listTemplates() { return Promise.resolve({ data: { data: [] } }) }
-export function uploadTemplate() { return Promise.resolve({ data: {} }) }
-export function deleteTemplate() { return Promise.resolve({ data: {} }) }
-export function setActiveTemplate() { return Promise.resolve({ data: {} }) }
+// Template methods — delegate to settingsService (real Tauri commands)
+export { getTemplates as listTemplates, uploadTemplate, deleteTemplate, setActiveTemplate } from './settingsService'

@@ -465,7 +465,7 @@ export default function VisitDetailPage() {
           {/* Doctor invoice — always available */}
           <button
             className="rx-action-btn vst-invoice-btn"
-            onClick={() => window.open(`/visits/${visitId}/invoice`, '_blank')}
+            onClick={() => navigate(`/visits/${visitId}/invoice`)}
           >
             <IconPrint />
             Doctor Invoice

@@ -2,6 +2,7 @@ import '../../styles/revenue-page.css'
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { invoke } from '@tauri-apps/api/core'
 import {
   getPharmacyRevenue,
   recordPrescriptionPayment,
@@ -10,9 +11,9 @@ import {
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 
-function exportCsv(txs, period, filter) {
+async function exportCsv(txs, period, filter) {
   const BOM  = '﻿'
-  const head = ['Patient', 'Completed', 'Status', 'Bill (₹)', 'Paid (₹)', 'Due (₹)']
+  const head = ['Patient', 'Completed', 'Status', 'Bill (Rs)', 'Paid (Rs)', 'Due (Rs)']
   const rows = txs.map(tx => {
     const due = Math.max(0, tx.total_amount - tx.amount_paid)
     return [
@@ -25,13 +26,13 @@ function exportCsv(txs, period, filter) {
     ]
   })
   const body = [head, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
-  const blob = new Blob([BOM + body], { type: 'text/csv;charset=utf-8' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href     = url
-  a.download = `pharmacy-revenue-${filter}-${period}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  const filename = `pharmacy-revenue-${filter}-${period}.csv`
+  try {
+    const saved = await invoke('write_text_to_downloads', { content: BOM + body, filename })
+    toast.success(`Exported to Downloads: ${saved}`)
+  } catch {
+    toast.error('Export failed — could not write file.')
+  }
 }
 
 const PERIODS = [

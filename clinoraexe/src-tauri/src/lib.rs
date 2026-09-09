@@ -87,6 +87,11 @@ pub fn run() {
             commands::settings::upload_template,
             commands::settings::delete_template,
             commands::settings::set_active_template,
+            commands::settings::read_template_file,
+            commands::settings::scan_template_layout,
+            // Downloads — save files to user's Downloads folder
+            commands::downloads::write_text_to_downloads,
+            commands::downloads::write_bytes_to_downloads,
             // Profile
             commands::profile::get_profile,
             commands::profile::update_profile,

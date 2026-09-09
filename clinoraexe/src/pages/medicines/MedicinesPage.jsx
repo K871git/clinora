@@ -2,6 +2,7 @@ import '../../styles/medicines-page.css'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
+import { invoke } from '@tauri-apps/api/core'
 import { confirmDelete } from '../../lib/swal'
 import {
   getMedicines,
@@ -39,45 +40,43 @@ function toRows(list) {
   ])
 }
 
-function dlBlob(content, name, type) {
-  const blob = new Blob([content], { type })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href     = url
-  a.download = name
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function doExport(fmt, list) {
+async function doExport(fmt, list) {
   if (!list.length) return
   const rows = toRows(list)
-  if (fmt === 'csv') {
-    const BOM = '﻿'
-    const body = [EXPORT_COLS, ...rows]
-      .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
-      .join('\r\n')
-    dlBlob(BOM + body, 'medicines.csv', 'text/csv;charset=utf-8')
-    return
-  }
-  if (fmt === 'txt') {
-    const body = [EXPORT_COLS, ...rows].map(r => r.join('\t')).join('\r\n')
-    dlBlob(body, 'medicines.txt', 'text/plain;charset=utf-8')
-    return
-  }
-  if (fmt === 'xls') {
-    const data = list.map(m => ({
-      'Name':         m.name,
-      'Generic Name': m.generic_name  || '',
-      'Category':     m.category      || '',
-      'Unit':         m.unit          || '',
-      'Quantity':     m.quantity      ?? 0,
-      'Price':        m.price != null ? parseFloat(m.price) : '',
-    }))
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Medicines')
-    XLSX.writeFile(wb, 'medicines.xlsx')
+  try {
+    if (fmt === 'csv') {
+      const BOM  = '﻿'
+      const body = [EXPORT_COLS, ...rows]
+        .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\r\n')
+      const saved = await invoke('write_text_to_downloads', { content: BOM + body, filename: 'medicines.csv' })
+      toast.success(`Exported to Downloads: ${saved}`)
+      return
+    }
+    if (fmt === 'txt') {
+      const body = [EXPORT_COLS, ...rows].map(r => r.join('\t')).join('\r\n')
+      const saved = await invoke('write_text_to_downloads', { content: body, filename: 'medicines.txt' })
+      toast.success(`Exported to Downloads: ${saved}`)
+      return
+    }
+    if (fmt === 'xls') {
+      const data = list.map(m => ({
+        'Name':         m.name,
+        'Generic Name': m.generic_name  || '',
+        'Category':     m.category      || '',
+        'Unit':         m.unit          || '',
+        'Quantity':     m.quantity      ?? 0,
+        'Price':        m.price != null ? parseFloat(m.price) : '',
+      }))
+      const ws  = XLSX.utils.json_to_sheet(data)
+      const wb  = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Medicines')
+      const b64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+      const saved = await invoke('write_bytes_to_downloads', { b64, filename: 'medicines.xlsx' })
+      toast.success(`Exported to Downloads: ${saved}`)
+    }
+  } catch {
+    toast.error('Export failed — could not write file.')
   }
 }
 
@@ -97,8 +96,8 @@ function ExportMenu({ list }) {
   }, [open])
 
   function pick(fmt) {
-    doExport(fmt, list)
     setOpen(false)
+    doExport(fmt, list)
   }
 
   return (

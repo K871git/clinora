@@ -52,6 +52,10 @@ async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::My
         "unit_price": r.get::<Option<f64>, _>("unit_price")
     })).collect();
 
+    let total_amount: f64 = items_json.iter()
+        .filter_map(|i| i["unit_price"].as_f64())
+        .sum();
+
     Ok(json!({
         "id": row.get::<u64, _>("id"),
         "status": row.get::<String, _>("status"),
@@ -63,6 +67,7 @@ async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::My
         "payment_status": row.get::<String, _>("payment_status"),
         "amount_paid": row.get::<f64, _>("amount_paid"),
         "payment_notes": row.get::<Option<String>, _>("payment_notes"),
+        "total_amount": total_amount,
         "items": items_json,
         "patient": {
             "name": row.get::<String, _>("patient_name"),
