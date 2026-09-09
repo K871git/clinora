@@ -1,6 +1,8 @@
+import '../../styles/settings-page.css'
 import { useState, useEffect } from 'react'
 import { getSettings, updateClinic, updatePrescriptionSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
+import PageLoader from '../../components/ui/PageLoader'
 
 function flattenErrors(errors) {
   const out = {}
@@ -163,13 +165,7 @@ export default function SettingsPage() {
     } finally { setPrescSaving(false) }
   }
 
-  if (pageStatus === 'loading') {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-        <Spinner size={28} />
-      </div>
-    )
-  }
+  if (pageStatus === 'loading') return <PageLoader />
 
   if (pageStatus === 'error') {
     return (

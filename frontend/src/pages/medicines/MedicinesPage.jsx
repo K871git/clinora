@@ -1,6 +1,8 @@
+import '../../styles/medicines-page.css'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
+import { confirmDelete } from '../../lib/swal'
 import {
   getMedicines,
   createMedicine,
@@ -178,7 +180,7 @@ function IconPlus() {
 
 /* ── Category combobox ───────────────────────────────────────────────────── */
 
-function CategoryCombobox({ value, onChange }) {
+function CategoryCombobox({ value, onChange, categories = [] }) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
 
@@ -191,9 +193,15 @@ function CategoryCombobox({ value, onChange }) {
     return () => document.removeEventListener('mousedown', handle)
   }, [open])
 
+  // Merge static options with dynamic categories from loaded medicines (deduplicated)
+  const allOpts = useMemo(() => {
+    const combined = [...new Set([...categories, ...CATEGORY_OPTIONS])]
+    return combined.sort()
+  }, [categories])
+
   const filtered = value.trim()
-    ? CATEGORY_OPTIONS.filter(c => c.toLowerCase().includes(value.toLowerCase()))
-    : CATEGORY_OPTIONS
+    ? allOpts.filter(c => c.toLowerCase().includes(value.toLowerCase()))
+    : allOpts
 
   return (
     <div className="ml-cat-wrap" ref={wrapRef}>
@@ -231,7 +239,7 @@ function makeRow() {
   return { id: _rowSeq, name: '', generic_name: '', category: '', unit: '', quantity: '', price: '' }
 }
 
-function AddMedicineModal({ onClose, onDone }) {
+function AddMedicineModal({ onClose, onDone, categories = [], existingNames = [] }) {
   const [rows,   setRows]   = useState(() => [makeRow()])
   const [saving, setSaving] = useState(false)
 
@@ -316,12 +324,15 @@ function AddMedicineModal({ onClose, onDone }) {
                       Name <span style={{ color: 'var(--clr-danger)' }}>*</span>
                     </label>
                     <input
-                      className="field"
+                      className={`field${existingNames.includes(row.name.trim().toLowerCase()) && row.name.trim() ? ' field--warn' : ''}`}
                       placeholder="e.g. Paracetamol 500mg"
                       value={row.name}
                       onChange={e => updateRow(row.id, 'name', e.target.value)}
                       autoFocus={idx === 0}
                     />
+                    {existingNames.includes(row.name.trim().toLowerCase()) && row.name.trim() && (
+                      <p className="phs-dup-warn">⚠ Already in library — will be skipped or overwrite.</p>
+                    )}
                   </div>
 
                   <div className="field-group">
@@ -339,6 +350,7 @@ function AddMedicineModal({ onClose, onDone }) {
                     <CategoryCombobox
                       value={row.category}
                       onChange={v => updateRow(row.id, 'category', v)}
+                      categories={categories}
                     />
                   </div>
 
@@ -403,7 +415,6 @@ function AddMedicineModal({ onClose, onDone }) {
             <button
               type="submit"
               className="btn-primary"
-              style={{ width: 'auto' }}
               disabled={saving || validCount === 0}
             >
               {saving
@@ -422,7 +433,10 @@ function AddMedicineModal({ onClose, onDone }) {
 
 /* ── Single-medicine edit modal ──────────────────────────────────────────── */
 
-function MedicineModal({ title, form, setForm, onClose, onSubmit, saving }) {
+function MedicineModal({ title, form, setForm, onClose, onSubmit, saving, categories = [], existingNames = [], editingId = null }) {
+  const isDup = form.name.trim().length > 0 &&
+    existingNames.includes(form.name.trim().toLowerCase())
+
   return (
     <div className="ml-modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="ml-modal">
@@ -438,13 +452,14 @@ function MedicineModal({ title, form, setForm, onClose, onSubmit, saving }) {
                 Name <span style={{ color: 'var(--clr-danger)' }}>*</span>
               </label>
               <input
-                className="field"
+                className={`field${isDup ? ' field--warn' : ''}`}
                 placeholder="e.g. Paracetamol 500mg"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 required
                 autoFocus
               />
+              {isDup && <p className="phs-dup-warn">⚠ Another medicine with this name already exists.</p>}
             </div>
 
             <div className="field-group">
@@ -460,11 +475,10 @@ function MedicineModal({ title, form, setForm, onClose, onSubmit, saving }) {
             <div className="med-row">
               <div className="field-group">
                 <label className="field-label">Category</label>
-                <input
-                  className="field"
-                  placeholder="e.g. Analgesic"
+                <CategoryCombobox
                   value={form.category}
-                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, category: v }))}
+                  categories={categories}
                 />
               </div>
               <div className="field-group">
@@ -514,7 +528,7 @@ function MedicineModal({ title, form, setForm, onClose, onSubmit, saving }) {
             <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" style={{ width: 'auto' }} disabled={saving}>
+            <button type="submit" className="btn-primary" disabled={saving}>
               {saving ? 'Saving…' : 'Save Medicine'}
             </button>
           </div>
@@ -590,7 +604,6 @@ function ImportModal({ onClose, onDone }) {
             <button
               type="submit"
               className="btn-primary"
-              style={{ width: 'auto' }}
               disabled={!file || loading}
             >
               {loading ? 'Importing…' : 'Import'}
@@ -626,6 +639,20 @@ export default function MedicinesPage() {
   }
 
   useEffect(load, [])
+
+  // Derived lists for dynamic category dropdown and duplicate detection
+  const categories = useMemo(
+    () => [...new Set(medicines.map(m => m.category).filter(Boolean))].sort(),
+    [medicines]
+  )
+  const existingNames = useMemo(
+    () => medicines.map(m => m.name.toLowerCase()),
+    [medicines]
+  )
+  const editingExistingNames = useMemo(
+    () => medicines.filter(m => m.id !== editing?.id).map(m => m.name.toLowerCase()),
+    [medicines, editing]
+  )
 
   const filtered = useMemo(() => {
     if (!search.trim()) return medicines
@@ -684,7 +711,8 @@ export default function MedicinesPage() {
   }
 
   async function handleDelete(med) {
-    if (!window.confirm(`Delete "${med.name}" from the library?`)) return
+    const ok = await confirmDelete({ title: `Delete "${med.name}"?`, text: 'It will be removed from the medicine library.' })
+    if (!ok) return
     try {
       await deleteMedicine(med.id)
       setMedicines(prev => prev.filter(m => m.id !== med.id))
@@ -802,6 +830,8 @@ export default function MedicinesPage() {
       {/* Multi-add modal */}
       {modal === 'add' && (
         <AddMedicineModal
+          categories={categories}
+          existingNames={existingNames}
           onClose={closeModal}
           onDone={newMeds => {
             setMedicines(prev => [...newMeds, ...prev])
@@ -820,6 +850,9 @@ export default function MedicinesPage() {
           onClose={closeModal}
           onSubmit={handleSave}
           saving={saving}
+          categories={categories}
+          existingNames={editingExistingNames}
+          editingId={editing?.id}
         />
       )}
 

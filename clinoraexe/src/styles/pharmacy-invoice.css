@@ -1,0 +1,478 @@
+/* ─── Pharmacy Invoice / Receipt Print View ────────────────────────────────
+ * Import in PharmacyInvoicePage.jsx only.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* ══ Screen shell ═══════════════════════════════════════════════════════ */
+
+.inv-page {
+  min-height: 100vh;
+  background: #d1d5db;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 48px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Action toolbar — hidden when printing */
+.inv-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  background: #1e293b;
+  color: #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+}
+
+.inv-toolbar-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+.inv-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s;
+}
+
+.inv-toolbar-btn--print {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.inv-toolbar-btn--print:hover { background: #1d4ed8; border-color: #1d4ed8; }
+
+.inv-toolbar-btn--back {
+  background: transparent;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+.inv-toolbar-btn--back:hover { background: rgba(255,255,255,0.07); color: #f1f5f9; }
+
+/* Paper size selector in toolbar */
+.inv-toolbar-size-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+}
+
+.inv-toolbar-select {
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 5px;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.inv-toolbar-select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* Loading / error state */
+.inv-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* ══ Document (white paper) ══════════════════════════════════════════════ */
+
+.inv-doc {
+  background: #fff;
+  width: 720px;
+  max-width: 96vw;
+  margin: 28px auto 0;
+  padding: 48px 52px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.14);
+  border-radius: 4px;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: width 0.2s ease;
+}
+
+/* ── Paper size variants ─────────────────────────────────────────────── */
+
+.inv-doc--a4 {
+  width: 720px;
+}
+
+.inv-doc--a5 {
+  width: 520px;
+  padding: 36px 40px;
+  font-size: 12.5px;
+}
+
+.inv-doc--a5 .inv-brand-name  { font-size: 18px; }
+.inv-doc--a5 .inv-info-grid   { padding: 12px 14px; }
+
+.inv-doc--thermal {
+  width: 302px;
+  padding: 20px 16px;
+  font-size: 11px;
+  border-radius: 2px;
+}
+
+.inv-doc--thermal .inv-doc-header    { border-bottom: 1px dashed #94a3b8; margin-bottom: 16px; padding-bottom: 12px; }
+.inv-doc--thermal .inv-brand-name    { font-size: 14px; }
+.inv-doc--thermal .inv-brand-sub     { font-size: 9.5px; }
+.inv-doc--thermal .inv-title         { font-size: 13px; }
+.inv-doc--thermal .inv-info-grid     { grid-template-columns: 1fr; gap: 8px; padding: 10px 12px; margin-bottom: 14px; }
+.inv-doc--thermal .inv-info-block--right { text-align: left; }
+.inv-doc--thermal .inv-info-block--right .inv-info-row { justify-content: flex-start; }
+.inv-doc--thermal .inv-table th      { font-size: 9.5px; padding: 6px 8px; }
+.inv-doc--thermal .inv-table td      { padding: 7px 8px; font-size: 11px; }
+.inv-doc--thermal .inv-footer        { grid-template-columns: 1fr; gap: 20px; margin-top: 24px; }
+.inv-doc--thermal .inv-total-amount  { font-size: 13px !important; }
+
+/* Print — force full page width regardless of size setting */
+@media print {
+  .inv-doc--a5     { width: 148mm !important; }
+  .inv-doc--thermal { width: 80mm !important; padding: 4mm 6mm !important; }
+}
+
+/* ── Document header ──────────────────────────────────────────────────── */
+
+.inv-doc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #1e293b;
+}
+
+.inv-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.inv-brand-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+.inv-brand-sub {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.inv-title-block {
+  text-align: right;
+}
+
+.inv-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inv-number {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 3px;
+}
+
+/* ── Patient / prescription info grid ─────────────────────────────────── */
+
+.inv-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.inv-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.inv-info-block--right { text-align: right; }
+
+.inv-info-row {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.inv-info-block--right .inv-info-row { justify-content: flex-end; }
+
+.inv-info-label {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+  min-width: 68px;
+}
+
+.inv-info-value {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* ── Medicines table ───────────────────────────────────────────────────── */
+
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.inv-table th {
+  background: #1e293b;
+  color: #f1f5f9;
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inv-table th:last-child { text-align: right; }
+
+.inv-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
+  vertical-align: top;
+}
+
+.inv-table tbody tr:nth-child(even) td { background: #f8fafc; }
+
+.inv-table tbody tr:last-child td { border-bottom: 2px solid #1e293b; }
+
+.inv-table tfoot td {
+  padding: 10px 12px;
+  border-bottom: none;
+  font-weight: 600;
+}
+
+.inv-med-name { font-weight: 600; }
+.inv-med-detail { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+.inv-amount { text-align: right; font-weight: 600; white-space: nowrap; }
+.inv-total-row td { font-size: 14px; }
+.inv-total-label { text-align: right; }
+.inv-total-amount { font-size: 16px !important; font-weight: 800 !important; color: #2563eb !important; }
+
+/* ── Footer / signatures ──────────────────────────────────────────────── */
+
+.inv-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.inv-sig-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inv-sig-line {
+  height: 1px;
+  background: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.inv-sig-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+}
+
+.inv-note {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+  font-style: italic;
+}
+
+/* ══ Print media ══════════════════════════════════════════════════════════ */
+
+@media print {
+  body { background: #fff !important; }
+
+  .inv-toolbar { display: none !important; }
+
+  .inv-page {
+    background: #fff !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .inv-doc {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 24px 28px !important;
+  }
+}
+
+/* ══ Print Settings Panel ════════════════════════════════════════════════ */
+
+.inv-settings-panel {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 20px;
+  background: #1a2438;
+  border-top: 1px solid #2d3d55;
+  border-bottom: 1px solid #2d3d55;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 47px;
+  z-index: 99;
+}
+
+.inv-settings-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inv-settings-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.inv-settings-div {
+  width: 1px;
+  height: 20px;
+  background: #2d3d55;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.inv-settings-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.inv-chip {
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: all .1s;
+  line-height: 1.5;
+}
+
+.inv-chip:hover {
+  border-color: #475569;
+  color: #94a3b8;
+}
+
+.inv-chip--on {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff !important;
+}
+
+/* Settings toggle button variants */
+.inv-toolbar-btn--settings {
+  background: transparent;
+  border-color: #374151;
+  color: #6b7280;
+}
+
+.inv-toolbar-btn--settings:hover {
+  background: rgba(255,255,255,.06);
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+.inv-toolbar-btn--settings-on {
+  background: rgba(29,78,216,.18);
+  border-color: #1d4ed8;
+  color: #93c5fd;
+}
+
+@media print {
+  .inv-settings-panel { display: none !important; }
+}
+
+/* ── Settings panel selects ─────────────────────────────────────────────── */
+
+.inv-settings-select {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.inv-settings-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}

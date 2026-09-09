@@ -53,14 +53,31 @@ class DashboardController extends Controller
 
         $period = function ($start, $end) use ($id) {
             $q = Visit::where('clinic_id', $id)->whereBetween('visited_at', [$start, $end]);
+            $amountCollected = (float) (clone $q)->where('payment_status', 'paid')->sum('consultation_fee')
+                + (float) (clone $q)->where('payment_status', 'partial')->sum('amount_paid');
+            $debtAmount = (float) (clone $q)
+                ->whereIn('payment_status', ['unpaid', 'partial'])
+                ->where('consultation_fee', '>', 0)
+                ->selectRaw("SUM(CASE WHEN payment_status = 'unpaid' THEN consultation_fee ELSE (consultation_fee - amount_paid) END) as d")
+                ->value('d');
             return [
-                'revenue'      => (float) (clone $q)->sum('consultation_fee'),
-                'paid_visits'  => (clone $q)->where('consultation_fee', '>', 0)->count(),
-                'total_visits' => (clone $q)->count(),
+                'revenue'          => (float) (clone $q)->sum('consultation_fee'),
+                'paid_visits'      => (clone $q)->where('payment_status', 'paid')->count(),
+                'unpaid_count'     => (clone $q)->whereIn('payment_status', ['unpaid', 'partial'])->where('consultation_fee', '>', 0)->count(),
+                'total_visits'     => (clone $q)->count(),
+                'amount_collected' => $amountCollected,
+                'debt_amount'      => max(0.0, (float) $debtAmount),
             ];
         };
 
-        $allPaid = Visit::where('clinic_id', $id)->where('consultation_fee', '>', 0);
+        $allBase  = Visit::where('clinic_id', $id);
+        $allDebt  = (float) (clone $allBase)
+            ->whereIn('payment_status', ['unpaid', 'partial'])
+            ->where('consultation_fee', '>', 0)
+            ->selectRaw("SUM(CASE WHEN payment_status = 'unpaid' THEN consultation_fee ELSE (consultation_fee - amount_paid) END) as d")
+            ->value('d');
+        $allCollected = (float) (clone $allBase)->where('payment_status', 'paid')->sum('consultation_fee')
+            + (float) (clone $allBase)->where('payment_status', 'partial')->sum('amount_paid');
 
         return response()->json([
             'data' => [
@@ -68,12 +85,58 @@ class DashboardController extends Controller
                 'this_week'  => $period($weekStart,  $weekEnd),
                 'this_month' => $period($monthStart, $monthEnd),
                 'all_time'   => [
-                    'revenue'      => (float) Visit::where('clinic_id', $id)->sum('consultation_fee'),
-                    'paid_visits'  => (clone $allPaid)->count(),
-                    'total_visits' => Visit::where('clinic_id', $id)->count(),
-                    'avg_fee'      => (float) (clone $allPaid)->avg('consultation_fee'),
+                    'revenue'          => (float) (clone $allBase)->sum('consultation_fee'),
+                    'paid_visits'      => (clone $allBase)->where('payment_status', 'paid')->count(),
+                    'unpaid_count'     => (clone $allBase)->whereIn('payment_status', ['unpaid', 'partial'])->where('consultation_fee', '>', 0)->count(),
+                    'total_visits'     => (clone $allBase)->count(),
+                    'avg_fee'          => (float) (clone $allBase)->where('consultation_fee', '>', 0)->avg('consultation_fee'),
+                    'amount_collected' => $allCollected,
+                    'debt_amount'      => max(0.0, $allDebt),
                 ],
             ],
+        ]);
+    }
+
+    public function transactions(Request $request): JsonResponse
+    {
+        $id     = $request->user()->clinic_id;
+        $period = $request->query('period', 'this_month');
+        $filter = $request->query('filter', 'all');
+
+        [$start, $end] = match($period) {
+            'today'      => [today()->startOfDay(), today()->endOfDay()],
+            'this_week'  => [now()->startOfWeek(), now()->endOfWeek()],
+            'this_month' => [now()->startOfMonth(), now()->endOfMonth()],
+            default      => [null, null],
+        };
+
+        $q = Visit::where('clinic_id', $id)
+            ->where('consultation_fee', '>', 0)
+            ->with('patient');
+
+        if ($start && $end) {
+            $q->whereBetween('visited_at', [$start, $end]);
+        }
+
+        match($filter) {
+            'collected'   => $q->where('payment_status', 'paid'),
+            'outstanding' => $q->whereIn('payment_status', ['unpaid', 'partial']),
+            default       => null,
+        };
+
+        $visits = $q->orderByDesc('visited_at')->limit(100)->get();
+
+        return response()->json([
+            'data' => $visits->map(fn ($v) => [
+                'id'               => $v->id,
+                'patient_name'     => $v->patient?->name,
+                'patient_id'       => $v->patient_id,
+                'visited_at'       => $v->visited_at->toISOString(),
+                'consultation_fee' => (float) ($v->consultation_fee ?? 0),
+                'amount_paid'      => (float) ($v->amount_paid ?? 0),
+                'payment_status'   => $v->payment_status ?? 'unpaid',
+                'payment_notes'    => $v->payment_notes,
+            ]),
         ]);
     }
 

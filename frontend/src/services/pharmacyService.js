@@ -29,3 +29,17 @@ export function completePharmacyPrescription(id, items = []) {
 export function getPharmacyHistory(search = '') {
   return api.get('/pharmacy/prescriptions/history', { params: search ? { q: search } : {} })
 }
+
+/** Record payment status for a completed prescription */
+export function recordPrescriptionPayment(id, data) {
+  return api.patch(`/pharmacy/prescriptions/${id}/payment`, data)
+}
+
+/** Pharmacy revenue and debt data */
+export function getPharmacyRevenue() {
+  return api.get('/pharmacy/revenue')
+}
+
+export function getPharmacyRevenueTransactions(period = 'this_month', filter = 'all') {
+  return api.get('/pharmacy/revenue/transactions', { params: { period, filter } })
+}

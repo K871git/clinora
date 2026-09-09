@@ -24,6 +24,9 @@ class Prescription extends Model
         'dispensed_at',
         'completed_at',
         'completed_by',
+        'payment_status',
+        'amount_paid',
+        'payment_notes',
     ];
 
     protected function casts(): array
@@ -38,6 +41,7 @@ class Prescription extends Model
             'sent_to_pharmacy_at' => 'datetime',
             'dispensed_at'        => 'datetime',
             'completed_at'        => 'datetime',
+            'amount_paid'         => 'decimal:2',
         ];
     }
 

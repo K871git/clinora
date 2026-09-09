@@ -1,0 +1,152 @@
+/* ─── Pharmacy Help page (pharma-help-*) ─────────────────────────────── */
+.pharma-help-page { max-width: 880px; }
+
+.pharma-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+@media (max-width: 720px) {
+  .pharma-help-grid { grid-template-columns: 1fr; }
+}
+
+.pharma-help-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 20px 18px;
+  border-radius: var(--radius-md);
+}
+
+.pharma-help-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pharma-help-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.pharma-help-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.pharma-help-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pharma-help-desc {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.pharma-help-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--clr-text);
+  line-height: 1.5;
+}
+
+.pharma-help-step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--clr-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.pharma-help-step-text { font-weight: 500; }
+.pharma-help-step-note { color: var(--clr-text-muted); font-size: 12px; }
+
+.pharma-help-tip {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  font-style: italic;
+  padding: 8px 10px;
+  border-left: 2px solid var(--clr-border);
+  background: var(--clr-surface-hover);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.pharma-help-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.pharma-help-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.pharma-help-arrow {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+}
+
+.pharma-help-stat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pharma-help-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 13px;
+  padding: 8px 10px;
+  background: var(--clr-surface-hover);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-border-subtle);
+}
+
+.pharma-help-stat-item strong {
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.pharma-help-stat-item span {
+  color: var(--clr-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pharma-help-footer {
+  margin-top: var(--space-xl);
+  font-size: 11.5px;
+  color: var(--clr-text-muted);
+  text-align: center;
+  opacity: 0.6;
+}

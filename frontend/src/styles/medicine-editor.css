@@ -1,0 +1,125 @@
+/* ─── Medicine editor (med-*) ────────────────────────────────────────── */
+.med-card {
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background-color: var(--clr-bg);
+  animation: med-card-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes med-card-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.med-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.med-card-num {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--clr-text-muted);
+}
+
+.med-card-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.med-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.med-empty {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.med-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+@media (max-width: 540px) {
+  .med-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.med-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px dashed var(--clr-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--clr-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--space-xs);
+}
+
+.med-add-btn:hover {
+  background-color: var(--clr-primary-subtle);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}
+
+html[data-theme="dark"] .med-add-btn {
+  border-color: var(--clr-border);
+  color: var(--clr-primary);
+}
+
+html[data-theme="dark"] .med-add-btn:hover {
+  background-color: rgba(99, 179, 237, 0.1);
+  border-color: var(--clr-primary);
+}
+
+/* Icon button (used in med-card-controls) */
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--clr-surface);
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background-color: var(--clr-surface-hover);
+  color: var(--clr-text);
+}
+
+.btn-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-icon-remove:hover:not(:disabled) {
+  background-color: var(--clr-danger-bg);
+  color: var(--clr-danger);
+  border-color: var(--clr-danger);
+}

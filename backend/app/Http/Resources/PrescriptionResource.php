@@ -18,6 +18,9 @@ class PrescriptionResource extends JsonResource
             'dispensed_at'        => $this->dispensed_at?->toISOString(),
             'completed_at'        => $this->completed_at?->toISOString(),
             'completed_by'        => $this->completed_by,
+            'payment_status'      => $this->payment_status ?? 'unpaid',
+            'amount_paid'         => (float) ($this->amount_paid ?? 0),
+            'payment_notes'       => $this->payment_notes,
             'patient'       => $this->whenLoaded('patient', fn () => [
                 'id'            => $this->patient->id,
                 'name'          => $this->patient->name,
@@ -37,10 +40,7 @@ class PrescriptionResource extends JsonResource
             'items'         => $this->whenLoaded('items', fn () =>
                 PrescriptionItemResource::collection($this->items)
             ),
-            'total_amount'  => $this->whenLoaded('items', function () {
-                $hasPrice = $this->items->contains(fn ($i) => $i->unit_price !== null);
-                return $hasPrice ? (float) $this->items->sum('unit_price') : null;
-            }),
+            'total_amount'  => $this->whenLoaded('items', fn () => (float) $this->items->sum('unit_price')),
             'created_at'    => $this->created_at->toISOString(),
         ];
     }

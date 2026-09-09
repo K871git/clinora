@@ -113,7 +113,7 @@ export default function VisitInvoicePage() {
         <button className="inv-toolbar-btn inv-toolbar-btn--back" onClick={() => window.close()}>
           ✕ Close
         </button>
-        <span className="inv-toolbar-title">Visit Invoice — {p.name}</span>
+        <span className="inv-toolbar-title">Doctor Invoice — {p.name}</span>
         <button
           className={`inv-toolbar-btn inv-toolbar-btn--settings${settingsOpen ? ' inv-toolbar-btn--settings-on' : ''}`}
           onClick={() => setSettingsOpen(o => !o)}
@@ -143,7 +143,7 @@ export default function VisitInvoicePage() {
             {clinicPhone && <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{clinicPhone}</div>}
           </div>
           <div className="inv-title-block">
-            <div className="inv-title">Invoice</div>
+            <div className="inv-title">Doctor Invoice</div>
             <div className="inv-number">{invNum}</div>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function VisitInvoicePage() {
           </div>
         </div>
 
-        {/* Charges table */}
+        {/* Charges table — consultation fee only */}
         <table className="inv-table">
           <thead>
             <tr>
@@ -211,39 +211,26 @@ export default function VisitInvoicePage() {
             </tr>
           </thead>
           <tbody>
-            {/* Consultation fee row */}
             <tr>
               <td>1</td>
               <td>
                 <div className="inv-med-name">Consultation Fee</div>
-                {doctorName && <div className="inv-med-detail">{doctorName}</div>}
+                {doctorName && <div className="inv-med-detail">{doctorName}{qualification && `, ${qualification}`}</div>}
               </td>
               <td className="inv-amount">₹{fmtPrice(consultFee)}</td>
             </tr>
-
-            {/* Medicine rows — one per item from completed prescriptions */}
-            {completedPrescriptions.flatMap((rx, ri) =>
-              rx.items.map((item, ii) => (
-                <tr key={`${ri}-${ii}`}>
-                  <td>{ii === 0 && ri === 0 ? 2 : ''}</td>
-                  <td>
-                    <div className="inv-med-name">{item.medicine_name}</div>
-                    <div className="inv-med-detail">
-                      {[item.dosage, item.frequency, item.duration].filter(Boolean).join(' · ')}
-                    </div>
-                  </td>
-                  <td className="inv-amount">₹{fmtPrice(item.unit_price)}</td>
-                </tr>
-              ))
-            )}
           </tbody>
           <tfoot>
             <tr className="inv-total-row">
-              <td colSpan={2} className="inv-total-label">Grand Total</td>
-              <td className="inv-amount inv-total-amount">₹{fmtPrice(grandTotal)}</td>
+              <td colSpan={2} className="inv-total-label">Total</td>
+              <td className="inv-amount inv-total-amount">₹{fmtPrice(consultFee)}</td>
             </tr>
           </tfoot>
         </table>
+
+        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '10px', fontStyle: 'italic' }}>
+          Medicine charges are billed separately by the pharmacy.
+        </p>
 
         {/* Signatures */}
         <div className="inv-footer">

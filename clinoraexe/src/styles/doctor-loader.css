@@ -1,0 +1,154 @@
+/* ── Doctor full-screen transition overlay ──────────────────────────── */
+
+.dr-lscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  animation: dr-lscreen-in 0.22s ease-out forwards;
+}
+
+.dr-lscreen--dark {
+  background: #0b0f1a;
+  --dr-l-primary: #818cf8;
+  --dr-l-track:   rgba(129, 140, 248, 0.1);
+  --dr-l-text:    #e2e8f0;
+  --dr-l-sub:     rgba(226, 232, 240, 0.48);
+}
+
+.dr-lscreen--light {
+  background: #f0f4ff;
+  --dr-l-primary: #4f46e5;
+  --dr-l-track:   rgba(79, 70, 229, 0.12);
+  --dr-l-text:    #0f172a;
+  --dr-l-sub:     rgba(15, 23, 42, 0.45);
+}
+
+@keyframes dr-lscreen-in {
+  from { opacity: 0; transform: scale(1.015); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.dr-lscreen--out {
+  animation: dr-lscreen-out 0.32s ease-in forwards;
+}
+
+@keyframes dr-lscreen-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.985); }
+}
+
+/* ── Ring SVG container ───────────────────────────────────────────────── */
+
+.dr-lring-wrap {
+  position: relative;
+  width: 136px;
+  height: 136px;
+}
+
+.dr-lring {
+  display: block;
+  overflow: visible;
+}
+
+.dr-lhalo {
+  fill: none;
+  stroke: var(--dr-l-track);
+  stroke-width: 1.5;
+}
+
+.dr-ltrack {
+  fill: none;
+  stroke: var(--dr-l-track);
+  stroke-width: 3.5;
+}
+
+.dr-larc {
+  fill: none;
+  stroke: var(--dr-l-primary);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 82 231;
+  transform-origin: 68px 68px;
+  animation: dr-arc-spin 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.dr-larc-inner {
+  fill: none;
+  stroke: var(--dr-l-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 20 193;
+  transform-origin: 68px 68px;
+  opacity: 0.4;
+  animation: dr-arc-spin-rev 1.9s linear infinite;
+}
+
+@keyframes dr-arc-spin {
+  from { transform: rotate(-90deg); }
+  to   { transform: rotate(270deg); }
+}
+
+@keyframes dr-arc-spin-rev {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+/* ── Center stethoscope icon ──────────────────────────────────────────── */
+
+.dr-lcenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dr-l-primary);
+  opacity: 0.72;
+}
+
+/* ── Text block ────────────────────────────────────────────────────────── */
+
+.dr-ltext {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.dr-lmsg {
+  font-family: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--dr-l-text);
+}
+
+.dr-lsub {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--dr-l-sub);
+  letter-spacing: 0.01em;
+}
+
+/* ── Decorative dots around the ring ──────────────────────────────────── */
+
+.dr-ldot {
+  fill: var(--dr-l-primary);
+  opacity: 0.28;
+  animation: dr-ldot-pulse 2.5s ease-in-out infinite;
+}
+
+.dr-ldot:nth-child(2) { animation-delay: 0.4s; }
+.dr-ldot:nth-child(3) { animation-delay: 0.8s; }
+.dr-ldot:nth-child(4) { animation-delay: 1.2s; }
+
+@keyframes dr-ldot-pulse {
+  0%, 100% { opacity: 0.2; r: 3; }
+  50%       { opacity: 0.55; r: 4; }
+}

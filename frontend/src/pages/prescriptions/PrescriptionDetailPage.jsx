@@ -1,3 +1,4 @@
+import '../../styles/prescriptions-detail.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,6 +12,8 @@ import {
 import MedicineEditor from './MedicineEditor'
 import { newMedicineItem } from './medicineUtils'
 import Spinner from '../../components/ui/Spinner'
+import PageLoader from '../../components/ui/PageLoader'
+import { confirmDelete, confirmDiscard } from '../../lib/swal'
 
 const STATUS_LABEL = {
   draft:            'Draft',
@@ -166,12 +169,15 @@ export default function PrescriptionDetailPage() {
     setFieldErrors({}); setApiError(null); setEditing(true)
   }
 
-  function cancelEdit() {
+  async function cancelEdit() {
     const changed =
       editDoctorNotes  !== (prescription.doctor_notes ?? '')      ||
       editPrescribedAt !== isoToLocal(prescription.prescribed_at) ||
       editItems.length !== (prescription.items?.length ?? 0)
-    if (changed && !window.confirm('Discard changes?')) return
+    if (changed) {
+      const ok = await confirmDiscard()
+      if (!ok) return
+    }
     setEditing(false); setFieldErrors({}); setApiError(null)
   }
 
@@ -224,7 +230,8 @@ export default function PrescriptionDetailPage() {
   }
 
   async function handleDelete() {
-    if (!window.confirm('Delete this prescription? This cannot be undone.')) return
+    const ok = await confirmDelete({ title: 'Delete prescription?', text: 'This cannot be undone.' })
+    if (!ok) return
     setDeleting(true)
     try {
       await deletePrescription(prescriptionId)
@@ -255,11 +262,7 @@ export default function PrescriptionDetailPage() {
 
   /* ── States ────────────────────────────────────────────────────────── */
 
-  if (pageStatus === 'loading') return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-      <Spinner size={28} />
-    </div>
-  )
+  if (pageStatus === 'loading') return <PageLoader />
   if (pageStatus === 'not-found') return <div className="card state-panel">Prescription not found.</div>
   if (pageStatus === 'forbidden') return <div className="card state-panel">You do not have access to this prescription.</div>
   if (pageStatus === 'error')     return <div className="card state-panel">Could not load prescription — check your connection.</div>

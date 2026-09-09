@@ -1,0 +1,278 @@
+/* ─── Profile Page (prf-*) ────────────────────────────────────────────── */
+.prf-page {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Hero card */
+.prf-hero {
+  padding: 28px 24px;
+}
+
+.prf-hero-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+/* Avatar */
+.prf-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.prf-avatar {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 3px var(--clr-border);
+}
+
+.prf-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.prf-avatar-initials {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -1px;
+  user-select: none;
+}
+
+.prf-avatar-btn {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.18s;
+  border-radius: 50%;
+  font-family: inherit;
+}
+
+.prf-avatar:hover .prf-avatar-btn {
+  opacity: 1;
+}
+
+.prf-avatar-loading {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.prf-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.prf-remove-avatar {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--clr-danger);
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+/* Hero identity */
+.prf-hero-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 4px;
+  min-width: 0;
+}
+
+.prf-hero-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin: 0;
+  letter-spacing: -0.4px;
+}
+
+.prf-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.prf-role-badge--doctor {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+html[data-theme="dark"] .prf-role-badge--doctor {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+.prf-role-badge--pharmacy {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+html[data-theme="dark"] .prf-role-badge--pharmacy {
+  background: #052e16;
+  color: #86efac;
+}
+
+.prf-hero-username {
+  font-size: 12.5px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+  margin: -2px 0 0;
+}
+
+.prf-hero-phone {
+  font-size: 12.5px;
+  color: var(--clr-text-muted);
+  margin: 0;
+}
+
+.prf-hero-email {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  margin: 0;
+}
+
+/* Section cards */
+.prf-card {
+  overflow: hidden;
+}
+
+.prf-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--clr-border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.prf-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prf-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.prf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.prf-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.prf-error {
+  font-size: 12px;
+  color: var(--clr-danger);
+  margin-top: 2px;
+}
+
+.prf-input--error {
+  border-color: var(--clr-danger) !important;
+
+  &:focus {
+    border-color: var(--clr-danger) !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+  }
+}
+
+.prf-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+/* Required asterisk */
+.prf-required { color: var(--clr-danger, #ef4444); font-size: 10px; }
+
+/* Select styled like stg-input */
+.prf-select { appearance: none; cursor: pointer; }
+
+/* Textarea styled like stg-input */
+.prf-textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+
+/* Username prefix "@" wrapper */
+.prf-input-prefix-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.prf-input-prefix {
+  position: absolute;
+  left: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.prf-input-prefixed { padding-left: 26px; }
+
+@media (max-width: 540px) {
+  .prf-grid-2   { grid-template-columns: 1fr; }
+  .prf-hero-body { flex-direction: column; align-items: center; text-align: center; }
+  .prf-role-badge { margin: 0 auto; }
+}

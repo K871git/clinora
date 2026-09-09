@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
         /* ── Clinic ─────────────────────────────────────────────────────── */
 
         $clinic = Clinic::create([
-            'name'          => 'Atmajyot Clinic',
-            'doctor_name'   => 'Dr. Kunal Sasane',
-            'qualification' => 'BHMS (MUHS), Nashik',
-            'address'       => 'Mandali, Tal: Karjat, Dist: Ahilyanagar',
-            'contact'       => '+91 89992 20511',
+            'name'          => 'Shifa Medical Clinic',
+            'doctor_name'   => 'Amol Patil',
+            'qualification' => 'MBBS, MD (General Medicine)',
+            'address'       => 'Shop No. 5, Saddar Bazaar, Karachi, Sindh',
+            'contact'       => '+92 21 3456 7890',
         ]);
 
         ClinicSetting::create([
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
 
         User::create([
             'clinic_id' => $clinic->id,
-            'name'      => 'Yash Shinde',
+            'name'      => 'Sonali Shinde',
             'email'     => 'pharmacy@clinora.local',
             'password'  => Hash::make('password'),
             'role'      => 'pharmacy',

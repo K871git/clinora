@@ -1,0 +1,10 @@
+pub mod auth;
+pub mod dashboard;
+pub mod patients;
+pub mod visits;
+pub mod prescriptions;
+pub mod pharmacy;
+pub mod stock_items;
+pub mod medicines;
+pub mod settings;
+pub mod profile;

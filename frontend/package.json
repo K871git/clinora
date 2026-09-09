@@ -21,6 +21,7 @@
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3",
     "sonner": "^2.0.8",
+    "sweetalert2": "^11.26.25",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

@@ -1,3 +1,4 @@
+import '../../styles/prescriptions-detail.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getVisit } from '../../services/visitService'
@@ -5,11 +6,17 @@ import { createPrescription } from '../../services/prescriptionService'
 import MedicineEditor from './MedicineEditor'
 import { newMedicineItem } from './medicineUtils'
 import Spinner from '../../components/ui/Spinner'
+import PageLoader from '../../components/ui/PageLoader'
+import { confirmDiscard } from '../../lib/swal'
 
 function nowLocal() {
   const d = new Date()
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
-  return d.toISOString().slice(0, 16)
+  const y  = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const dy = String(d.getDate()).padStart(2, '0')
+  const h  = String(d.getHours()).padStart(2, '0')
+  const m  = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${mo}-${dy}T${h}:${m}`
 }
 
 function fmtDate(iso) {
@@ -78,9 +85,12 @@ export default function NewPrescriptionPage() {
     return () => { cancelled = true }
   }, [visitId])
 
-  function handleCancel() {
-    if (items.length > 0 && !window.confirm('Discard this prescription?')) return
-    navigate(`/visits/${visitId}`)
+  async function handleCancel() {
+    if (items.length > 0) {
+      const ok = await confirmDiscard({ title: 'Discard this prescription?', text: 'All added medicines will be lost.' })
+      if (!ok) return
+    }
+    navigate(-1)
   }
 
   async function handleSubmit(e) {
@@ -125,13 +135,7 @@ export default function NewPrescriptionPage() {
 
   /* ── Loading / error screens ─────────────────────────────────────── */
 
-  if (visitStatus === 'loading') {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0', color: 'var(--clr-text-muted)' }}>
-        <Spinner size={28} />
-      </div>
-    )
-  }
+  if (visitStatus === 'loading') return <PageLoader />
   if (visitStatus === 'not-found') return <div className="card state-panel">Visit not found.</div>
   if (visitStatus === 'error')     return <div className="card state-panel">Could not load visit — check your connection.</div>
 
@@ -212,7 +216,7 @@ export default function NewPrescriptionPage() {
             Cancel
           </button>
           <button type="submit" className="btn-primary" disabled={submitting}>
-            {submitting ? 'Saving…' : 'Save as Draft'}
+            {submitting ? 'Saving…' : 'Save Prescription'}
           </button>
         </div>
 

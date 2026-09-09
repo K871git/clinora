@@ -1,3 +1,4 @@
+import '../../styles/profile-page.css'
 import { useState, useRef } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import profileService from '../../services/profileService'

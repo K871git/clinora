@@ -21,6 +21,9 @@ class Visit extends Model
         'consultation_fee',
         'status',
         'invoiced_at',
+        'payment_status',
+        'amount_paid',
+        'payment_notes',
     ];
 
     protected function casts(): array
@@ -31,6 +34,7 @@ class Visit extends Model
             'doctor_id'        => 'integer',
             'visited_at'       => 'datetime',
             'consultation_fee' => 'decimal:2',
+            'amount_paid'      => 'decimal:2',
             'invoiced_at'      => 'datetime',
         ];
     }

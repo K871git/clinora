@@ -1,0 +1,244 @@
+/* ─── Visit status badge ──────────────────────────────────────────────── */
+.vst-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.vst-status-badge--open {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.vst-status-badge--completed {
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+html[data-theme="dark"] .vst-status-badge--open      { color: #fbbf24; background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); }
+html[data-theme="dark"] .vst-status-badge--completed { color: #4ade80; background: rgba(34,197,94,0.1);  border-color: rgba(34,197,94,0.2); }
+
+/* ─── Visit billing card ──────────────────────────────────────────────── */
+.vst-billing-card { overflow: hidden; }
+
+.vst-billing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+}
+html[data-theme="dark"] .vst-billing-head { background: rgba(255,255,255,0.02); }
+
+.vst-billing-head-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+}
+
+.vst-billing-head-date {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+.vst-billing-body {
+  padding: 8px 20px 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.vst-billing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--clr-border-subtle);
+  gap: 12px;
+}
+
+.vst-billing-row-label {
+  font-size: 14px;
+  color: var(--clr-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vst-billing-source {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  font-weight: 400;
+}
+
+.vst-billing-row-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+}
+
+.vst-billing-row-value--muted {
+  color: var(--clr-text-muted);
+  font-weight: 400;
+}
+
+.vst-billing-fee-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vst-billing-currency {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+}
+
+.vst-billing-fee-input {
+  width: 120px;
+  padding: 6px 10px;
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: right;
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  font-family: inherit;
+  font-weight: 600;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.vst-billing-fee-input::-webkit-inner-spin-button,
+.vst-billing-fee-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.vst-billing-fee-input:focus {
+  outline: none;
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.vst-billing-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 12px;
+  margin-top: 4px;
+  border-top: 2px solid var(--clr-border);
+}
+
+.vst-billing-total-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vst-billing-total-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--clr-text);
+  letter-spacing: -0.03em;
+}
+
+.vst-billing-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--clr-border);
+  background: var(--clr-surface-hover);
+  flex-wrap: wrap;
+}
+html[data-theme="dark"] .vst-billing-actions { background: rgba(255,255,255,0.025); }
+
+/* Fee row with inline save button */
+.vst-fee-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vst-save-fee-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.vst-save-fee-btn:hover:not(:disabled) {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  background: rgba(13,148,136,0.06);
+}
+.vst-save-fee-btn--saved {
+  border-color: #22c55e !important;
+  color: #16a34a !important;
+  background: rgba(34,197,94,0.08) !important;
+}
+.vst-save-fee-btn:disabled { opacity: 0.6; cursor: default; }
+
+.vst-invoice-btn {
+  border-color: var(--clr-primary) !important;
+  color: var(--clr-primary) !important;
+}
+
+/* Payment status section */
+.vst-payment-section {
+  padding: 16px 20px;
+  border-top: 1px solid var(--clr-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vst-payment-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.vst-payment-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+}
+.vst-payment-pills { display: flex; gap: 6px; }
+.vst-payment-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--clr-border);
+  background: var(--clr-surface);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.14s;
+  color: var(--clr-text-muted);
+}
+.vst-payment-pill--on.vst-payment-pill--unpaid  { border-color: #ef4444; background: #fef2f2; color: #dc2626; }
+.vst-payment-pill--on.vst-payment-pill--partial { border-color: #f59e0b; background: #fffbeb; color: #d97706; }
+.vst-payment-pill--on.vst-payment-pill--paid    { border-color: #10b981; background: #ecfdf5; color: #059669; }
+[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--unpaid  { background: rgba(239,68,68,.15); }
+[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--partial { background: rgba(245,158,11,.15); }
+[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--paid    { background: rgba(16,185,129,.15); }
+.vst-payment-partial-row { display: flex; align-items: center; gap: 10px; }
+.vst-payment-partial-label { font-size: 13px; color: var(--clr-text-muted); white-space: nowrap; }
+.vst-payment-notes-input { min-height: 36px; resize: none; font-size: 13px; }

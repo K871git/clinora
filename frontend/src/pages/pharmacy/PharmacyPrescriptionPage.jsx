@@ -1,3 +1,6 @@
+import '../../styles/prescriptions-detail.css'
+import '../../styles/pharmacy-pages.css'
+import '../../styles/pharmacy-stock.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -5,8 +8,10 @@ import {
   getPharmacyPrescription,
   startDispensingPharmacyPrescription,
   completePharmacyPrescription,
+  recordPrescriptionPayment,
 } from '../../services/pharmacyService'
 import Spinner from '../../components/ui/Spinner'
+import PageLoader from '../../components/ui/PageLoader'
 
 const STATUS_LABEL = {
   sent_to_pharmacy: 'Pending',
@@ -16,14 +21,14 @@ const STATUS_LABEL = {
 
 function fmtDateTime(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-PK', {
+  return new Date(iso).toLocaleString('en-IN', {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
 }
 
 function fmtPrice(amount) {
-  return parseFloat(amount).toLocaleString('en-PK', {
+  return '₹' + parseFloat(amount || 0).toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
@@ -79,11 +84,24 @@ export default function PharmacyPrescriptionPage() {
   const [checked,         setChecked]         = useState(new Set())
   const [prices,          setPrices]          = useState({})
 
+  /* payment state */
+  const [paymentStatus,  setPaymentStatus]  = useState('unpaid')
+  const [amountPaid,     setAmountPaid]     = useState('')
+  const [paymentNotes,   setPaymentNotes]   = useState('')
+  const [savingPayment,  setSavingPayment]  = useState(false)
+
   useEffect(() => {
     let cancelled = false
     getPharmacyPrescription(prescriptionId)
       .then(({ data }) => {
-        if (!cancelled) { setPrescription(data.data); setPageStatus('done') }
+        if (!cancelled) {
+          const rx = data.data
+          setPrescription(rx)
+          setPaymentStatus(rx.payment_status ?? 'unpaid')
+          setAmountPaid(rx.amount_paid > 0 ? String(rx.amount_paid) : '')
+          setPaymentNotes(rx.payment_notes ?? '')
+          setPageStatus('done')
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -128,6 +146,28 @@ export default function PharmacyPrescriptionPage() {
     } finally { setDispensing(false) }
   }
 
+  async function handleSavePayment() {
+    setSavingPayment(true)
+    try {
+      const { data } = await recordPrescriptionPayment(prescriptionId, {
+        payment_status: paymentStatus,
+        amount_paid:    paymentStatus === 'paid'
+          ? prescription.total_amount ?? 0
+          : paymentStatus === 'partial'
+            ? parseFloat(amountPaid || '0') || 0
+            : 0,
+        payment_notes: paymentNotes.trim() || null,
+      })
+      setPrescription(data.data)
+      setPaymentStatus(data.data.payment_status)
+      toast.success('Payment recorded')
+    } catch {
+      toast.error('Could not save payment — try again.')
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
   async function handleComplete() {
     setCompleting(true); setConfirmComplete(false)
     try {
@@ -154,13 +194,7 @@ export default function PharmacyPrescriptionPage() {
 
   /* ── Page states ─────────────────────────────────────────────────────── */
 
-  if (pageStatus === 'loading') {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-        <Spinner size={28} />
-      </div>
-    )
-  }
+  if (pageStatus === 'loading') return <PageLoader />
   if (pageStatus === 'not-found') return <div className="card state-panel">Prescription not found.</div>
   if (pageStatus === 'forbidden') return <div className="card state-panel">You do not have access to this prescription.</div>
   if (pageStatus === 'error')     return <div className="card state-panel">Could not load prescription — check your connection.</div>
@@ -183,8 +217,8 @@ export default function PharmacyPrescriptionPage() {
 
   return (
     <div>
-      <button className="btn-link detail-back" onClick={() => navigate('/pharmacy')}>
-        ← Queue
+      <button className="btn-link detail-back" onClick={() => navigate(-1)}>
+        ← Back
       </button>
 
       {/* ── Header card ──────────────────────────────────────────────── */}
@@ -305,6 +339,15 @@ export default function PharmacyPrescriptionPage() {
               </div>
             )}
 
+            {/* Print Prescription — always available */}
+            <button
+              className="rx-action-btn"
+              onClick={() => window.open(`/pharmacy/prescriptions/${prescriptionId}/print`, '_blank')}
+            >
+              <IconPrint />
+              Print Rx
+            </button>
+
             {/* Completed notice + View Invoice */}
             {isCompleted && (
               <>
@@ -317,7 +360,7 @@ export default function PharmacyPrescriptionPage() {
                   onClick={() => window.open(`/pharmacy/prescriptions/${prescriptionId}/invoice`, '_blank')}
                 >
                   <IconPrint />
-                  View Invoice
+                  Pharmacy Invoice
                 </button>
               </>
             )}
@@ -417,6 +460,64 @@ export default function PharmacyPrescriptionPage() {
           <div className="history-empty">No medicines on this prescription.</div>
         )}
       </div>
+
+      {/* ── Payment section — only for completed prescriptions ────────── */}
+      {isCompleted && (
+        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+          <div className="rx-content-header">
+            <span className="rx-content-label">Payment</span>
+            <span className={`px-pay-badge px-pay-badge--${paymentStatus}`}>
+              {paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? 'Partial' : 'Unpaid'}
+            </span>
+          </div>
+
+          <div className="px-pay-body">
+            <div className="px-pay-pills">
+              {['unpaid', 'partial', 'paid'].map(s => (
+                <button
+                  key={s}
+                  className={`px-pay-pill px-pay-pill--${s}${paymentStatus === s ? ' px-pay-pill--on' : ''}`}
+                  onClick={() => setPaymentStatus(s)}
+                >
+                  {s === 'unpaid' ? 'Unpaid' : s === 'partial' ? 'Partial' : 'Paid'}
+                </button>
+              ))}
+            </div>
+
+            {paymentStatus === 'partial' && (
+              <div className="px-pay-partial">
+                <span className="px-pay-partial-label">Amount Paid ₹</span>
+                <input
+                  className="field px-pay-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amountPaid}
+                  onChange={e => setAmountPaid(e.target.value)}
+                />
+              </div>
+            )}
+
+            <textarea
+              className="field px-pay-notes"
+              rows={1}
+              placeholder="Payment notes (optional)…"
+              value={paymentNotes}
+              onChange={e => setPaymentNotes(e.target.value)}
+            />
+
+            <button
+              className="rx-action-btn rx-action-btn--primary px-pay-save-btn"
+              onClick={handleSavePayment}
+              disabled={savingPayment}
+            >
+              {savingPayment ? <Spinner size={12} /> : null}
+              {savingPayment ? 'Saving…' : 'Save Payment'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Doctor notes ──────────────────────────────────────────────── */}
       {prescription.doctor_notes && (

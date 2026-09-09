@@ -176,6 +176,18 @@ class PrescriptionService
                     'updated_at'   => now(),
                 ]);
 
+            if ($updated > 0) {
+                // Decrement stock for each dispensed medicine (never below 0)
+                $names = $prescription->items()->pluck('medicine_name');
+                foreach ($names as $name) {
+                    DB::table('medicines')
+                        ->where('clinic_id', $prescription->clinic_id)
+                        ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+                        ->where('quantity', '>', 0)
+                        ->decrement('quantity');
+                }
+            }
+
             return $updated > 0;
         });
     }

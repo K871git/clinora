@@ -1,0 +1,454 @@
+/* ─── Prescription Print View ─────────────────────────────────────────────
+ * Import in PrintPrescriptionPage.jsx only.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════════
+   SCREEN SHELL
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-page {
+  min-height: 100vh;
+  background: #d1d5db;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 40px;
+}
+
+/* Action bar — visible on screen only */
+.print-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  background: #1e293b;
+  color: #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+.print-toolbar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.print-toolbar-back:hover { color: #f1f5f9; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); }
+
+.print-toolbar-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  flex: 1;
+}
+
+.print-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 18px;
+  height: 34px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.print-toolbar-btn:hover { background: #1d4ed8; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PAPER
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-paper {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  margin: 24px auto 0;
+  position: relative;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.22), 0 1px 4px rgba(0,0,0,0.12);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* Typography defaults — serif for that prescription feel */
+  font-family: 'Georgia', 'Times New Roman', Times, serif;
+  font-size: 11pt;
+  line-height: 1.55;
+  color: #0f172a;
+}
+
+/* Standalone paper — has inner padding */
+.print-paper--standalone {
+  padding: 14mm 16mm 14mm;
+}
+
+/* Template paper — no default padding; content wrapper handles it */
+.print-paper--template {
+  padding: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEMPLATE BACKGROUND (image or PDF embed)
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-template-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.print-template-bg-pdf {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Content overlaid on the template.
+   Must use absolute mm values — CSS % in padding is relative to WIDTH (210mm),
+   not height. 26% × 210mm = only 54mm which is inside most template headers.
+   88mm = ~30% of A4 height, placing content at the Name/Date line. */
+.print-template-overlay {
+  position: relative;
+  z-index: 1;
+  padding: 88mm 18mm 44mm;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* No-template warning bar */
+.print-no-template-warn {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 24px 0;
+  font-family: system-ui, sans-serif;
+}
+
+@media print {
+  .print-no-template-warn { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   STANDALONE HEADER (no template)
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-standalone-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14pt;
+  align-items: start;
+  padding-bottom: 9pt;
+  margin-bottom: 10pt;
+  border-bottom: 2.5px solid #0f172a;
+}
+
+.print-clinic-col {}
+
+.print-clinic-name {
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #0f172a;
+  margin: 0 0 2pt;
+  line-height: 1.1;
+  font-family: 'Georgia', serif;
+}
+
+.print-doctor-name {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 1pt;
+}
+
+.print-qualification {
+  font-size: 9.5pt;
+  color: #334155;
+  margin: 0 0 1pt;
+  font-family: system-ui, sans-serif;
+}
+
+.print-address,
+.print-clinic-contact {
+  font-size: 9pt;
+  color: #475569;
+  margin: 0 0 1pt;
+  font-family: system-ui, sans-serif;
+}
+
+/* Patient + date block (top-right in standalone) */
+.print-patient-col {
+  text-align: right;
+}
+
+.print-patient-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6pt;
+  margin-bottom: 3pt;
+}
+
+.print-patient-label {
+  font-size: 8.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  font-family: system-ui, sans-serif;
+}
+
+.print-patient-value {
+  font-size: 10.5pt;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEMPLATE MODE — PATIENT INFO
+   Values only — no labels or underlines (template already has those printed)
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-tpl-patient-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8pt;
+  margin-bottom: 2pt;
+}
+
+.print-tpl-val {
+  font-size: 11pt;
+  font-weight: 600;
+  color: #0f172a;
+  font-family: 'Georgia', serif;
+}
+
+/* Notes pushed to the bottom of the writable area */
+.print-tpl-notes {
+  margin-top: auto;
+  padding-top: 12pt;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Rx SYMBOL + MEDICINE LIST
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-rx-symbol {
+  font-size: 20pt;
+  font-weight: 900;
+  font-style: italic;
+  color: #0f172a;
+  line-height: 1;
+  margin: 10pt 0 5pt;
+}
+
+.print-med-list {
+  list-style: none;
+  counter-reset: med-counter;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9pt;
+}
+
+.print-med-item {
+  counter-increment: med-counter;
+  display: grid;
+  grid-template-columns: 14pt 1fr;
+  gap: 0 4pt;
+}
+
+.print-med-item::before {
+  content: counter(med-counter) '.';
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 11pt;
+  padding-top: 0.5pt;
+}
+
+.print-med-body {}
+
+.print-med-name {
+  font-size: 11.5pt;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.5pt;
+}
+
+.print-med-meta {
+  font-size: 10pt;
+  color: #1e293b;
+  margin: 0 0 0.5pt;
+}
+
+.print-med-instructions {
+  font-size: 9.5pt;
+  color: #475569;
+  font-style: italic;
+  margin: 0;
+}
+
+.print-no-medicines {
+  font-size: 10pt;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 6pt 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   NOTES
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-notes-section {
+  margin-top: 10pt;
+}
+
+.print-notes-label {
+  font-size: 8.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  font-family: system-ui, sans-serif;
+  margin-bottom: 3pt;
+}
+
+.print-notes-text {
+  font-size: 10.5pt;
+  color: #1e293b;
+  white-space: pre-line;
+  line-height: 1.55;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SIGNATURE
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-signature-section {
+  margin-top: auto;
+  padding-top: 18pt;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.print-signature-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 120pt;
+}
+
+.print-signature-line {
+  width: 100%;
+  border-top: 1px solid #0f172a;
+  margin-bottom: 4pt;
+}
+
+.print-signature-name {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+  font-family: system-ui, sans-serif;
+}
+
+.print-signature-qual {
+  font-size: 8.5pt;
+  color: #475569;
+  text-align: center;
+  font-family: system-ui, sans-serif;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DIVIDERS + BANNERS
+   ══════════════════════════════════════════════════════════════════════ */
+
+.print-rule {
+  border: none;
+  border-top: 1px solid #cbd5e1;
+  margin: 10pt 0;
+}
+
+.print-banner {
+  font-size: 9pt;
+  color: #475569;
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  line-height: 1.5;
+  padding: 6pt 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   @MEDIA PRINT
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media print {
+  body { margin: 0; background: white; }
+
+  .print-hide { display: none !important; }
+
+  .print-page {
+    background: white;
+    padding: 0;
+    display: block;
+  }
+
+  .print-paper {
+    width: 100%;
+    min-height: auto;
+    margin: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  .print-paper--standalone { padding: 12mm 14mm 12mm; }
+  .print-paper--template   { padding: 0; }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .print-template-bg-img,
+  .print-template-bg-pdf {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

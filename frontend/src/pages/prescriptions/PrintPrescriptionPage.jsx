@@ -9,14 +9,14 @@ import '../../styles/print-prescription.css'
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-PK', {
+  return new Date(iso).toLocaleDateString('en-IN', {
     year: 'numeric', month: 'long', day: 'numeric',
   })
 }
 
 function fmtDateTime(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-PK', {
+  return new Date(iso).toLocaleString('en-IN', {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
@@ -152,7 +152,7 @@ export default function PrintPrescriptionPage() {
     <div className="print-toolbar print-hide">
       <button
         className="print-toolbar-back"
-        onClick={() => navigate(`/prescriptions/${prescriptionId}`)}
+        onClick={() => navigate(-1)}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <polyline points="15 18 9 12 15 6"/>

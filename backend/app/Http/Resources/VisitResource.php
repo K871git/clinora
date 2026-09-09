@@ -16,6 +16,9 @@ class VisitResource extends JsonResource
             'consultation_fee'   => (float) ($this->consultation_fee ?? 0),
             'status'             => $this->status ?? 'open',
             'invoiced_at'        => $this->invoiced_at?->toISOString(),
+            'payment_status'     => $this->payment_status ?? 'unpaid',
+            'amount_paid'        => (float) ($this->amount_paid ?? 0),
+            'payment_notes'      => $this->payment_notes,
             'medicine_total'     => $this->whenLoaded('prescriptions', function () {
                 return (float) $this->prescriptions
                     ->where('status', 'completed')

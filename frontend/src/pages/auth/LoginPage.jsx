@@ -549,7 +549,10 @@ export default function LoginPage() {
 
       </div>
 
-      <p className="login-footer">Clinora — Offline Medical Records System</p>
+      <p className="login-footer">
+        Clinora — Offline Medical Records System &middot; Built by{' '}
+        <a className="login-footer-link" href="https://k871git.github.io/thaelon" target="_blank" rel="noopener noreferrer">Thaelon</a>
+      </p>
 
       {/* Welcome overlay — pharmacy (teal) or doctor (indigo) */}
       {welcomeUser && welcomeUser.role === 'pharmacy' && (

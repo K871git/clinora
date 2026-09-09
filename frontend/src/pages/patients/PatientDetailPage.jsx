@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getPatient, getPatientVisits, getPatientPrescriptions } from '../../services/patientService'
 import PatientFormModal from './PatientFormModal'
 import Spinner from '../../components/ui/Spinner'
+import PageLoader from '../../components/ui/PageLoader'
 import '../../styles/patients.css'
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
@@ -32,12 +33,12 @@ const RX_DOT_COLOR = {
 
 function fmtDate(str) {
   if (!str) return '—'
-  return new Date(str).toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric' })
+  return new Date(str).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 function fmtShortDate(str) {
   if (!str) return 'Never'
-  return new Date(str).toLocaleDateString('en-PK', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(str).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function capitalize(s) {
@@ -109,13 +110,7 @@ export default function PatientDetailPage() {
 
   /* ── Loading / error screens ────────────────────────────────────────── */
 
-  if (pageStatus === 'loading') {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-        <Spinner size={28} />
-      </div>
-    )
-  }
+  if (pageStatus === 'loading') return <PageLoader />
 
   if (pageStatus === 'not-found') {
     return (

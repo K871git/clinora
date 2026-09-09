@@ -1,8 +1,18 @@
+import '../../styles/visit-detail.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { getVisit, updateVisit, completeVisit } from '../../services/visitService'
+import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment } from '../../services/visitService'
 import Spinner from '../../components/ui/Spinner'
+import PageLoader from '../../components/ui/PageLoader'
+import { confirmDiscard } from '../../lib/swal'
+
+/* ── Avatar ──────────────────────────────────────────────────────────────── */
+
+const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#3b82f6']
+function avatarColor(name) { return AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length] }
+
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
 
 function fmtDateTime(iso) {
   if (!iso) return '—'
@@ -20,10 +30,21 @@ function fmtPrice(amount) {
 
 function isoToLocal(iso) {
   if (!iso) return ''
-  const d = new Date(iso)
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
-  return d.toISOString().slice(0, 16)
+  const d  = new Date(iso)
+  const y  = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const dy = String(d.getDate()).padStart(2, '0')
+  const h  = String(d.getHours()).padStart(2, '0')
+  const m  = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${mo}-${dy}T${h}:${m}`
 }
+
+function doctorLabel(name) {
+  if (!name) return ''
+  return /^dr\.?\s/i.test(name) ? name : `Dr. ${name}`
+}
+
+/* ── Icons ───────────────────────────────────────────────────────────────── */
 
 function IconCheck({ size = 14 }) {
   return (
@@ -45,14 +66,27 @@ function IconPrint() {
   )
 }
 
+function IconSave() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  )
+}
+
+/* ── Page ────────────────────────────────────────────────────────────────── */
+
 export default function VisitDetailPage() {
   const { visitId } = useParams()
-  const navigate = useNavigate()
+  const navigate    = useNavigate()
 
   const [visit,      setVisit]      = useState(null)
   const [pageStatus, setPageStatus] = useState('loading')
 
-  /* edit form state */
+  /* edit form */
   const [editing,       setEditing]       = useState(false)
   const [editVisitedAt, setEditVisitedAt] = useState('')
   const [editNotes,     setEditNotes]     = useState('')
@@ -60,19 +94,31 @@ export default function VisitDetailPage() {
   const [apiError,      setApiError]      = useState(null)
   const [saving,        setSaving]        = useState(false)
 
-  /* billing state */
-  const [feeInput,         setFeeInput]         = useState('')
-  const [completing,       setCompleting]       = useState(false)
-  const [confirmComplete,  setConfirmComplete]  = useState(false)
+  /* billing */
+  const [feeInput,        setFeeInput]        = useState('')
+  const [savingFee,       setSavingFee]       = useState(false)
+  const [feeSaved,        setFeeSaved]        = useState(false)
+  const [completing,      setCompleting]      = useState(false)
+  const [confirmComplete, setConfirmComplete] = useState(false)
+
+  /* payment status */
+  const [paymentStatus,  setPaymentStatus]  = useState('unpaid')
+  const [amountPaid,     setAmountPaid]     = useState('')
+  const [paymentNotes,   setPaymentNotes]   = useState('')
+  const [savingPayment,  setSavingPayment]  = useState(false)
 
   useEffect(() => {
     let cancelled = false
     getVisit(visitId)
       .then(({ data }) => {
         if (!cancelled) {
-          setVisit(data.data)
-          const fee = data.data.consultation_fee
+          const v = data.data
+          setVisit(v)
+          const fee = v.consultation_fee
           setFeeInput(fee > 0 ? String(fee) : '')
+          setPaymentStatus(v.payment_status ?? 'unpaid')
+          setAmountPaid(v.amount_paid > 0 ? String(v.amount_paid) : '')
+          setPaymentNotes(v.payment_notes ?? '')
           setPageStatus('done')
         }
       })
@@ -90,10 +136,13 @@ export default function VisitDetailPage() {
     setEditing(true)
   }
 
-  function cancelEdit() {
+  async function cancelEdit() {
     const changed = editNotes !== (visit.consultation_notes ?? '') ||
       editVisitedAt !== isoToLocal(visit.visited_at)
-    if (changed && !window.confirm('Discard changes?')) return
+    if (changed) {
+      const ok = await confirmDiscard()
+      if (!ok) return
+    }
     setEditing(false)
     setFieldErrors({})
     setApiError(null)
@@ -110,25 +159,61 @@ export default function VisitDetailPage() {
     setFieldErrors({})
     try {
       const { data } = await updateVisit(visitId, {
-        visited_at:         editVisitedAt,
+        visited_at:         new Date(editVisitedAt).toISOString(),
         consultation_notes: editNotes.trim() || null,
       })
       setVisit(data.data)
       setEditing(false)
+      toast.success('Visit updated')
     } catch (err) {
-      const httpStatus = err.response?.status
       const body = err.response?.data
-      if (httpStatus === 422 && body?.errors) {
-        const sErrs = {}
-        Object.entries(body.errors).forEach(([k, msgs]) => {
-          sErrs[k] = Array.isArray(msgs) ? msgs[0] : msgs
-        })
-        setFieldErrors(sErrs)
+      if (err.response?.status === 422 && body?.errors) {
+        const errs = {}
+        Object.entries(body.errors).forEach(([k, msgs]) => { errs[k] = Array.isArray(msgs) ? msgs[0] : msgs })
+        setFieldErrors(errs)
       } else {
         setApiError(body?.message ?? 'Could not save changes — please try again.')
       }
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleSaveFee() {
+    setSavingFee(true)
+    setFeeSaved(false)
+    try {
+      const fee = feeInput ? parseFloat(feeInput) : 0
+      const { data } = await saveFee(visitId, fee)
+      setVisit(data.data)
+      setFeeSaved(true)
+      setTimeout(() => setFeeSaved(false), 2000)
+    } catch {
+      toast.error('Could not save fee — try again.')
+    } finally {
+      setSavingFee(false)
+    }
+  }
+
+  async function handleSavePayment() {
+    setSavingPayment(true)
+    try {
+      const { data } = await recordVisitPayment(visitId, {
+        payment_status: paymentStatus,
+        amount_paid:    paymentStatus === 'paid'
+          ? parseFloat(feeInput || '0') || 0
+          : paymentStatus === 'partial'
+            ? parseFloat(amountPaid || '0') || 0
+            : 0,
+        payment_notes: paymentNotes.trim() || null,
+      })
+      setVisit(data.data)
+      setPaymentStatus(data.data.payment_status)
+      toast.success('Payment status saved')
+    } catch {
+      toast.error('Could not save payment — try again.')
+    } finally {
+      setSavingPayment(false)
     }
   }
 
@@ -139,31 +224,21 @@ export default function VisitDetailPage() {
       const fee = feeInput ? parseFloat(feeInput) : null
       const { data } = await completeVisit(visitId, fee)
       setVisit(data.data)
-      toast.success('Visit completed', {
-        description: 'Invoice has been recorded.',
-        duration: 4000,
-      })
+      toast.success('Visit completed', { description: 'Invoice recorded.', duration: 4000 })
     } catch (err) {
-      const msg = err.response?.data?.message ?? 'Could not complete visit — try again.'
-      toast.error(msg)
+      toast.error(err.response?.data?.message ?? 'Could not complete visit — try again.')
     } finally {
       setCompleting(false)
     }
   }
 
-  /* ── Loading / error screens ────────────────────────────────────────── */
+  /* ── Loading / error screens ─────────────────────────────────────────── */
 
   if (pageStatus === 'loading') {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0', color: 'var(--clr-text-muted)' }}>
-        <Spinner size={28} />
-      </div>
-    )
+    return <PageLoader />
   }
   if (pageStatus === 'not-found') return <div className="card state-panel">Visit not found.</div>
-  if (pageStatus === 'error')     return <div className="card state-panel">Could not load visit — check your connection.</div>
-
-  /* ── Derived values ─────────────────────────────────────────────────── */
+  if (pageStatus === 'error')     return <div className="card state-panel">Could not load visit.</div>
 
   const isOpen      = (visit.status ?? 'open') === 'open'
   const isCompleted = visit.status === 'completed'
@@ -171,26 +246,27 @@ export default function VisitDetailPage() {
   const consultFee  = parseFloat(feeInput || '0') || 0
   const medTotal    = visit.medicine_total ?? 0
   const grandTotal  = consultFee + medTotal
-
-  const hasPharmacyTotal = medTotal > 0
+  const hasPharmacy = medTotal > 0
 
   return (
     <div>
-      <button
-        className="btn-link detail-back"
-        onClick={() => navigate(`/patients/${visit.patient.id}`)}
-      >
-        ← {visit.patient.name}
+      <button className="btn-link detail-back" onClick={() => navigate(-1)}>
+        ← Back
       </button>
 
       {/* Header card */}
       <div className="card detail-header-card">
-        <div className="detail-avatar">{visit.patient.name[0].toUpperCase()}</div>
+        <div
+          className="detail-avatar"
+          style={{ background: avatarColor(visit.patient.name), color: '#fff' }}
+        >
+          {visit.patient.name[0].toUpperCase()}
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 className="detail-name">{visit.patient.name}</h2>
           <div className="detail-sub">{fmtDateTime(visit.visited_at)}</div>
           {visit.doctor && (
-            <div className="visit-attending">Dr. {visit.doctor.name}</div>
+            <div className="visit-attending">{doctorLabel(visit.doctor.name)}</div>
           )}
         </div>
         <div className="detail-actions" style={{ alignItems: 'center', gap: '8px' }}>
@@ -202,7 +278,6 @@ export default function VisitDetailPage() {
               <button className="btn-secondary" onClick={startEdit}>Edit</button>
               <button
                 className="btn-primary"
-                style={{ width: 'auto' }}
                 onClick={() => navigate(`/visits/${visitId}/prescriptions/new`)}
               >
                 + Prescription
@@ -219,10 +294,10 @@ export default function VisitDetailPage() {
         </div>
       )}
 
-      {/* Consultation notes */}
+      {/* Consultation notes card */}
       <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
         {editing ? (
-          <form onSubmit={handleSave}>
+          <form onSubmit={handleSave} className="form-enter">
             <div className="form-stack">
               <div className="field-group">
                 <label className="field-label">Visit Date &amp; Time</label>
@@ -233,9 +308,7 @@ export default function VisitDetailPage() {
                   onChange={(e) => setEditVisitedAt(e.target.value)}
                 />
                 {(fieldErrors.visitedAt || fieldErrors.visited_at) && (
-                  <span className="field-error-msg">
-                    {fieldErrors.visitedAt ?? fieldErrors.visited_at}
-                  </span>
+                  <span className="field-error-msg">{fieldErrors.visitedAt ?? fieldErrors.visited_at}</span>
                 )}
               </div>
               <div className="field-group">
@@ -252,9 +325,7 @@ export default function VisitDetailPage() {
               </div>
             </div>
             <div className="visit-form-actions">
-              <button type="button" className="btn-secondary" onClick={cancelEdit} disabled={saving}>
-                Cancel
-              </button>
+              <button type="button" className="btn-secondary" onClick={cancelEdit} disabled={saving}>Cancel</button>
               <button type="submit" className="btn-primary" disabled={saving}>
                 {saving ? 'Saving…' : 'Save Changes'}
               </button>
@@ -272,27 +343,90 @@ export default function VisitDetailPage() {
         )}
       </div>
 
-      {/* ── Billing / Invoice card ──────────────────────────────────────── */}
+      {/* ── Billing / Invoice card ─────────────────────────────────────── */}
       <div className="card vst-billing-card" style={{ marginTop: 'var(--space-md)' }}>
 
-        {/* Card header */}
         <div className="vst-billing-head">
           <span className="vst-billing-head-label">Billing &amp; Invoice</span>
           {isCompleted && visit.invoiced_at && (
-            <span className="vst-billing-head-date">
-              Invoiced {fmtDateTime(visit.invoiced_at)}
-            </span>
+            <span className="vst-billing-head-date">Completed {fmtDateTime(visit.invoiced_at)}</span>
           )}
         </div>
 
-        {/* Rows */}
         <div className="vst-billing-body">
 
           {/* Consultation fee */}
           <div className="vst-billing-row">
             <span className="vst-billing-row-label">Consultation Fee</span>
             {isOpen ? (
-              <div className="vst-billing-fee-wrap">
+              <div className="vst-fee-row">
+                <div className="vst-billing-fee-wrap">
+                  <span className="vst-billing-currency">₹</span>
+                  <input
+                    className="vst-billing-fee-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={feeInput}
+                    onChange={e => { setFeeInput(e.target.value); setFeeSaved(false) }}
+                  />
+                </div>
+                <button
+                  className={`vst-save-fee-btn${feeSaved ? ' vst-save-fee-btn--saved' : ''}`}
+                  onClick={handleSaveFee}
+                  disabled={savingFee}
+                  title="Save consultation fee"
+                >
+                  {savingFee ? <Spinner size={12} /> : feeSaved ? <IconCheck size={12} /> : <IconSave />}
+                  {savingFee ? 'Saving…' : feeSaved ? 'Saved' : 'Save'}
+                </button>
+              </div>
+            ) : (
+              <span className="vst-billing-row-value">₹{fmtPrice(visit.consultation_fee)}</span>
+            )}
+          </div>
+
+          {/* Medicine total */}
+          <div className="vst-billing-row">
+            <span className="vst-billing-row-label">
+              Medicine Total
+              {hasPharmacy && <span className="vst-billing-source"> (from pharmacy)</span>}
+            </span>
+            <span className={`vst-billing-row-value${!hasPharmacy ? ' vst-billing-row-value--muted' : ''}`}>
+              {hasPharmacy ? `₹${fmtPrice(medTotal)}` : '—'}
+            </span>
+          </div>
+
+          <div className="vst-billing-total-row">
+            <span className="vst-billing-total-label">Grand Total</span>
+            <span className="vst-billing-total-amount">
+              ₹{fmtPrice(isCompleted ? (parseFloat(visit.consultation_fee ?? 0) + medTotal) : grandTotal)}
+            </span>
+          </div>
+        </div>
+
+        {/* ── Payment Status ──────────────────────────────────────── */}
+        <div className="vst-payment-section">
+          <div className="vst-payment-head">
+            <span className="vst-payment-label">Payment Status</span>
+            <div className="vst-payment-pills">
+              {['unpaid', 'partial', 'paid'].map(s => (
+                <button
+                  key={s}
+                  className={`vst-payment-pill vst-payment-pill--${s}${paymentStatus === s ? ' vst-payment-pill--on' : ''}`}
+                  onClick={() => setPaymentStatus(s)}
+                >
+                  {s === 'unpaid' ? 'Unpaid' : s === 'partial' ? 'Partial' : 'Paid'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {paymentStatus === 'partial' && (
+            <div className="vst-payment-partial-row">
+              <span className="vst-payment-partial-label">Amount Paid</span>
+              <div className="vst-billing-fee-wrap" style={{ width: '140px' }}>
                 <span className="vst-billing-currency">₹</span>
                 <input
                   className="vst-billing-fee-input"
@@ -300,64 +434,63 @@ export default function VisitDetailPage() {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  value={feeInput}
-                  onChange={e => setFeeInput(e.target.value)}
+                  value={amountPaid}
+                  onChange={e => setAmountPaid(e.target.value)}
                 />
               </div>
-            ) : (
-              <span className="vst-billing-row-value">₹{fmtPrice(visit.consultation_fee)}</span>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Medicine total from pharmacy */}
-          <div className="vst-billing-row">
-            <span className="vst-billing-row-label">
-              Medicine Total
-              {hasPharmacyTotal && (
-                <span className="vst-billing-source"> (from pharmacy)</span>
-              )}
-            </span>
-            <span className={`vst-billing-row-value${!hasPharmacyTotal ? ' vst-billing-row-value--muted' : ''}`}>
-              {hasPharmacyTotal ? `₹${fmtPrice(medTotal)}` : '—'}
-            </span>
-          </div>
+          <textarea
+            className="field vst-payment-notes-input"
+            rows={1}
+            placeholder="Payment notes (optional)…"
+            value={paymentNotes}
+            onChange={e => setPaymentNotes(e.target.value)}
+          />
 
-          {/* Divider + Grand total */}
-          <div className="vst-billing-total-row">
-            <span className="vst-billing-total-label">Grand Total</span>
-            <span className="vst-billing-total-amount">₹{fmtPrice(isCompleted ? (visit.consultation_fee + medTotal) : grandTotal)}</span>
-          </div>
+          <button
+            className="rx-action-btn vst-save-payment-btn"
+            onClick={handleSavePayment}
+            disabled={savingPayment}
+          >
+            {savingPayment ? <Spinner size={12} /> : null}
+            {savingPayment ? 'Saving…' : 'Save Payment'}
+          </button>
         </div>
 
         {/* Actions */}
         <div className="vst-billing-actions">
+
+          {/* Doctor invoice — always available */}
+          <button
+            className="rx-action-btn vst-invoice-btn"
+            onClick={() => window.open(`/visits/${visitId}/invoice`, '_blank')}
+          >
+            <IconPrint />
+            Doctor Invoice
+          </button>
+
+          {/* Complete visit */}
           {isOpen && !confirmComplete && (
             <button
-              className="rx-action-btn rx-action-btn--primary"
+              className="rx-action-btn"
               onClick={() => setConfirmComplete(true)}
               disabled={completing}
             >
-              <IconCheck size={13} />
+              <IconCheck size={12} />
               Complete Visit
             </button>
           )}
 
           {isOpen && confirmComplete && (
             <div className="rx-send-confirm">
-              <span className="rx-send-confirm-label">Mark visit as complete &amp; save invoice?</span>
-              <button
-                className="rx-action-btn rx-action-btn--primary"
-                onClick={handleComplete}
-                disabled={completing}
-              >
+              <span className="rx-send-confirm-label">Mark visit as complete?</span>
+              <button className="rx-action-btn rx-action-btn--primary" onClick={handleComplete} disabled={completing}>
                 {completing ? <Spinner size={12} /> : null}
                 {completing ? 'Completing…' : 'Yes, Complete'}
               </button>
-              <button
-                className="rx-action-btn"
-                onClick={() => setConfirmComplete(false)}
-                disabled={completing}
-              >
+              <button className="rx-action-btn" onClick={() => setConfirmComplete(false)} disabled={completing}>
                 Cancel
               </button>
             </div>
@@ -369,14 +502,6 @@ export default function VisitDetailPage() {
               Visit Complete
             </div>
           )}
-
-          <button
-            className="rx-action-btn"
-            onClick={() => window.open(`/visits/${visitId}/invoice`, '_blank')}
-          >
-            <IconPrint />
-            Print Invoice
-          </button>
         </div>
       </div>
     </div>

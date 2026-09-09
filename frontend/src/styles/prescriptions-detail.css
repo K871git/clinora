@@ -1,0 +1,518 @@
+/* ─── Rx medicine list (read-only view) ──────────────────────────────── */
+.rx-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  color: var(--clr-text);
+  margin-bottom: var(--space-md);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.rx-medicine-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.rx-medicine-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--clr-border-subtle);
+}
+
+.rx-medicine-item:last-child {
+  border-bottom: none;
+}
+
+.rx-medicine-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(13,148,136,.1);
+  color: var(--clr-primary);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+[data-theme="dark"] .rx-medicine-num {
+  background: rgba(45,212,191,.12);
+}
+
+.rx-medicine-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--clr-text);
+  margin-bottom: 3px;
+  letter-spacing: -0.2px;
+}
+
+.rx-medicine-meta {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  line-height: 1.45;
+}
+
+.rx-medicine-instructions {
+  font-size: 12.5px;
+  color: var(--clr-text-muted);
+  font-style: italic;
+  margin-top: 3px;
+  padding-left: 10px;
+  border-left: 2px solid var(--clr-border);
+}
+
+.history-empty {
+  font-size: 14px;
+  color: var(--clr-text-muted);
+  padding: 8px 0;
+}
+
+/* ─── Prescription detail page ───────────────────────────────────────── */
+.rx-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.rx-detail-page .detail-back {
+  margin-bottom: 0;
+}
+
+/* Header card */
+.rx-hcard {
+  overflow: hidden;
+  border-top: 3px solid var(--clr-primary);
+}
+
+.rx-hcard-patient {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 24px;
+  flex-wrap: wrap;
+}
+
+.rx-hcard-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--clr-primary) 0%, #0891b2 100%);
+  color: #fff;
+  font-size: 21px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(13,148,136,0.28);
+}
+
+.rx-hcard-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rx-hcard-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.35px;
+  margin-bottom: 5px;
+}
+
+.rx-hcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  line-height: 1.4;
+}
+
+.rx-hcard-meta span {
+  white-space: nowrap;
+}
+
+.rx-hcard-meta span+span::before {
+  content: '·';
+  margin: 0 7px;
+  opacity: 0.4;
+}
+
+.rx-hcard-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.rx-hcard-date {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Action bar */
+.rx-hcard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--clr-border);
+  background: var(--clr-surface-hover);
+  flex-wrap: wrap;
+}
+
+.rx-hcard-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rx-hcard-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Action buttons */
+.rx-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.13s, border-color 0.13s, color 0.13s, box-shadow 0.13s;
+  flex-shrink: 0;
+}
+
+.rx-action-btn:hover:not(:disabled) {
+  background: var(--clr-surface-hover);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}
+
+.rx-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.rx-action-btn--primary {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+  color: #fff;
+}
+
+.rx-action-btn--primary:hover:not(:disabled) {
+  background: var(--clr-primary-hover);
+  border-color: var(--clr-primary-hover);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.rx-action-btn--danger {
+  color: var(--clr-text-muted);
+}
+
+.rx-action-btn--danger:hover:not(:disabled) {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.rx-action-btn--invoice {
+  background: rgba(79,70,229,.07);
+  border-color: rgba(79,70,229,.28);
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+.rx-action-btn--invoice:hover:not(:disabled) {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79,70,229,.32);
+}
+
+[data-theme="dark"] .rx-action-btn--invoice {
+  background: rgba(99,102,241,.1);
+  border-color: rgba(99,102,241,.3);
+  color: #a5b4fc;
+}
+
+[data-theme="dark"] .rx-action-btn--invoice:hover:not(:disabled) {
+  background: rgba(79,70,229,.8);
+  border-color: #6366f1;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(99,102,241,.35);
+}
+
+/* Inline alert strip */
+.rx-hcard-alert {
+  margin: 0 20px 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+  font-size: 13px;
+}
+
+html[data-theme="dark"] .rx-hcard-alert {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+/* Content cards (medicines, notes) */
+.rx-content-card {
+  padding: 20px 24px;
+}
+
+.rx-content-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.rx-content-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--clr-primary);
+}
+
+.rx-content-count {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 100px;
+  background: var(--clr-surface-hover);
+  color: var(--clr-text-muted);
+  border: 1px solid var(--clr-border);
+}
+
+/* Status timeline */
+.rx-timeline-card {
+  padding: 0 24px;
+}
+
+.rx-timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  position: relative;
+}
+
+.rx-timeline-step+.rx-timeline-step {
+  border-top: 1px solid var(--clr-border);
+}
+
+.rx-tl-dot-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.rx-tl-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.rx-timeline-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rx-timeline-dot--sent {
+  background: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+}
+
+.rx-timeline-dot--dispensing {
+  background: #d97706;
+  box-shadow: 0 0 0 3px rgba(217,119,6,.15);
+}
+
+.rx-timeline-dot--done {
+  background: #059669;
+  box-shadow: 0 0 0 3px rgba(5,150,105,.15);
+}
+
+.rx-timeline-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.rx-timeline-label--sent        { color: #2563eb; }
+.rx-timeline-label--dispensing  { color: #d97706; }
+.rx-timeline-label--done        { color: #059669; }
+
+[data-theme="dark"] .rx-timeline-label--sent        { color: #60a5fa; }
+[data-theme="dark"] .rx-timeline-label--dispensing  { color: #fbbf24; }
+[data-theme="dark"] .rx-timeline-label--done        { color: #34d399; }
+
+.rx-timeline-time {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+html[data-theme="dark"] .rx-hcard-actions {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* Inline send confirmation strip */
+.rx-send-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: rx-confirm-in 0.15s ease;
+}
+
+@keyframes rx-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.rx-send-confirm-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-text);
+  white-space: nowrap;
+  padding-right: 4px;
+}
+
+/* ─── New Prescription page (nrx-*) ───────────────────────────────────── */
+.nrx-section   { padding: var(--space-lg); margin-bottom: var(--space-md); }
+.nrx-date-wrap { max-width: 280px; }
+.nrx-api-err   { margin-bottom: var(--space-md); }
+.nrx-items-err { display: block; margin-bottom: var(--space-sm); }
+.nrx-opt       { font-weight: 400; color: var(--clr-text-muted); }
+.nrx-sub       { color: var(--clr-text-muted); margin-left: 4px; }
+.nrx-notes     { min-height: 100px; resize: vertical; }
+
+/* ─── Invoice price inputs (pharmacy dispensing view) ──────────────────── */
+.rx-price-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.rx-price-currency {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.rx-price-input {
+  width: 90px;
+  padding: 5px 8px;
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: right;
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  font-family: inherit;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.rx-price-input::-webkit-inner-spin-button,
+.rx-price-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.rx-price-input:focus {
+  outline: none;
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.rx-price-input::placeholder { color: var(--clr-text-muted); }
+
+.rx-price-display {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+.rx-invoice-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--clr-border);
+}
+
+.rx-invoice-total-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rx-invoice-total-amount {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.02em;
+}

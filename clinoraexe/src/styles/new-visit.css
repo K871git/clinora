@@ -1,0 +1,179 @@
+/* ─── New Visit page (nvp-*) ─────────────────────────────────────────── */
+.nvp-page {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.nvp-card {
+  overflow: hidden;
+}
+
+/* Patient strip at the top of the form */
+.nvp-patient-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  background: rgba(13,148,136,0.04);
+}
+html[data-theme="dark"] .nvp-patient-strip { background: rgba(13,148,136,0.07); }
+
+.nvp-patient-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: rgba(13,148,136,0.15);
+  color: var(--clr-primary);
+  font-size: 18px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.nvp-patient-name { font-size: 15px; font-weight: 700; color: var(--clr-text); }
+.nvp-patient-meta { font-size: 12px; color: var(--clr-text-muted); margin-top: 1px; }
+.nvp-badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  background: var(--clr-primary);
+  color: #fff;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.nvp-divider { height: 1px; background: var(--clr-border); }
+
+.nvp-form { padding: 24px; display: flex; flex-direction: column; gap: var(--space-md); }
+
+.nvp-field-group { display: flex; flex-direction: column; gap: 6px; }
+.nvp-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+.nvp-label-icon {
+  color: var(--clr-primary);
+  display: flex; align-items: center;
+}
+.nvp-label-opt {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--clr-text-muted);
+}
+.nvp-field   { /* inherits .field */ }
+.nvp-notes   { min-height: 200px; resize: vertical; }
+
+.nvp-fee-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  background: var(--clr-surface);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.nvp-fee-wrap:focus-within {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(13,148,136,.12);
+}
+.nvp-fee-currency {
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  border-right: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  display: flex;
+  align-items: center;
+}
+.nvp-fee-input {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  flex: 1;
+  min-width: 0;
+  background: transparent !important;
+}
+.nvp-fee-input:focus { outline: none; box-shadow: none !important; }
+
+.nvp-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--clr-border);
+}
+.nvp-actions--multi {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+.nvp-primary-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.nvp-btn-rx {
+  color: var(--clr-primary) !important;
+  border-color: var(--clr-primary) !important;
+}
+.nvp-btn-rx:hover:not(:disabled) {
+  background: rgba(13,148,136,.07) !important;
+}
+.nvp-submit { width: auto; }
+
+/* ─── Visit shared classes (view/edit notes) ─────────────────────── */
+.visit-page-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--clr-text);
+  margin-bottom: var(--space-lg);
+}
+
+.visit-notes-textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
+.visit-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.visit-form-actions .btn-primary {
+  width: auto;
+}
+
+.visit-notes-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--clr-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.visit-notes-display {
+  white-space: pre-wrap;
+  color: var(--clr-text);
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.visit-notes-empty {
+  color: var(--clr-text-muted);
+  font-style: italic;
+}
+
+.visit-attending {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  margin-top: 2px;
+}
