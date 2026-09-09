@@ -83,6 +83,10 @@ pub fn run() {
             commands::settings::update_clinic,
             commands::settings::update_prescription_settings,
             commands::settings::update_clinic_name,
+            commands::settings::list_templates,
+            commands::settings::upload_template,
+            commands::settings::delete_template,
+            commands::settings::set_active_template,
             // Profile
             commands::profile::get_profile,
             commands::profile::update_profile,

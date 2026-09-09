@@ -1,17 +1,24 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export async function searchPatients(q) {
-  const result = await invoke('list_patients', { q, page: 1, per_page: 8 })
+  const result = await invoke('list_patients', { q, page: 1, perPage: 8 })
   return { data: result }
 }
 
 export async function getRecentPatients() {
-  const result = await invoke('list_patients', { page: 1, per_page: 5 })
+  const result = await invoke('list_patients', { page: 1, perPage: 5 })
   return { data: result }
 }
 
 export async function listPatients({ q = '', page = 1, per_page = 15, sort_by = 'name', sort_dir = 'asc', gender = '', is_new = false } = {}) {
-  const result = await invoke('list_patients', { q, page, per_page, sort_by, sort_dir, gender, is_new })
+  const result = await invoke('list_patients', {
+    q, page,
+    perPage: per_page,
+    sortBy: sort_by,
+    sortDir: sort_dir,
+    gender,
+    isNew: is_new,
+  })
   return { data: result }
 }
 

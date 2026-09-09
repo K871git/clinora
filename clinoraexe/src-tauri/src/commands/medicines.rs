@@ -16,7 +16,7 @@ pub struct MedicinePayload {
 }
 
 const MEDICINE_COLS: &str =
-    "id, clinic_id, name, generic_name, category, unit, quantity, CAST(price AS DOUBLE) as price";
+    "id, clinic_id, name, generic_name, category, unit, quantity, price * 1e0 as price";
 
 fn medicine_row(r: &sqlx::mysql::MySqlRow) -> Value {
     json!({
@@ -56,12 +56,15 @@ pub async fn list_medicines(q: Option<String>, per_page: Option<u32>, state: Sta
 #[tauri::command]
 pub async fn create_medicine(data: MedicinePayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+    let generic_name = data.generic_name.filter(|s| !s.trim().is_empty());
+    let category     = data.category.filter(|s| !s.trim().is_empty());
+    let unit         = data.unit.filter(|s| !s.trim().is_empty());
     let result = sqlx::query(
         "INSERT INTO medicines (clinic_id, name, generic_name, category, unit, quantity, price, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
     )
-    .bind(session.clinic_id).bind(&data.name).bind(&data.generic_name)
-    .bind(&data.category).bind(&data.unit).bind(data.quantity.unwrap_or(0)).bind(data.price)
+    .bind(session.clinic_id).bind(&data.name).bind(&generic_name)
+    .bind(&category).bind(&unit).bind(data.quantity.unwrap_or(0)).bind(data.price)
     .execute(&state.db).await?;
 
     let row = sqlx::query(&format!("SELECT {} FROM medicines WHERE id=?", MEDICINE_COLS))
@@ -72,12 +75,15 @@ pub async fn create_medicine(data: MedicinePayload, state: State<'_, AppState>) 
 #[tauri::command]
 pub async fn update_medicine(id: u64, data: MedicinePayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+    let generic_name = data.generic_name.filter(|s| !s.trim().is_empty());
+    let category     = data.category.filter(|s| !s.trim().is_empty());
+    let unit         = data.unit.filter(|s| !s.trim().is_empty());
     sqlx::query(
         "UPDATE medicines SET name=?, generic_name=?, category=?, unit=?, quantity=?, price=?, updated_at=NOW()
          WHERE id=? AND clinic_id=?"
     )
-    .bind(&data.name).bind(&data.generic_name).bind(&data.category)
-    .bind(&data.unit).bind(data.quantity.unwrap_or(0)).bind(data.price)
+    .bind(&data.name).bind(&generic_name).bind(&category)
+    .bind(&unit).bind(data.quantity.unwrap_or(0)).bind(data.price)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
 
@@ -118,12 +124,15 @@ pub async fn import_medicines(items: Vec<MedicineImportItem>, state: State<'_, A
     for item in &items {
         let name = item.name.trim();
         if name.is_empty() || existing.contains(&name.to_lowercase()) { skipped += 1; continue; }
+        let generic_name = item.generic_name.as_deref().filter(|s| !s.trim().is_empty());
+        let category     = item.category.as_deref().filter(|s| !s.trim().is_empty());
+        let unit         = item.unit.as_deref().filter(|s| !s.trim().is_empty());
         sqlx::query(
             "INSERT INTO medicines (clinic_id, name, generic_name, category, unit, quantity, price, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
         )
-        .bind(session.clinic_id).bind(name).bind(&item.generic_name)
-        .bind(&item.category).bind(&item.unit).bind(item.quantity.unwrap_or(0)).bind(item.price)
+        .bind(session.clinic_id).bind(name).bind(generic_name)
+        .bind(category).bind(unit).bind(item.quantity.unwrap_or(0)).bind(item.price)
         .execute(&state.db).await?;
         imported += 1;
     }

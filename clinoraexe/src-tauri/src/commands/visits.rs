@@ -1,3 +1,4 @@
+use super::utils::parse_datetime;
 use crate::error::AppResult;
 use crate::state::{get_session, AppState};
 use serde::Deserialize;
@@ -45,8 +46,8 @@ fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
 static VISIT_COLS: &str =
     "v.id, v.patient_id, v.consultation_notes, v.status,
      v.payment_status, v.payment_notes,
-     CAST(v.consultation_fee AS DOUBLE) as consultation_fee,
-     CAST(v.amount_paid AS DOUBLE) as amount_paid,
+     v.consultation_fee * 1e0 as consultation_fee,
+     v.amount_paid * 1e0 as amount_paid,
      DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
      DATE_FORMAT(v.invoiced_at, '%Y-%m-%dT%H:%i:%s') as invoiced_at,
      p.name as patient_name, p.mobile as patient_mobile, u.name as doctor_name";
@@ -64,7 +65,11 @@ pub async fn list_visits(
     let per_page = per_page.unwrap_or(20).min(200);
     let offset = (page - 1) * per_page;
 
-    let mut conditions = vec!["v.clinic_id = ?".to_string(), "v.deleted_at IS NULL".to_string()];
+    let mut conditions = vec![
+        "v.clinic_id = ?".to_string(),
+        "v.deleted_at IS NULL".to_string(),
+        "p.deleted_at IS NULL".to_string(),
+    ];
     let mut binds: Vec<String> = vec![session.clinic_id.to_string()];
 
     if let Some(ref s) = status {
@@ -107,7 +112,12 @@ pub async fn list_visits(
 #[tauri::command]
 pub async fn create_visit(patient_id: u64, data: VisitPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
-    let visited_at = data.visited_at.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string());
+
+    // Normalize any ISO 8601 datetime string to MySQL DATETIME format
+    let visited_at = data.visited_at
+        .as_deref()
+        .map(parse_datetime)
+        .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string());
 
     let result = sqlx::query(
         "INSERT INTO visits (clinic_id, patient_id, doctor_id, visited_at, consultation_notes, consultation_fee, status, payment_status, amount_paid, created_at, updated_at)
@@ -150,13 +160,17 @@ pub async fn get_visit(id: u64, state: State<'_, AppState>) -> AppResult<Value> 
 #[tauri::command]
 pub async fn update_visit(id: u64, data: VisitPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+
+    let visited_at = data.visited_at.as_deref().map(parse_datetime);
+
     sqlx::query(
-        "UPDATE visits SET consultation_notes=?, consultation_fee=?, updated_at=NOW()
+        "UPDATE visits SET visited_at=COALESCE(?,visited_at), consultation_notes=?, updated_at=NOW()
          WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
     )
-    .bind(&data.consultation_notes).bind(data.consultation_fee.unwrap_or(0.0))
+    .bind(visited_at).bind(&data.consultation_notes)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
+
     get_visit(id, state).await
 }
 
@@ -172,13 +186,13 @@ pub async fn update_visit_fee(id: u64, consultation_fee: f64, state: State<'_, A
 #[tauri::command]
 pub async fn complete_visit(id: u64, consultation_fee: Option<f64>, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
-    let mut q = sqlx::query(
+    sqlx::query(
         "UPDATE visits SET status='completed', invoiced_at=NOW(), updated_at=NOW(),
          consultation_fee = COALESCE(?, consultation_fee)
          WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
-    );
-    q = q.bind(consultation_fee).bind(id).bind(session.clinic_id);
-    q.execute(&state.db).await?;
+    )
+    .bind(consultation_fee).bind(id).bind(session.clinic_id)
+    .execute(&state.db).await?;
     get_visit(id, state).await
 }
 

@@ -53,11 +53,19 @@ pub async fn get_profile(state: State<'_, AppState>) -> AppResult<Value> {
 #[tauri::command]
 pub async fn update_profile(data: ProfilePayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+
+    // Sanitize: empty string → NULL for ENUM (gender) and DATE (dob) columns.
+    let username = data.username.filter(|s| !s.trim().is_empty());
+    let phone    = data.phone.filter(|s| !s.trim().is_empty());
+    let gender   = data.gender.filter(|s| !s.trim().is_empty());
+    let dob      = data.dob.filter(|s| !s.trim().is_empty());
+    let address  = data.address.filter(|s| !s.trim().is_empty());
+
     sqlx::query(
         "UPDATE users SET name=COALESCE(?,name), username=?, phone=?, gender=?, dob=?, address=?, updated_at=NOW() WHERE id=?"
     )
-    .bind(&data.name).bind(&data.username).bind(&data.phone)
-    .bind(&data.gender).bind(&data.dob).bind(&data.address)
+    .bind(&data.name).bind(&username).bind(&phone)
+    .bind(&gender).bind(&dob).bind(&address)
     .bind(session.id)
     .execute(&state.db).await?;
 

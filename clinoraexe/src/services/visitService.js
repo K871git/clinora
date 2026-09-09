@@ -1,12 +1,19 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export async function getClinicVisits(params = {}) {
-  const result = await invoke('list_visits', params)
+  // remap snake_case keys to camelCase for Tauri 2
+  const { per_page, sort_by, sort_dir, is_new, ...rest } = params
+  const mapped = { ...rest }
+  if (per_page !== undefined) mapped.perPage = per_page
+  if (sort_by !== undefined) mapped.sortBy = sort_by
+  if (sort_dir !== undefined) mapped.sortDir = sort_dir
+  if (is_new !== undefined) mapped.isNew = is_new
+  const result = await invoke('list_visits', mapped)
   return { data: result }
 }
 
 export async function createVisit(patientId, data) {
-  const result = await invoke('create_visit', { patient_id: Number(patientId), data })
+  const result = await invoke('create_visit', { patientId: Number(patientId), data })
   return { data: result }
 }
 
@@ -21,12 +28,12 @@ export async function updateVisit(visitId, data) {
 }
 
 export async function saveFee(visitId, consultationFee) {
-  const result = await invoke('update_visit_fee', { id: Number(visitId), consultation_fee: consultationFee })
+  const result = await invoke('update_visit_fee', { id: Number(visitId), consultationFee })
   return { data: result }
 }
 
 export async function completeVisit(visitId, consultationFee = null) {
-  const result = await invoke('complete_visit', { id: Number(visitId), consultation_fee: consultationFee })
+  const result = await invoke('complete_visit', { id: Number(visitId), consultationFee })
   return { data: result }
 }
 

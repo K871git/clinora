@@ -1,3 +1,4 @@
+use super::utils::parse_datetime;
 use crate::error::AppResult;
 use crate::state::{get_session, AppState};
 use serde::Deserialize;
@@ -17,13 +18,14 @@ pub struct PrescriptionItem {
 
 #[derive(Deserialize)]
 pub struct PrescriptionPayload {
+    pub prescribed_at: Option<String>,
     pub doctor_notes: Option<String>,
     pub items: Vec<PrescriptionItem>,
 }
 
 async fn get_prescription_items(prescription_id: u64, db: &sqlx::MySqlPool) -> AppResult<Vec<Value>> {
     let rows = sqlx::query(
-        "SELECT id, medicine_name, dosage, frequency, duration, instructions, sort_order, CAST(unit_price AS DOUBLE) as unit_price
+        "SELECT id, medicine_name, dosage, frequency, duration, instructions, sort_order, unit_price * 1e0 as unit_price
          FROM prescription_items WHERE prescription_id = ? AND deleted_at IS NULL ORDER BY sort_order ASC"
     ).bind(prescription_id).fetch_all(db).await?;
 
@@ -75,7 +77,7 @@ pub async fn list_prescriptions(
     );
     let list_sql = format!(
         "SELECT pr.id, pr.visit_id, pr.status, pr.doctor_notes, pr.payment_status,
-                CAST(pr.amount_paid AS DOUBLE) as amount_paid,
+                pr.amount_paid * 1e0 as amount_paid,
                 DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                 DATE_FORMAT(pr.sent_to_pharmacy_at, '%Y-%m-%dT%H:%i:%s') as sent_to_pharmacy_at,
                 DATE_FORMAT(pr.completed_at, '%Y-%m-%dT%H:%i:%s') as completed_at,
@@ -126,14 +128,18 @@ pub async fn create_prescription(
         .fetch_optional(&state.db).await?.ok_or("Visit not found.")?;
 
     let patient_id: u64 = visit.get("patient_id");
-    let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    let prescribed_at = data.prescribed_at
+        .as_deref()
+        .map(parse_datetime)
+        .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string());
 
     let result = sqlx::query(
         "INSERT INTO prescriptions (clinic_id, patient_id, visit_id, doctor_id, prescribed_at, doctor_notes, status, payment_status, amount_paid, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, 'draft', 'unpaid', 0, NOW(), NOW())"
     )
     .bind(session.clinic_id).bind(patient_id).bind(visit_id).bind(session.id)
-    .bind(&now).bind(&data.doctor_notes)
+    .bind(&prescribed_at).bind(&data.doctor_notes)
     .execute(&state.db).await?;
 
     let prescription_id = result.last_insert_id();
@@ -157,7 +163,7 @@ pub async fn get_prescription(id: u64, state: State<'_, AppState>) -> AppResult<
     let session = get_session(&state)?;
     let row = sqlx::query(
         "SELECT pr.id, pr.visit_id, pr.status, pr.doctor_notes, pr.payment_status,
-                CAST(pr.amount_paid AS DOUBLE) as amount_paid,
+                pr.amount_paid * 1e0 as amount_paid,
                 DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                 DATE_FORMAT(pr.sent_to_pharmacy_at, '%Y-%m-%dT%H:%i:%s') as sent_to_pharmacy_at,
                 DATE_FORMAT(pr.completed_at, '%Y-%m-%dT%H:%i:%s') as completed_at,
@@ -187,7 +193,7 @@ pub async fn get_prescription(id: u64, state: State<'_, AppState>) -> AppResult<
         "items": items,
         "patient": { "name": row.get::<String, _>("patient_name"), "mobile": row.get::<Option<String>, _>("patient_mobile") },
         "doctor": { "name": row.get::<String, _>("doctor_name") },
-        "visit": { "visited_at": row.get::<Option<String>, _>("visited_at"), "consultation_notes": row.get::<Option<String>, _>("consultation_notes") }
+        "visit": { "id": row.get::<u64, _>("visit_id"), "visited_at": row.get::<Option<String>, _>("visited_at"), "consultation_notes": row.get::<Option<String>, _>("consultation_notes") }
     }))
 }
 
@@ -201,10 +207,14 @@ pub async fn update_prescription(id: u64, data: PrescriptionPayload, state: Stat
         return Err("Only draft prescriptions can be updated.".into());
     }
 
-    sqlx::query("UPDATE prescriptions SET doctor_notes=?, updated_at=NOW() WHERE id=?")
-        .bind(&data.doctor_notes).bind(id).execute(&state.db).await?;
+    let prescribed_at = data.prescribed_at.as_deref().map(parse_datetime);
 
-    sqlx::query("DELETE FROM prescription_items WHERE prescription_id=?")
+    sqlx::query("UPDATE prescriptions SET prescribed_at=COALESCE(?,prescribed_at), doctor_notes=?, updated_at=NOW() WHERE id=?")
+        .bind(prescribed_at).bind(&data.doctor_notes).bind(id)
+        .execute(&state.db).await?;
+
+    // Soft-delete existing items to match PHP behavior
+    sqlx::query("UPDATE prescription_items SET deleted_at=NOW() WHERE prescription_id=? AND deleted_at IS NULL")
         .bind(id).execute(&state.db).await?;
 
     for (i, item) in data.items.iter().enumerate() {
@@ -242,7 +252,11 @@ pub async fn delete_prescription(id: u64, state: State<'_, AppState>) -> AppResu
     if current.get::<String, _>("status") != "draft" {
         return Err("Only draft prescriptions can be deleted.".into());
     }
-    sqlx::query("UPDATE prescriptions SET deleted_at=NOW() WHERE id=?").bind(id).execute(&state.db).await?;
+    // Soft-delete items first (match PHP)
+    sqlx::query("UPDATE prescription_items SET deleted_at=NOW() WHERE prescription_id=? AND deleted_at IS NULL")
+        .bind(id).execute(&state.db).await?;
+    sqlx::query("UPDATE prescriptions SET deleted_at=NOW() WHERE id=?")
+        .bind(id).execute(&state.db).await?;
     Ok(())
 }
 

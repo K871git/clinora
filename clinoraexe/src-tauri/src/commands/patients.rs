@@ -134,13 +134,23 @@ pub async fn get_patient(id: u64, state: State<'_, AppState>) -> AppResult<Value
 pub async fn create_patient(data: PatientPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
 
-    if let Some(ref mobile) = data.mobile {
-        let exists: i64 = sqlx::query(
-            "SELECT COUNT(*) FROM patients WHERE clinic_id = ? AND mobile = ? AND deleted_at IS NULL"
-        ).bind(session.clinic_id).bind(mobile)
-        .fetch_one(&state.db).await?.get(0);
-        if exists > 0 {
-            return Err("A patient with this mobile number already exists.".into());
+    // Sanitize: empty string → NULL for ENUM (gender) and DATE (date_of_birth) columns.
+    let name = data.name;
+    let mobile = data.mobile;
+    let date_of_birth = data.date_of_birth.filter(|s| !s.trim().is_empty());
+    let age = data.age;
+    let gender = data.gender.filter(|s| !s.trim().is_empty());
+    let address = data.address.filter(|s| !s.trim().is_empty());
+
+    if let Some(ref m) = mobile {
+        if !m.is_empty() {
+            let exists: i64 = sqlx::query(
+                "SELECT COUNT(*) FROM patients WHERE clinic_id = ? AND mobile = ? AND deleted_at IS NULL"
+            ).bind(session.clinic_id).bind(m)
+            .fetch_one(&state.db).await?.get(0);
+            if exists > 0 {
+                return Err("A patient with this mobile number already exists.".into());
+            }
         }
     }
 
@@ -148,8 +158,8 @@ pub async fn create_patient(data: PatientPayload, state: State<'_, AppState>) ->
         "INSERT INTO patients (clinic_id, name, mobile, date_of_birth, age, gender, address, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
     )
-    .bind(session.clinic_id).bind(&data.name).bind(&data.mobile)
-    .bind(&data.date_of_birth).bind(data.age).bind(&data.gender).bind(&data.address)
+    .bind(session.clinic_id).bind(&name).bind(&mobile)
+    .bind(&date_of_birth).bind(age).bind(&gender).bind(&address)
     .execute(&state.db).await?;
 
     get_patient(result.last_insert_id(), state).await
@@ -159,12 +169,19 @@ pub async fn create_patient(data: PatientPayload, state: State<'_, AppState>) ->
 pub async fn update_patient(id: u64, data: PatientPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
 
+    let name = data.name;
+    let mobile = data.mobile;
+    let date_of_birth = data.date_of_birth.filter(|s| !s.trim().is_empty());
+    let age = data.age;
+    let gender = data.gender.filter(|s| !s.trim().is_empty());
+    let address = data.address.filter(|s| !s.trim().is_empty());
+
     sqlx::query(
         "UPDATE patients SET name=?, mobile=?, date_of_birth=?, age=?, gender=?, address=?, updated_at=NOW()
          WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
     )
-    .bind(&data.name).bind(&data.mobile).bind(&data.date_of_birth)
-    .bind(data.age).bind(&data.gender).bind(&data.address)
+    .bind(&name).bind(&mobile).bind(&date_of_birth)
+    .bind(age).bind(&gender).bind(&address)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
 
@@ -176,7 +193,7 @@ pub async fn get_patient_visits(id: u64, state: State<'_, AppState>) -> AppResul
     let session = get_session(&state)?;
     let rows = sqlx::query(
         "SELECT v.id, DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
-                v.consultation_notes, v.consultation_fee,
+                v.consultation_notes, v.consultation_fee * 1e0 as consultation_fee,
                 v.status, v.payment_status, u.name as doctor_name
          FROM visits v
          JOIN users u ON u.id = v.doctor_id

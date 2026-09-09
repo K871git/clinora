@@ -1,12 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export async function getClinicPrescriptions({ status = '', q = '', page = 1, per_page } = {}) {
-  const result = await invoke('list_prescriptions', { status, q, page, per_page })
+  const result = await invoke('list_prescriptions', { status, q, page, perPage: per_page })
   return { data: result }
 }
 
 export async function createPrescription(visitId, data) {
-  const result = await invoke('create_prescription', { visit_id: Number(visitId), data })
+  const result = await invoke('create_prescription', { visitId: Number(visitId), data })
   return { data: result }
 }
 

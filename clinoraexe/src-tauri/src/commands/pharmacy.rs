@@ -21,7 +21,7 @@ pub struct PaymentPayload {
 async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::MySqlPool) -> AppResult<Value> {
     let row = sqlx::query(
         "SELECT pr.id, pr.status, pr.doctor_notes, pr.payment_status, pr.payment_notes,
-                CAST(pr.amount_paid AS DOUBLE) as amount_paid,
+                pr.amount_paid * 1e0 as amount_paid,
                 DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                 DATE_FORMAT(pr.sent_to_pharmacy_at, '%Y-%m-%dT%H:%i:%s') as sent_to_pharmacy_at,
                 DATE_FORMAT(pr.dispensed_at, '%Y-%m-%dT%H:%i:%s') as dispensed_at,
@@ -38,7 +38,7 @@ async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::My
     ).bind(id).bind(clinic_id).fetch_optional(db).await?.ok_or("Prescription not found.")?;
 
     let items = sqlx::query(
-        "SELECT id, medicine_name, dosage, frequency, duration, instructions, sort_order, CAST(unit_price AS DOUBLE) as unit_price
+        "SELECT id, medicine_name, dosage, frequency, duration, instructions, sort_order, unit_price * 1e0 as unit_price
          FROM prescription_items WHERE prescription_id=? AND deleted_at IS NULL ORDER BY sort_order ASC"
     ).bind(id).fetch_all(db).await?;
 
@@ -114,7 +114,7 @@ pub async fn list_pharmacy_prescriptions(state: State<'_, AppState>) -> AppResul
     let ids: Vec<u64> = rows.iter().map(|r| r.get::<u64, _>("id")).collect();
     let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
     let items_sql = format!(
-        "SELECT prescription_id, id, medicine_name, dosage, frequency, duration, CAST(unit_price AS DOUBLE) as unit_price \
+        "SELECT prescription_id, id, medicine_name, dosage, frequency, duration, unit_price * 1e0 as unit_price \
          FROM prescription_items WHERE prescription_id IN ({}) AND deleted_at IS NULL \
          ORDER BY prescription_id, sort_order ASC",
         placeholders
@@ -190,11 +190,20 @@ pub async fn complete_pharmacy_prescription(
         return Err("Only pending or dispensing prescriptions can be completed.".into());
     }
 
-    if let (Some(ps), Some(ap)) = (&payment_status, amount_paid) {
+    // Update item prices first so they exist before completing
+    for item in &items {
+        if let Some(price) = item.unit_price {
+            sqlx::query("UPDATE prescription_items SET unit_price=? WHERE id=? AND prescription_id=?")
+                .bind(price).bind(item.id).bind(id).execute(&state.db).await?;
+        }
+    }
+
+    // Mark prescription complete — include payment fields if payment_status is provided
+    if let Some(ps) = &payment_status {
         sqlx::query(
             "UPDATE prescriptions SET status='completed', completed_at=NOW(), completed_by=?,
              payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW() WHERE id=?"
-        ).bind(session.id).bind(ps).bind(ap).bind(&payment_notes).bind(id)
+        ).bind(session.id).bind(ps).bind(amount_paid.unwrap_or(0.0)).bind(&payment_notes).bind(id)
         .execute(&state.db).await?;
     } else {
         sqlx::query(
@@ -202,11 +211,16 @@ pub async fn complete_pharmacy_prescription(
         ).bind(session.id).bind(id).execute(&state.db).await?;
     }
 
-    for item in &items {
-        if let Some(price) = item.unit_price {
-            sqlx::query("UPDATE prescription_items SET unit_price=? WHERE id=? AND prescription_id=?")
-                .bind(price).bind(item.id).bind(id).execute(&state.db).await?;
-        }
+    // Decrement medicine stock quantity for each dispensed item (match PHP)
+    let dispensed = sqlx::query(
+        "SELECT medicine_name FROM prescription_items WHERE prescription_id=? AND deleted_at IS NULL"
+    ).bind(id).fetch_all(&state.db).await?;
+    for row in &dispensed {
+        let name: String = row.get("medicine_name");
+        sqlx::query(
+            "UPDATE medicines SET quantity=GREATEST(0, quantity-1), updated_at=NOW()
+             WHERE clinic_id=? AND LOWER(name)=LOWER(?) AND quantity>0"
+        ).bind(session.clinic_id).bind(&name).execute(&state.db).await?;
     }
 
     get_pharmacy_prescription_detail(id, session.clinic_id, &state.db).await
@@ -218,7 +232,7 @@ pub async fn get_pharmacy_history(q: Option<String>, state: State<'_, AppState>)
     let mut sql = "SELECT pr.id, pr.status,
                           DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                           DATE_FORMAT(pr.completed_at, '%Y-%m-%dT%H:%i:%s') as completed_at,
-                          pr.payment_status, CAST(pr.amount_paid AS DOUBLE) as amount_paid,
+                          pr.payment_status, pr.amount_paid * 1e0 as amount_paid,
                           p.name as patient_name, p.mobile as patient_mobile,
                           u.name as doctor_name, COUNT(pi.id) as item_count
                    FROM prescriptions pr
@@ -271,24 +285,24 @@ pub async fn get_pharmacy_revenue(state: State<'_, AppState>) -> AppResult<Value
     let session = get_session(&state)?;
     let row = sqlx::query(
         "SELECT
-            CAST(COALESCE(SUM(CASE WHEN DATE(pr.completed_at)=CURDATE() THEN it.total ELSE 0 END),0) AS DOUBLE) as t_rev,
+            COALESCE(SUM(CASE WHEN DATE(pr.completed_at)=CURDATE() THEN it.total ELSE 0 END),0) * 1e0 as t_rev,
             COUNT(CASE WHEN DATE(pr.completed_at)=CURDATE() THEN 1 END) as t_count,
-            CAST(COALESCE(SUM(CASE WHEN DATE(pr.completed_at)=CURDATE() AND pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) AS DOUBLE) as t_coll,
+            COALESCE(SUM(CASE WHEN DATE(pr.completed_at)=CURDATE() AND pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) * 1e0 as t_coll,
             COUNT(CASE WHEN DATE(pr.completed_at)=CURDATE() AND pr.payment_status='paid' THEN 1 END) as t_paid,
             COUNT(CASE WHEN DATE(pr.completed_at)=CURDATE() AND pr.payment_status!='paid' THEN 1 END) as t_unpaid,
-            CAST(COALESCE(SUM(CASE WHEN YEARWEEK(pr.completed_at)=YEARWEEK(CURDATE()) THEN it.total ELSE 0 END),0) AS DOUBLE) as w_rev,
+            COALESCE(SUM(CASE WHEN YEARWEEK(pr.completed_at)=YEARWEEK(CURDATE()) THEN it.total ELSE 0 END),0) * 1e0 as w_rev,
             COUNT(CASE WHEN YEARWEEK(pr.completed_at)=YEARWEEK(CURDATE()) THEN 1 END) as w_count,
-            CAST(COALESCE(SUM(CASE WHEN YEARWEEK(pr.completed_at)=YEARWEEK(CURDATE()) AND pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) AS DOUBLE) as w_coll,
+            COALESCE(SUM(CASE WHEN YEARWEEK(pr.completed_at)=YEARWEEK(CURDATE()) AND pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) * 1e0 as w_coll,
             COUNT(CASE WHEN YEARWEEK(pr.completed_at)=YEARWEEK(CURDATE()) AND pr.payment_status='paid' THEN 1 END) as w_paid,
             COUNT(CASE WHEN YEARWEEK(pr.completed_at)=YEARWEEK(CURDATE()) AND pr.payment_status!='paid' THEN 1 END) as w_unpaid,
-            CAST(COALESCE(SUM(CASE WHEN MONTH(pr.completed_at)=MONTH(CURDATE()) AND YEAR(pr.completed_at)=YEAR(CURDATE()) THEN it.total ELSE 0 END),0) AS DOUBLE) as m_rev,
+            COALESCE(SUM(CASE WHEN MONTH(pr.completed_at)=MONTH(CURDATE()) AND YEAR(pr.completed_at)=YEAR(CURDATE()) THEN it.total ELSE 0 END),0) * 1e0 as m_rev,
             COUNT(CASE WHEN MONTH(pr.completed_at)=MONTH(CURDATE()) AND YEAR(pr.completed_at)=YEAR(CURDATE()) THEN 1 END) as m_count,
-            CAST(COALESCE(SUM(CASE WHEN MONTH(pr.completed_at)=MONTH(CURDATE()) AND YEAR(pr.completed_at)=YEAR(CURDATE()) AND pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) AS DOUBLE) as m_coll,
+            COALESCE(SUM(CASE WHEN MONTH(pr.completed_at)=MONTH(CURDATE()) AND YEAR(pr.completed_at)=YEAR(CURDATE()) AND pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) * 1e0 as m_coll,
             COUNT(CASE WHEN MONTH(pr.completed_at)=MONTH(CURDATE()) AND YEAR(pr.completed_at)=YEAR(CURDATE()) AND pr.payment_status='paid' THEN 1 END) as m_paid,
             COUNT(CASE WHEN MONTH(pr.completed_at)=MONTH(CURDATE()) AND YEAR(pr.completed_at)=YEAR(CURDATE()) AND pr.payment_status!='paid' THEN 1 END) as m_unpaid,
-            CAST(COALESCE(SUM(it.total),0) AS DOUBLE) as a_rev,
+            COALESCE(SUM(it.total),0) * 1e0 as a_rev,
             COUNT(*) as a_count,
-            CAST(COALESCE(SUM(CASE WHEN pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) AS DOUBLE) as a_coll,
+            COALESCE(SUM(CASE WHEN pr.payment_status='paid' THEN pr.amount_paid ELSE 0 END),0) * 1e0 as a_coll,
             COUNT(CASE WHEN pr.payment_status='paid' THEN 1 END) as a_paid,
             COUNT(CASE WHEN pr.payment_status!='paid' THEN 1 END) as a_unpaid
          FROM prescriptions pr
@@ -347,9 +361,9 @@ pub async fn get_pharmacy_revenue_transactions(
 
     let sql = format!(
         "SELECT pr.id, DATE_FORMAT(pr.completed_at, '%Y-%m-%dT%H:%i:%s') as completed_at, pr.payment_status, pr.payment_notes,
-                CAST(pr.amount_paid AS DOUBLE) as amount_paid,
+                pr.amount_paid * 1e0 as amount_paid,
                 p.name as patient_name, p.id as patient_id,
-                CAST(COALESCE(it.total, 0) AS DOUBLE) as total_amount
+                COALESCE(it.total, 0) * 1e0 as total_amount
          FROM prescriptions pr
          JOIN patients p ON p.id=pr.patient_id
          LEFT JOIN (

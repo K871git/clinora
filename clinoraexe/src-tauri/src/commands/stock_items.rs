@@ -16,7 +16,7 @@ pub struct StockItemPayload {
 }
 
 const STOCK_COLS: &str =
-    "id, clinic_id, name, category, unit, CAST(selling_price AS DOUBLE) as selling_price, stock_quantity, description";
+    "id, clinic_id, name, category, unit, selling_price * 1e0 as selling_price, stock_quantity, description";
 
 fn stock_row(r: &sqlx::mysql::MySqlRow) -> Value {
     json!({
@@ -52,12 +52,15 @@ pub async fn list_stock_items(q: Option<String>, state: State<'_, AppState>) -> 
 #[tauri::command]
 pub async fn create_stock_item(data: StockItemPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+    let category    = data.category.filter(|s| !s.trim().is_empty());
+    let unit        = data.unit.filter(|s| !s.trim().is_empty());
+    let description = data.description.filter(|s| !s.trim().is_empty());
     let result = sqlx::query(
         "INSERT INTO stock_items (clinic_id, name, category, unit, selling_price, stock_quantity, description, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
     )
-    .bind(session.clinic_id).bind(&data.name).bind(&data.category)
-    .bind(&data.unit).bind(data.selling_price).bind(data.stock_quantity.unwrap_or(0)).bind(&data.description)
+    .bind(session.clinic_id).bind(&data.name).bind(&category)
+    .bind(&unit).bind(data.selling_price).bind(data.stock_quantity.unwrap_or(0)).bind(&description)
     .execute(&state.db).await?;
 
     let row = sqlx::query(&format!("SELECT {} FROM stock_items WHERE id=?", STOCK_COLS))
@@ -68,12 +71,15 @@ pub async fn create_stock_item(data: StockItemPayload, state: State<'_, AppState
 #[tauri::command]
 pub async fn update_stock_item(id: u64, data: StockItemPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+    let category    = data.category.filter(|s| !s.trim().is_empty());
+    let unit        = data.unit.filter(|s| !s.trim().is_empty());
+    let description = data.description.filter(|s| !s.trim().is_empty());
     sqlx::query(
         "UPDATE stock_items SET name=?, category=?, unit=?, selling_price=?, stock_quantity=?, description=?, updated_at=NOW()
          WHERE id=? AND clinic_id=?"
     )
-    .bind(&data.name).bind(&data.category).bind(&data.unit)
-    .bind(data.selling_price).bind(data.stock_quantity.unwrap_or(0)).bind(&data.description)
+    .bind(&data.name).bind(&category).bind(&unit)
+    .bind(data.selling_price).bind(data.stock_quantity.unwrap_or(0)).bind(&description)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
 
