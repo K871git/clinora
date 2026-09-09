@@ -10,7 +10,6 @@ import {
   deleteTemplate,
   setActiveTemplate,
   deletePrescription,
-  getPrescriptionPdf,
 } from '../../services/prescriptionService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
@@ -218,7 +217,7 @@ function TemplatesPanel() {
       const { data } = await uploadTemplate(file, (ev) => {
         if (ev.total) setUploadPct(Math.round((ev.loaded / ev.total) * 100))
       })
-      setTemplates(prev => [...prev, data.data])
+      setTemplates(prev => [...prev, data])
     } catch {
       alert('Upload failed. Check file type (PDF/PNG/JPG/WebP) and size (max 10 MB).')
     } finally {
@@ -424,16 +423,7 @@ export default function PrescriptionsPage() {
 
   // Row action handlers
   useEffect(() => {
-    window.__rxViewPdf = async (id) => {
-      try {
-        const { data } = await getPrescriptionPdf(id)
-        const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
-        window.open(url, '_blank')
-        setTimeout(() => URL.revokeObjectURL(url), 60_000)
-      } catch {
-        alert('Could not generate PDF. Ensure a template is active.')
-      }
-    }
+    window.__rxViewPdf = (id) => navigate(`/prescriptions/${id}/print`)
     window.__rxEditRx = (id) => navigate(`/prescriptions/${id}`)
     window.__rxDeleteRx = async (id) => {
       const ok = await confirmDelete({ title: 'Delete prescription?', text: 'This cannot be undone.' })

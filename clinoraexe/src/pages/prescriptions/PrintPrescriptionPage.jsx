@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { invoke } from '@tauri-apps/api/core'
 import { getPrescription } from '../../services/prescriptionService'
 import { getSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
@@ -9,9 +10,10 @@ import '../../styles/print-prescription.css'
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  })
+  const d = new Date(iso)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dd}/${mm}/${d.getFullYear()}`
 }
 
 function fmtDateTime(iso) {
@@ -76,6 +78,8 @@ export default function PrintPrescriptionPage() {
   const [prescription, setPrescription] = useState(null)
   const [settings,     setSettings]     = useState(null)
   const [pageStatus,   setPageStatus]   = useState('loading')
+  const [pdfBlobUrl,   setPdfBlobUrl]   = useState(null)
+  const [pdfLayout,    setPdfLayout]    = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -97,6 +101,33 @@ export default function PrintPrescriptionPage() {
       })
     return () => { cancelled = true }
   }, [prescriptionId])
+
+  // For PDF templates: read file as blob URL (avoids asset:// D%3A encoding on Windows)
+  // and scan the PDF text coordinates to position the overlay at exact mm positions.
+  useEffect(() => {
+    if (pageStatus !== 'done' || !settings) return
+    const templatePath = settings.prescription_template_path
+    const ext = settings.prescription_template?.split('.').pop()?.toLowerCase() ?? ''
+    if (ext !== 'pdf' || !templatePath) return
+
+    let blobUrl = null
+
+    invoke('read_template_file', { path: templatePath })
+      .then(b64 => {
+        const binary = atob(b64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+        blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+        setPdfBlobUrl(blobUrl)
+      })
+      .catch(() => setPdfBlobUrl(null))
+
+    invoke('scan_template_layout', { path: templatePath })
+      .then(layout => setPdfLayout(layout))
+      .catch(() => setPdfLayout(null))
+
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl) }
+  }, [pageStatus, settings])
 
   /* ── Loading / error ── */
   if (pageStatus === 'loading') {
@@ -275,37 +306,75 @@ export default function PrintPrescriptionPage() {
           />
         )}
 
-        {/* Background — PDF template (embedded) */}
-        {isPdf && (
+        {/* Background — PDF template (blob URL avoids asset:// D%3A encoding on Windows) */}
+        {isPdf && pdfBlobUrl && (
           <iframe
-            src={templateUrl}
+            src={pdfBlobUrl}
             title="prescription-template"
             className="print-template-bg-pdf"
             aria-hidden="true"
           />
         )}
 
-        {/* Overlay — values only, no labels (template has those pre-printed) */}
-        <div className="print-template-overlay">
+        {/*
+          Overlay:
+          - PDF template with scanned coords  → position: absolute using mm from pdf scan
+          - Image template / scan fallback    → CSS padding-based flex column
+          - PDF loading (no blob yet)         → hidden to avoid flash
+        */}
+        {(!isPdf || pdfBlobUrl) && (
+          pdfLayout ? (
+            /* ── Absolute overlay — coordinates from scan_template_layout ── */
+            <div className="print-template-overlay print-template-overlay--absolute">
+              <span className="print-tpl-val" style={{
+                position: 'absolute',
+                top:  `${pdfLayout.name_y}mm`,
+                left: `${pdfLayout.name_x}mm`,
+              }}>
+                {prescription.patient.name}
+              </span>
 
-          {/* Patient name left, date right — values only, no labels */}
-          <div className="print-tpl-patient-row">
-            <span className="print-tpl-val">{prescription.patient.name}</span>
-            <span className="print-tpl-val">{fmtDate(prescription.prescribed_at)}</span>
-          </div>
+              <span className="print-tpl-val" style={{
+                position: 'absolute',
+                top:  `${pdfLayout.date_y}mm`,
+                left: `${pdfLayout.date_x}mm`,
+              }}>
+                {fmtDate(prescription.prescribed_at)}
+              </span>
 
-          {/* Medicines — no Rx symbol here; template has one pre-printed */}
-          <MedicineList items={prescription.items} />
-
-          {/* Notes — pushed to bottom of the overlay area */}
-          {prescription.doctor_notes && (
-            <div className="print-tpl-notes">
-              <div className="print-notes-label">Notes</div>
-              <div className="print-notes-text">{prescription.doctor_notes}</div>
+              <div style={{
+                position: 'absolute',
+                top:   `${pdfLayout.meds_start_y}mm`,
+                left:  `${pdfLayout.meds_x}mm`,
+                width: `${pdfLayout.meds_w}mm`,
+              }}>
+                <MedicineList items={prescription.items} />
+                {prescription.doctor_notes && (
+                  <div className="print-tpl-notes" style={{ marginTop: '12pt' }}>
+                    <div className="print-notes-label">Notes</div>
+                    <div className="print-notes-text">{prescription.doctor_notes}</div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          ) : (
+            /* ── CSS-padded fallback (image template or scan failed) ── */
+            <div className="print-template-overlay">
+              <div className="print-tpl-patient-row">
+                <span className="print-tpl-val">{prescription.patient.name}</span>
+                <span className="print-tpl-val">{fmtDate(prescription.prescribed_at)}</span>
+              </div>
+              <MedicineList items={prescription.items} />
+              {prescription.doctor_notes && (
+                <div className="print-tpl-notes">
+                  <div className="print-notes-label">Notes</div>
+                  <div className="print-notes-text">{prescription.doctor_notes}</div>
+                </div>
+              )}
+            </div>
+          )
+        )}
 
-        </div>
       </div>
     </div>
   )

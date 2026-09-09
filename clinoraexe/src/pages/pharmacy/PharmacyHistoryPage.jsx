@@ -147,7 +147,7 @@ function HistoryGroup({ label, items, navigate, showDate }) {
             )}
             <HistoryCard
               rx={rx}
-              onInvoice={() => window.open(`/pharmacy/prescriptions/${rx.id}/invoice`, '_blank')}
+              onInvoice={() => navigate(`/pharmacy/prescriptions/${rx.id}/invoice`)}
               onDetails={() => navigate(`/pharmacy/prescriptions/${rx.id}`)}
             />
           </li>

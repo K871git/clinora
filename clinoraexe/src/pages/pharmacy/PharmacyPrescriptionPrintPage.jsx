@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getPharmacyPrescription } from '../../services/pharmacyService'
 import { getSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
@@ -47,6 +47,7 @@ function MedicineList({ items }) {
 
 export default function PharmacyPrescriptionPrintPage() {
   const { prescriptionId } = useParams()
+  const navigate = useNavigate()
   const [prescription, setPrescription] = useState(null)
   const [settings,     setSettings]     = useState(null)
   const [status,       setStatus]       = useState('loading')
@@ -110,7 +111,7 @@ export default function PharmacyPrescriptionPrintPage() {
       <div className="print-toolbar print-hide">
         <button
           className="print-toolbar-back"
-          onClick={() => window.close()}
+          onClick={() => navigate(-1)}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="2.5" strokeLinecap="round">

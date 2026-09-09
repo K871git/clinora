@@ -7,8 +7,8 @@ import {
   updatePrescription,
   sendPrescription,
   deletePrescription,
-  getPrescriptionPdf,
 } from '../../services/prescriptionService'
+import { getSettings } from '../../services/settingsService'
 import MedicineEditor from './MedicineEditor'
 import { newMedicineItem } from './medicineUtils'
 import Spinner from '../../components/ui/Spinner'
@@ -244,20 +244,13 @@ export default function PrescriptionDetailPage() {
   }
 
   async function handleViewPdf() {
-    setPdfLoading(true); setPdfError(null)
     try {
-      const { data } = await getPrescriptionPdf(prescriptionId)
-      const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
-      window.open(url, '_blank')
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
-    } catch (err) {
-      const s = err.response?.status
-      setPdfError(
-        s === 404
-          ? 'No active PDF template — upload one in Prescriptions → Templates.'
-          : 'Could not generate PDF — please try again.'
-      )
-    } finally { setPdfLoading(false) }
+      const { data: settings } = await getSettings()
+      if (!settings.prescription_template) {
+        toast.warning('No prescription template set. Upload one in Prescriptions → Templates to use your clinic pad.')
+      }
+    } catch { /* ignore — proceed anyway */ }
+    navigate(`/prescriptions/${prescriptionId}/print`)
   }
 
   /* ── States ────────────────────────────────────────────────────────── */
@@ -323,7 +316,7 @@ export default function PrescriptionDetailPage() {
               {prescription.status === 'completed' && (
                 <button
                   className="rx-action-btn rx-action-btn--invoice"
-                  onClick={() => window.open(`/pharmacy/prescriptions/${prescriptionId}/invoice`, '_blank')}
+                  onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/invoice`)}
                 >
                   <IconInvoice />
                   View Invoice

@@ -1,4 +1,5 @@
 pub mod utils;
+pub mod downloads;
 pub mod auth;
 pub mod dashboard;
 pub mod patients;

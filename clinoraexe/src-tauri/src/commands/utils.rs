@@ -26,6 +26,22 @@ pub fn empty_to_null(s: Option<String>) -> Option<String> {
     s.filter(|v| !v.trim().is_empty())
 }
 
+/// Encode raw bytes as a base64 string.
+pub fn base64_encode(bytes: &[u8]) -> String {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity((bytes.len() + 2) / 3 * 4);
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0];
+        let b1 = chunk.get(1).copied().unwrap_or(0);
+        let b2 = chunk.get(2).copied().unwrap_or(0);
+        out.push(CHARS[(b0 >> 2) as usize] as char);
+        out.push(CHARS[((b0 & 0x3) << 4 | b1 >> 4) as usize] as char);
+        out.push(if chunk.len() > 1 { CHARS[((b1 & 0xF) << 2 | b2 >> 6) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 2 { CHARS[(b2 & 0x3F) as usize] as char } else { '=' });
+    }
+    out
+}
+
 /// Decode a base64 string (with or without data URL prefix) to raw bytes.
 pub fn base64_decode(input: &str) -> crate::error::AppResult<Vec<u8>> {
     let clean = input.split(',').last().unwrap_or(input).trim();

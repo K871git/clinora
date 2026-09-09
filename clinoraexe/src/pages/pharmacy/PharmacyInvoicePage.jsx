@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getPharmacyPrescription } from '../../services/pharmacyService'
 import { getSettings } from '../../services/settingsService'
 import usePrintSettings from '../../hooks/usePrintSettings'
@@ -55,6 +55,7 @@ function IconSettings() {
 
 export default function PharmacyInvoicePage() {
   const { prescriptionId } = useParams()
+  const navigate = useNavigate()
   const [prescription, setPrescription] = useState(null)
   const [clinicName,   setClinicName]   = useState('')
   const [status,       setStatus]       = useState('loading')
@@ -102,7 +103,7 @@ export default function PharmacyInvoicePage() {
 
       {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       <div className="inv-toolbar">
-        <button className="inv-toolbar-btn inv-toolbar-btn--back" onClick={() => window.close()}>
+        <button className="inv-toolbar-btn inv-toolbar-btn--back" onClick={() => navigate(-1)}>
           ✕ Close
         </button>
         <span className="inv-toolbar-title">Invoice — {p.name}</span>

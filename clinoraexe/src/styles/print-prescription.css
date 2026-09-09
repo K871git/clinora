@@ -130,17 +130,29 @@
   pointer-events: none;
 }
 
-/* Content overlaid on the template.
-   Must use absolute mm values — CSS % in padding is relative to WIDTH (210mm),
-   not height. 26% × 210mm = only 54mm which is inside most template headers.
-   88mm = ~30% of A4 height, placing content at the Name/Date line. */
 .print-template-overlay {
   position: relative;
   z-index: 1;
-  padding: 88mm 18mm 44mm;
+  padding: 72mm 18mm 44mm;
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* Push medicines past the pre-printed Rx symbol / vitals block (fallback / image template) */
+.print-template-overlay .print-med-list {
+  margin-top: 14mm;
+}
+
+/* Absolute-positioned overlay when PDF coordinates are known from scan_template_layout */
+.print-template-overlay--absolute {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  flex: none;
+  display: block;
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* No-template warning bar */

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getVisit } from '../../services/visitService'
 import { getSettings } from '../../services/settingsService'
 import usePrintSettings from '../../hooks/usePrintSettings'
@@ -55,6 +55,7 @@ function IconPrint() {
 
 export default function VisitInvoicePage() {
   const { visitId } = useParams()
+  const navigate    = useNavigate()
   const [visit,        setVisit]        = useState(null)
   const [settings,     setSettings]     = useState(null)
   const [status,       setStatus]       = useState('loading')
@@ -73,12 +74,6 @@ export default function VisitInvoicePage() {
       .catch(() => setStatus('error'))
   }, [visitId])
 
-  useEffect(() => {
-    if (status === 'done') {
-      const t = setTimeout(() => window.print(), 450)
-      return () => clearTimeout(t)
-    }
-  }, [status])
 
   if (status === 'loading') return <div className="inv-loading"><Spinner size={24} /></div>
   if (status === 'error')   return <div className="inv-loading">Could not load invoice.</div>
@@ -110,7 +105,7 @@ export default function VisitInvoicePage() {
 
       {/* Screen toolbar */}
       <div className="inv-toolbar">
-        <button className="inv-toolbar-btn inv-toolbar-btn--back" onClick={() => window.close()}>
+        <button className="inv-toolbar-btn inv-toolbar-btn--back" onClick={() => navigate(-1)}>
           ✕ Close
         </button>
         <span className="inv-toolbar-title">Doctor Invoice — {p.name}</span>

@@ -342,7 +342,7 @@ export default function PharmacyPrescriptionPage() {
             {/* Print Prescription — always available */}
             <button
               className="rx-action-btn"
-              onClick={() => window.open(`/pharmacy/prescriptions/${prescriptionId}/print`, '_blank')}
+              onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/print`)}
             >
               <IconPrint />
               Print Rx
@@ -357,7 +357,7 @@ export default function PharmacyPrescriptionPage() {
                 </div>
                 <button
                   className="rx-action-btn rx-action-btn--invoice"
-                  onClick={() => window.open(`/pharmacy/prescriptions/${prescriptionId}/invoice`, '_blank')}
+                  onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/invoice`)}
                 >
                   <IconPrint />
                   Pharmacy Invoice
