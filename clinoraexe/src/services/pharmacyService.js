@@ -20,8 +20,12 @@ export async function startDispensingPharmacyPrescription(id) {
   return { data: result }
 }
 
-export async function completePharmacyPrescription(id, items = []) {
-  const result = await invoke('complete_pharmacy_prescription', { id: Number(id), items })
+export async function completePharmacyPrescription(id, items = [], extraItems = []) {
+  const result = await invoke('complete_pharmacy_prescription', {
+    id: Number(id),
+    items,
+    extraItems,
+  })
   return { data: result }
 }
 

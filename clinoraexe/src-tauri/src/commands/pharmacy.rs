@@ -12,6 +12,12 @@ pub struct DispenseItem {
 }
 
 #[derive(Deserialize)]
+pub struct ExtraItem {
+    pub name: String,
+    pub unit_price: f64,
+}
+
+#[derive(Deserialize)]
 pub struct PaymentPayload {
     pub payment_status: String,
     pub amount_paid: Option<f64>,
@@ -182,6 +188,7 @@ pub async fn start_dispensing(id: u64, state: State<'_, AppState>) -> AppResult<
 pub async fn complete_pharmacy_prescription(
     id: u64,
     items: Vec<DispenseItem>,
+    extra_items: Vec<ExtraItem>,
     payment_status: Option<String>,
     amount_paid: Option<f64>,
     payment_notes: Option<String>,
@@ -195,11 +202,32 @@ pub async fn complete_pharmacy_prescription(
         return Err("Only pending or dispensing prescriptions can be completed.".into());
     }
 
-    // Update item prices first so they exist before completing
+    // Update prices on existing prescribed items
     for item in &items {
         if let Some(price) = item.unit_price {
+            if !price.is_finite() || price < 0.0 {
+                return Err("Invalid price: must be a non-negative number.".into());
+            }
             sqlx::query("UPDATE prescription_items SET unit_price=? WHERE id=? AND prescription_id=?")
                 .bind(price).bind(item.id).bind(id).execute(&state.db).await?;
+        }
+    }
+
+    // Insert pharmacist-added extra items (water bottle, inhaler, gadgets, etc.)
+    if !extra_items.is_empty() {
+        let max_sort: i64 = sqlx::query(
+            "SELECT COALESCE(MAX(sort_order), 0) FROM prescription_items WHERE prescription_id=?"
+        ).bind(id).fetch_one(&state.db).await?.get(0);
+
+        for (i, item) in extra_items.iter().enumerate() {
+            if !item.unit_price.is_finite() || item.unit_price < 0.0 {
+                return Err("Invalid extra item price: must be a non-negative number.".into());
+            }
+            sqlx::query(
+                "INSERT INTO prescription_items (prescription_id, medicine_name, unit_price, sort_order, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, NOW(), NOW())"
+            ).bind(id).bind(&item.name).bind(item.unit_price).bind(max_sort + 1 + i as i64)
+            .execute(&state.db).await?;
         }
     }
 
@@ -275,6 +303,9 @@ pub async fn get_pharmacy_history(q: Option<String>, state: State<'_, AppState>)
 #[tauri::command]
 pub async fn record_prescription_payment(id: u64, data: PaymentPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+    if !["paid", "partial", "unpaid"].contains(&data.payment_status.as_str()) {
+        return Err("Invalid payment status.".into());
+    }
     sqlx::query(
         "UPDATE prescriptions SET payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW()
          WHERE id=? AND clinic_id=? AND deleted_at IS NULL"

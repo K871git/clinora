@@ -24,6 +24,16 @@ function initialForm(patient) {
   }
 }
 
+function dobToAge(dob) {
+  if (!dob) return null
+  const today = new Date()
+  const birth = new Date(dob)
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return Math.max(0, age)
+}
+
 /* ── Icons ────────────────────────────────────────────────────────── */
 
 function IconPerson() {
@@ -98,19 +108,45 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
   const [submitting, setSubmitting] = useState(false)
 
   function setField(field, value) {
-    setFormState((f) => ({ ...f, [field]: value }))
-    if (errors[field]) setErrors((e) => ({ ...e, [field]: null }))
+    setFormState((f) => {
+      const next = { ...f, [field]: value }
+      if (field === 'date_of_birth') {
+        const computed = dobToAge(value)
+        if (computed !== null) next.age = String(computed)
+      }
+      return next
+    })
+    setErrors((e) => {
+      const cleared = { ...e, [field]: null }
+      if (field === 'mobile' || field === 'date_of_birth') {
+        cleared.mobile = null
+        cleared.date_of_birth = null
+      }
+      return cleared
+    })
     setApiError(null)
     setDuplicate(null)
   }
 
   function validate() {
     const errs = {}
-    if (!form.name.trim())   errs.name   = 'Name is required.'
-    if (!form.mobile.trim()) errs.mobile = 'Contact number is required.'
-    if (form.age !== '' && (isNaN(Number(form.age)) || Number(form.age) < 0 || Number(form.age) > 150)) {
+    if (!form.name.trim()) errs.name = 'Name is required.'
+
+    const numAge = form.age !== '' ? Number(form.age) : null
+    if (numAge !== null && (isNaN(numAge) || numAge < 0 || numAge > 150)) {
       errs.age = 'Enter a valid age (0–150).'
     }
+
+    const effAge = numAge !== null
+      ? numAge
+      : (form.date_of_birth ? dobToAge(form.date_of_birth) : null)
+
+    if (effAge !== null && effAge < 55) {
+      if (!form.mobile.trim() && !form.date_of_birth) {
+        errs.mobile = 'Patients under 55 need a contact number or date of birth — please add at least one.'
+      }
+    }
+
     return errs
   }
 
@@ -234,7 +270,7 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
           </Field>
 
           {/* Contact */}
-          <Field label="Contact Number" icon={<IconPhone />} required error={errors.mobile}>
+          <Field label="Contact Number" icon={<IconPhone />} error={errors.mobile}>
             <input
               className={`field${errors.mobile ? ' has-error' : ''}`}
               placeholder="e.g. 9876543210"

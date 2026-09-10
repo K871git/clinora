@@ -77,13 +77,6 @@ export default function PharmacyInvoicePage() {
       .catch(() => setStatus('error'))
   }, [prescriptionId])
 
-  useEffect(() => {
-    if (status === 'done') {
-      const t = setTimeout(() => window.print(), 450)
-      return () => clearTimeout(t)
-    }
-  }, [status])
-
   if (status === 'loading') return <div className="inv-loading"><Spinner size={24} /></div>
   if (status === 'error')   return <div className="inv-loading">Could not load prescription.</div>
 

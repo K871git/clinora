@@ -2,23 +2,90 @@ mod commands;
 mod error;
 mod state;
 
+#[cfg(windows)]
+extern crate windows;
+
 use state::AppState;
 use sqlx::mysql::MySqlPoolOptions;
 use tauri::Manager;
 
-pub const DB_URL: &str = "mysql://root:npav@127.0.0.1:3306/clinoradb";
+fn fatal_error(msg: &str) -> ! {
+    #[cfg(windows)]
+    {
+        use windows::core::PCWSTR;
+        use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+        let title: Vec<u16> = "Clinora — Configuration Error\0".encode_utf16().collect();
+        let text: Vec<u16> = format!("{}\0", msg).encode_utf16().collect();
+        unsafe {
+            MessageBoxW(None, PCWSTR(text.as_ptr()), PCWSTR(title.as_ptr()), MB_OK | MB_ICONERROR);
+        }
+    }
+    #[cfg(not(windows))]
+    eprintln!("FATAL: {}", msg);
+    std::process::exit(1);
+}
+
+/// Load the database URL from (in order):
+///   1. CLINORA_DB_URL environment variable  — used during development
+///   2. data/clinora.cfg next to the executable — written by the installer
+fn load_db_url() -> String {
+    if let Ok(url) = std::env::var("CLINORA_DB_URL") {
+        if !url.trim().is_empty() {
+            return url.trim().to_string();
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let cfg = dir.join("data").join("clinora.cfg");
+            if let Ok(contents) = std::fs::read_to_string(&cfg) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&contents) {
+                    if let Some(url) = val.get("db_url").and_then(|v| v.as_str()) {
+                        if !url.trim().is_empty() {
+                            return url.trim().to_string();
+                        }
+                    }
+                }
+            }
+            fatal_error(&format!(
+                "Database configuration file not found.\n\n\
+                 Please create the file:\n\
+                 {}\n\n\
+                 with the following content:\n\
+                 {{\"db_url\":\"mysql://root:password@127.0.0.1:3306/clinoradb\"}}\n\n\
+                 Replace 'root' and 'password' with your MySQL credentials.",
+                dir.join("data").join("clinora.cfg").display()
+            ));
+        }
+    }
+    fatal_error("Cannot determine the installation directory.");
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            let db_url = load_db_url();
             let pool = tauri::async_runtime::block_on(async {
-                MySqlPoolOptions::new()
+                let pool = MySqlPoolOptions::new()
                     .max_connections(5)
-                    .connect(DB_URL)
+                    .connect(&db_url)
                     .await
-                    .expect("Failed to connect to MySQL. Is it running?")
+                    .unwrap_or_else(|e| fatal_error(&format!(
+                        "Cannot connect to the database.\n\nError: {}\n\nCheck that:\n\
+                         • MySQL is running\n\
+                         • The credentials in data/clinora.cfg are correct\n\
+                         • The database 'clinoradb' exists", e
+                    )));
+
+                sqlx::migrate!("./migrations")
+                    .run(&pool)
+                    .await
+                    .unwrap_or_else(|e| fatal_error(&format!(
+                        "Database setup failed.\n\nError: {}", e
+                    )));
+
+                pool
             });
             app.manage(AppState::new(pool));
             Ok(())
@@ -78,6 +145,7 @@ pub fn run() {
             commands::medicines::update_medicine,
             commands::medicines::delete_medicine,
             commands::medicines::import_medicines,
+            commands::medicines::parse_medicine_document,
             // Settings
             commands::settings::get_settings,
             commands::settings::update_clinic,
@@ -92,6 +160,9 @@ pub fn run() {
             // Downloads — save files to user's Downloads folder
             commands::downloads::write_text_to_downloads,
             commands::downloads::write_bytes_to_downloads,
+            // License
+            commands::license::get_license_status,
+            commands::license::activate_license,
             // Profile
             commands::profile::get_profile,
             commands::profile::update_profile,

@@ -142,18 +142,6 @@ pub async fn create_patient(data: PatientPayload, state: State<'_, AppState>) ->
     let gender = data.gender.filter(|s| !s.trim().is_empty());
     let address = data.address.filter(|s| !s.trim().is_empty());
 
-    if let Some(ref m) = mobile {
-        if !m.is_empty() {
-            let exists: i64 = sqlx::query(
-                "SELECT COUNT(*) FROM patients WHERE clinic_id = ? AND mobile = ? AND deleted_at IS NULL"
-            ).bind(session.clinic_id).bind(m)
-            .fetch_one(&state.db).await?.get(0);
-            if exists > 0 {
-                return Err("A patient with this mobile number already exists.".into());
-            }
-        }
-    }
-
     let result = sqlx::query(
         "INSERT INTO patients (clinic_id, name, mobile, date_of_birth, age, gender, address, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"

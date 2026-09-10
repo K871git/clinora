@@ -83,6 +83,9 @@ export default function PharmacyPrescriptionPage() {
   const [confirmComplete, setConfirmComplete] = useState(false)
   const [checked,         setChecked]         = useState(new Set())
   const [prices,          setPrices]          = useState({})
+  const [extraItems,      setExtraItems]      = useState([])
+  const [newItemName,     setNewItemName]     = useState('')
+  const [newItemPrice,    setNewItemPrice]    = useState('')
 
   /* payment state */
   const [paymentStatus,  setPaymentStatus]  = useState('unpaid')
@@ -124,6 +127,18 @@ export default function PharmacyPrescriptionPage() {
 
   function setItemPrice(itemId, value) {
     setPrices(prev => ({ ...prev, [itemId]: value }))
+  }
+
+  function addExtraItem() {
+    if (!newItemName.trim()) return
+    const price = parseFloat(newItemPrice || '0') || 0
+    setExtraItems(prev => [...prev, { uid: Date.now(), name: newItemName.trim(), price }])
+    setNewItemName('')
+    setNewItemPrice('')
+  }
+
+  function removeExtraItem(uid) {
+    setExtraItems(prev => prev.filter(i => i.uid !== uid))
   }
 
   async function handleStartDispensing() {
@@ -175,7 +190,8 @@ export default function PharmacyPrescriptionPage() {
         id:         item.id,
         unit_price: prices[item.id] ? parseFloat(prices[item.id]) : null,
       }))
-      const { data } = await completePharmacyPrescription(prescriptionId, itemPrices)
+      const extra = extraItems.map(i => ({ name: i.name, unit_price: i.price }))
+      const { data } = await completePharmacyPrescription(prescriptionId, itemPrices, extra)
       setPrescription(data)
       toast.success('Prescription completed', {
         description: `All medicines dispensed for ${prescription.patient.name}`,
@@ -207,11 +223,13 @@ export default function PharmacyPrescriptionPage() {
   const checkedCount = checked.size
   const progress     = totalMeds > 0 ? Math.round((checkedCount / totalMeds) * 100) : 0
 
-  /* Live total from price inputs during dispensing */
+  /* Live total from price inputs + extra items during dispensing */
   const liveTotal = (prescription.items ?? []).reduce((sum, item) => {
     const v = parseFloat(prices[item.id] || '0')
     return sum + (isNaN(v) ? 0 : v)
-  }, 0)
+  }, 0) + extraItems.reduce((sum, i) => sum + i.price, 0)
+
+  const uncheckedCount = totalMeds - checkedCount
 
   const hasInvoice = isDispensing || (isCompleted && (prescription.total_amount ?? 0) > 0)
 
@@ -319,23 +337,32 @@ export default function PharmacyPrescriptionPage() {
             )}
 
             {isDispensing && confirmComplete && (
-              <div className="rx-send-confirm" style={{ animationDuration: '0.15s' }}>
-                <span className="rx-send-confirm-label">Confirm all dispensed?</span>
-                <button
-                  className="rx-action-btn rx-action-btn--primary"
-                  onClick={handleComplete}
-                  disabled={completing}
-                >
-                  {completing ? <Spinner size={12} /> : null}
-                  {completing ? 'Completing…' : 'Yes, Complete'}
-                </button>
-                <button
-                  className="rx-action-btn"
-                  onClick={() => setConfirmComplete(false)}
-                  disabled={completing}
-                >
-                  Cancel
-                </button>
+              <div className="rx-send-confirm" style={{ animationDuration: '0.15s', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                {uncheckedCount > 0 && (
+                  <div className="rx-complete-warn">
+                    ⚠ {uncheckedCount} item{uncheckedCount > 1 ? 's' : ''} not checked — are they all dispensed?
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span className="rx-send-confirm-label">
+                    {uncheckedCount > 0 ? 'Complete anyway?' : 'Confirm all dispensed?'}
+                  </span>
+                  <button
+                    className="rx-action-btn rx-action-btn--primary"
+                    onClick={handleComplete}
+                    disabled={completing}
+                  >
+                    {completing ? <Spinner size={12} /> : null}
+                    {completing ? 'Completing…' : 'Yes, Complete'}
+                  </button>
+                  <button
+                    className="rx-action-btn"
+                    onClick={() => setConfirmComplete(false)}
+                    disabled={completing}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
 
@@ -433,7 +460,6 @@ export default function PharmacyPrescriptionPage() {
 
                   {isCompleted && item.unit_price != null && (
                     <div className="rx-price-wrap">
-                      <span className="rx-price-currency">₹</span>
                       <span className="rx-price-display">{fmtPrice(item.unit_price)}</span>
                     </div>
                   )}
@@ -441,18 +467,59 @@ export default function PharmacyPrescriptionPage() {
               ))}
             </ul>
 
+            {/* Extra items — pharmacist-added (water bottle, inhaler, gadgets…) */}
+            {isDispensing && (
+              <div className="rx-extra-section">
+                <div className="rx-extra-header">Additional Items</div>
+
+                {extraItems.map(item => (
+                  <div key={item.uid} className="rx-extra-row">
+                    <span className="rx-extra-name">{item.name}</span>
+                    <span className="rx-extra-price">{fmtPrice(item.price)}</span>
+                    <button className="rx-extra-remove" onClick={() => removeExtraItem(item.uid)} title="Remove">×</button>
+                  </div>
+                ))}
+
+                <div className="rx-extra-form">
+                  <input
+                    className="rx-extra-input"
+                    placeholder="Item name…"
+                    value={newItemName}
+                    onChange={e => setNewItemName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addExtraItem()}
+                  />
+                  <div className="rx-price-wrap" style={{ flex: 'none' }}>
+                    <span className="rx-price-currency">₹</span>
+                    <input
+                      className="rx-price-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={newItemPrice}
+                      onChange={e => setNewItemPrice(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && addExtraItem()}
+                    />
+                  </div>
+                  <button className="rx-extra-add-btn" onClick={addExtraItem} disabled={!newItemName.trim()}>
+                    + Add
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Invoice total footer */}
             {isDispensing && (
               <div className="rx-invoice-footer">
-                <span className="rx-invoice-total-label">Total</span>
-                <span className="rx-invoice-total-amount">₹{fmtPrice(liveTotal)}</span>
+                <span className="rx-invoice-total-label">TOTAL</span>
+                <span className="rx-invoice-total-amount">{fmtPrice(liveTotal)}</span>
               </div>
             )}
 
             {isCompleted && (prescription.total_amount ?? 0) > 0 && (
               <div className="rx-invoice-footer">
                 <span className="rx-invoice-total-label">Total</span>
-                <span className="rx-invoice-total-amount">₹{fmtPrice(prescription.total_amount)}</span>
+                <span className="rx-invoice-total-amount">{fmtPrice(prescription.total_amount)}</span>
               </div>
             )}
           </>

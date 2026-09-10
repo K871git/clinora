@@ -763,3 +763,83 @@ html[data-theme="dark"] .pd-fee-tag {
   .pd-stats   { grid-template-columns: repeat(3, 1fr); }
   .pd-history { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PRINT — Patients list only, no app chrome
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media print {
+  @page { size: A4 portrait; margin: 15mm; }
+
+  /* Hide entire app shell */
+  .shell-sidebar,
+  .shell-overlay,
+  .shell-header,
+  .offline-banner,
+  .nav-progress { display: none !important; }
+
+  /* Reset sidebar offset so table takes full width */
+  .shell-main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .shell-content,
+  .page-enter { padding: 0 !important; }
+
+  /* Hide patients page header button, keep title text */
+  .pt-add-btn,
+  .pt-count-badge { display: none !important; }
+
+  .pt-header {
+    margin-bottom: 8px;
+    border-bottom: 1.5px solid #000;
+    padding-bottom: 6px;
+  }
+
+  .pt-title {
+    font-size: 16pt;
+    color: #000;
+  }
+
+  /* Hide DataTable controls — buttons, search, length, pagination */
+  .pt-dt-top,
+  .pt-dt-bottom { display: none !important; }
+
+  /* Remove card border/shadow for clean paper look */
+  .pt-table-wrap {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* Clean table styling */
+  .table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 10pt;
+    color: #000;
+  }
+
+  .table th,
+  .table td {
+    border: 1px solid #aaa !important;
+    padding: 5px 8px !important;
+    color: #000 !important;
+  }
+
+  .table th {
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-weight: 700;
+  }
+
+  /* Hide avatar circle, show just the name text */
+  .pt-avatar { display: none !important; }
+  .d-flex.align-items-center { display: block !important; }
+
+  /* Hide action badges */
+  .badge { display: none !important; }
+}

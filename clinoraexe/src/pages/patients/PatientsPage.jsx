@@ -5,16 +5,15 @@ import DT from 'datatables.net-bs5'
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'
 import 'datatables.net-buttons-bs5'
 import 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css'
-import 'datatables.net-buttons/js/buttons.html5.mjs'
-import 'datatables.net-buttons/js/buttons.print.mjs'
-import JSZip from 'jszip'
+import * as XLSX from 'xlsx'
+import { invoke } from '@tauri-apps/api/core'
+import { toast } from 'sonner'
 import { listPatients } from '../../services/patientService'
 import PatientFormModal from './PatientFormModal'
 import PageLoader from '../../components/ui/PageLoader'
 import '../../styles/patients.css'
 
 DataTable.use(DT)
-window.JSZip = JSZip
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -76,9 +75,60 @@ const COLUMNS = [
   },
 ]
 
-/* strip HTML so exports are clean */
-const exportFormat = {
-  body: (d) => typeof d === 'string' ? stripHtml(d) : d,
+/* ── Export helpers ─────────────────────────────────────────────────── */
+
+const EXPORT_COLS = ['Name', 'Contact', 'Age', 'Gender', 'Last Visit']
+
+function patientRow(r) {
+  return [
+    r.name,
+    r.mobile || '',
+    r.age != null ? r.age : '',
+    capitalize(r.gender) || '',
+    r.last_visit_at ? fmtDate(r.last_visit_at) : 'Never',
+  ]
+}
+
+function buildCsv(rows) {
+  const BOM  = '﻿'
+  const body = [EXPORT_COLS, ...rows.map(patientRow)]
+    .map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+    .join('\r\n')
+  return BOM + body
+}
+
+function handleCopy(dt) {
+  const rows = dt.rows({ search: 'applied' }).data().toArray()
+  const text = [EXPORT_COLS, ...rows.map(patientRow)]
+    .map(r => r.join('\t')).join('\n')
+  navigator.clipboard.writeText(text)
+    .then(() => toast.success('Copied to clipboard'))
+    .catch(() => toast.error('Copy failed'))
+}
+
+function handleCsv(dt) {
+  const rows = dt.rows({ search: 'applied' }).data().toArray()
+  invoke('write_text_to_downloads', { content: buildCsv(rows), filename: 'patients.csv' })
+    .then(saved => toast.success(`Exported to Downloads: ${saved}`))
+    .catch(() => toast.error('Export failed'))
+}
+
+function handleExcel(dt) {
+  const rows = dt.rows({ search: 'applied' }).data().toArray()
+  const data = rows.map(r => ({
+    'Name':       r.name,
+    'Contact':    r.mobile || '',
+    'Age':        r.age ?? '',
+    'Gender':     capitalize(r.gender) || '',
+    'Last Visit': r.last_visit_at ? fmtDate(r.last_visit_at) : 'Never',
+  }))
+  const ws  = XLSX.utils.json_to_sheet(data)
+  const wb  = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Patients')
+  const b64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+  invoke('write_bytes_to_downloads', { b64, filename: 'patients.xlsx' })
+    .then(saved => toast.success(`Exported to Downloads: ${saved}`))
+    .catch(() => toast.error('Export failed'))
 }
 
 const DT_OPTIONS = {
@@ -86,27 +136,24 @@ const DT_OPTIONS = {
 
   buttons: [
     {
-      extend:        'copy',
-      text:          '⎘ Copy',
-      className:     'pt-exp-btn',
-      exportOptions: { format: exportFormat },
+      text:      '⎘ Copy',
+      className: 'pt-exp-btn',
+      action(e, dt) { handleCopy(dt) },
     },
     {
-      extend:        'csv',
-      text:          '↓ CSV',
-      className:     'pt-exp-btn',
-      exportOptions: { format: exportFormat },
+      text:      '↓ CSV',
+      className: 'pt-exp-btn',
+      action(e, dt) { handleCsv(dt) },
     },
     {
-      extend:        'excel',
-      text:          '↓ Excel',
-      className:     'pt-exp-btn pt-exp-btn--excel',
-      exportOptions: { format: exportFormat },
+      text:      '↓ Excel',
+      className: 'pt-exp-btn pt-exp-btn--excel',
+      action(e, dt) { handleExcel(dt) },
     },
     {
-      extend:    'print',
       text:      '⎙ Print',
       className: 'pt-exp-btn',
+      action()   { window.print() },
     },
   ],
 

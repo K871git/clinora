@@ -199,6 +199,9 @@ pub async fn complete_visit(id: u64, consultation_fee: Option<f64>, state: State
 #[tauri::command]
 pub async fn record_visit_payment(id: u64, data: PaymentPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
+    if !["paid", "partial", "unpaid"].contains(&data.payment_status.as_str()) {
+        return Err("Invalid payment status.".into());
+    }
     sqlx::query(
         "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW()
          WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
