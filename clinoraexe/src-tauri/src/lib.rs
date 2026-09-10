@@ -132,6 +132,9 @@ pub fn run() {
             // Downloads — save files to user's Downloads folder
             commands::downloads::write_text_to_downloads,
             commands::downloads::write_bytes_to_downloads,
+            // License
+            commands::license::get_license_status,
+            commands::license::activate_license,
             // Profile
             commands::profile::get_profile,
             commands::profile::update_profile,
