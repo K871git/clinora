@@ -26,9 +26,9 @@ function detectCols(headers) {
   }
 
   return {
-    name:         pick(['name', 'medicine name', 'drug name', 'medicine', 'drug', 'item name', 'item']),
-    generic_name: pick(['generic name', 'generic', 'salt', 'composition', 'active ingredient']),
-    category:     pick(['category', 'drug category', 'type', 'drug type', 'class', 'group']),
+    name:         pick(['name', 'medicine name', 'drug name', 'medicine', 'drug', 'item name', 'item', 'tab and companies name', 'companies name', 'brand name', 'brand']),
+    generic_name: pick(['generic name', 'generic', 'salt', 'composition', 'active ingredient', 'content', 'contents', 'molecule', 'ingredient']),
+    category:     pick(['category', 'drug category', 'type', 'drug type', 'class', 'group', 'uses', 'use', 'indication', 'indications', 'therapeutic']),
     unit:         pick(['unit', 'form', 'dosage form', 'uom', 'unit form']),
     quantity:     pick(['quantity', 'qty', 'stock qty', 'stock', 'stocks', 'inventory']),
     price:        pick(['price', 'selling price', 'unit price', 'mrp', 'rate', 'cost', 'sp', 'sale price']),
