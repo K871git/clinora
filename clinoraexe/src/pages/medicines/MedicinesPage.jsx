@@ -12,6 +12,7 @@ import {
   importMedicines,
 } from '../../services/medicineService'
 import Spinner from '../../components/ui/Spinner'
+import MedicineImportModal from '../../components/medicines/MedicineImportModal'
 
 const UNIT_OPTIONS = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Drops', 'Cream', 'Gel', 'Powder', 'Sachet', 'Inhaler', 'Patch']
 
@@ -782,7 +783,7 @@ export default function MedicinesPage() {
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             onClick={() => setModal('import')}
           >
-            <IconUpload /> Import CSV
+            <IconUpload /> Import
           </button>
           <button
             className="btn-primary"
@@ -882,7 +883,7 @@ export default function MedicinesPage() {
 
       {/* Import modal */}
       {modal === 'import' && (
-        <ImportModal
+        <MedicineImportModal
           onClose={closeModal}
           onDone={() => { closeModal(); load() }}
         />

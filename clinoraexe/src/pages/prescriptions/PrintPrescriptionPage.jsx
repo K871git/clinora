@@ -16,6 +16,15 @@ function fmtDate(iso) {
   return `${dd}/${mm}/${d.getFullYear()}`
 }
 
+function dateParts(iso) {
+  const d = new Date(iso)
+  return {
+    dd:   String(d.getDate()).padStart(2, '0'),
+    mm:   String(d.getMonth() + 1).padStart(2, '0'),
+    yyyy: String(d.getFullYear()),
+  }
+}
+
 function fmtDateTime(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('en-IN', {
@@ -334,13 +343,20 @@ export default function PrintPrescriptionPage() {
                 {prescription.patient.name}
               </span>
 
-              <span className="print-tpl-val" style={{
-                position: 'absolute',
-                top:  `${pdfLayout.date_y}mm`,
-                left: `${pdfLayout.date_x}mm`,
-              }}>
-                {fmtDate(prescription.prescribed_at)}
-              </span>
+              {/* Date: three spans for DD, MM, YYYY — template already has "/" separators printed */}
+              {(() => {
+                const { dd, mm, yyyy } = dateParts(prescription.prescribed_at)
+                const dy = pdfLayout.date_y
+                const dx = pdfLayout.date_x
+                const SLOT = pdfLayout.date_slot_w ?? 9
+                return (
+                  <>
+                    <span className="print-tpl-val" style={{ position: 'absolute', top: `${dy}mm`, left: `${dx}mm` }}>{dd}</span>
+                    <span className="print-tpl-val" style={{ position: 'absolute', top: `${dy}mm`, left: `${dx + SLOT}mm` }}>{mm}</span>
+                    <span className="print-tpl-val" style={{ position: 'absolute', top: `${dy}mm`, left: `${dx + SLOT * 2}mm` }}>{yyyy}</span>
+                  </>
+                )
+              })()}
 
               <div style={{
                 position: 'absolute',

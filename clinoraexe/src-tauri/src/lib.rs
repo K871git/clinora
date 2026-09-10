@@ -6,19 +6,58 @@ use state::AppState;
 use sqlx::mysql::MySqlPoolOptions;
 use tauri::Manager;
 
-pub const DB_URL: &str = "mysql://root:npav@127.0.0.1:3306/clinoradb";
+/// Load the database URL from (in order):
+///   1. CLINORA_DB_URL environment variable  — used during development
+///   2. data/clinora.cfg next to the executable — written by the installer
+fn load_db_url() -> String {
+    if let Ok(url) = std::env::var("CLINORA_DB_URL") {
+        if !url.trim().is_empty() {
+            return url.trim().to_string();
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let cfg = dir.join("data").join("clinora.cfg");
+            if let Ok(contents) = std::fs::read_to_string(&cfg) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&contents) {
+                    if let Some(url) = val.get("db_url").and_then(|v| v.as_str()) {
+                        if !url.trim().is_empty() {
+                            return url.trim().to_string();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    panic!(
+        "\n\nClinora: No database configuration found.\n\
+         Set the CLINORA_DB_URL environment variable, or create data/clinora.cfg\n\
+         next to the executable with content:\n\
+         {{\"db_url\":\"mysql://user:password@127.0.0.1:3306/clinoradb\"}}\n\n"
+    );
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            let db_url = load_db_url();
             let pool = tauri::async_runtime::block_on(async {
-                MySqlPoolOptions::new()
+                let pool = MySqlPoolOptions::new()
                     .max_connections(5)
-                    .connect(DB_URL)
+                    .connect(&db_url)
                     .await
-                    .expect("Failed to connect to MySQL. Is it running?")
+                    .expect("Failed to connect to the database. Check your configuration.");
+
+                // Run migrations automatically — creates all tables on first launch,
+                // applies only new migrations on subsequent launches.
+                sqlx::migrate!("./migrations")
+                    .run(&pool)
+                    .await
+                    .expect("Database migration failed. The database may be corrupted.");
+
+                pool
             });
             app.manage(AppState::new(pool));
             Ok(())
@@ -78,6 +117,7 @@ pub fn run() {
             commands::medicines::update_medicine,
             commands::medicines::delete_medicine,
             commands::medicines::import_medicines,
+            commands::medicines::parse_medicine_document,
             // Settings
             commands::settings::get_settings,
             commands::settings::update_clinic,

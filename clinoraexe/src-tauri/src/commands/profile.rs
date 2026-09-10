@@ -90,6 +90,10 @@ pub async fn update_password(data: PasswordPayload, state: State<'_, AppState>) 
     let valid = bcrypt::verify(&data.current_password, &hash)?;
     if !valid { return Err("Current password is incorrect.".into()); }
 
+    if data.password.len() < 8 {
+        return Err("New password must be at least 8 characters.".into());
+    }
+
     let new_hash = bcrypt::hash(&data.password, bcrypt::DEFAULT_COST)?;
     sqlx::query("UPDATE users SET password=?, updated_at=NOW() WHERE id=?")
         .bind(new_hash).bind(session.id).execute(&state.db).await?;
@@ -100,7 +104,10 @@ pub async fn update_password(data: PasswordPayload, state: State<'_, AppState>) 
 pub async fn upload_avatar(data: AvatarPayload, state: State<'_, AppState>) -> AppResult<Value> {
     use std::io::Write;
     let session = get_session(&state)?;
-    let ext = data.ext.unwrap_or_else(|| "jpg".to_string());
+    let ext = data.ext.unwrap_or_else(|| "jpg".to_string()).to_lowercase();
+    if !["jpg", "jpeg", "png", "webp"].contains(&ext.as_str()) {
+        return Err("Invalid file type. Only JPG, PNG, and WebP are allowed.".into());
+    }
 
     let bytes = base64_decode(&data.data)?;
     let exe_dir = std::env::current_exe()

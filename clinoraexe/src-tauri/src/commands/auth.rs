@@ -23,11 +23,34 @@ struct UserRow {
     clinic_name: String,
 }
 
+const MAX_ATTEMPTS: u32 = 5;
+const LOCKOUT_SECS: u64 = 300; // 5 minutes
+
 #[tauri::command]
 pub async fn login(
     payload: LoginPayload,
     state: State<'_, AppState>,
 ) -> AppResult<SessionUser> {
+    // ── Rate limiting ────────────────────────────────────────────────────────
+    {
+        let mut attempts = state.login_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some((count, since)) = attempts.get(&payload.email) {
+            if *count >= MAX_ATTEMPTS {
+                let elapsed = since.elapsed().as_secs();
+                if elapsed < LOCKOUT_SECS {
+                    let remaining_mins = ((LOCKOUT_SECS - elapsed) + 59) / 60;
+                    return Err(format!(
+                        "Too many failed attempts. Try again in {} minute(s).",
+                        remaining_mins
+                    ).into());
+                } else {
+                    attempts.remove(&payload.email);
+                }
+            }
+        }
+    }
+
+    // ── Lookup user ──────────────────────────────────────────────────────────
     let row = sqlx::query_as::<_, UserRow>(
         "SELECT u.id, u.clinic_id, u.name, u.email, u.password, u.role,
                 u.is_active, u.avatar, c.name as clinic_name
@@ -39,8 +62,21 @@ pub async fn login(
     .bind(&payload.email)
     .bind(&payload.role)
     .fetch_optional(&state.db)
-    .await?
-    .ok_or("Invalid email or password.")?;
+    .await?;
+
+    let fail = || -> AppResult<SessionUser> {
+        let mut attempts = state.login_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = attempts
+            .entry(payload.email.clone())
+            .or_insert((0, std::time::Instant::now()));
+        entry.0 += 1;
+        Err("Invalid email or password.".into())
+    };
+
+    let row = match row {
+        Some(r) => r,
+        None => return fail(),
+    };
 
     if row.is_active == 0 {
         return Err("Your account is inactive.".into());
@@ -48,7 +84,13 @@ pub async fn login(
 
     let valid = bcrypt::verify(&payload.password, &row.password)?;
     if !valid {
-        return Err("Invalid email or password.".into());
+        return fail();
+    }
+
+    // ── Success — clear attempts ─────────────────────────────────────────────
+    {
+        let mut attempts = state.login_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        attempts.remove(&payload.email);
     }
 
     let user = SessionUser {
@@ -65,7 +107,7 @@ pub async fn login(
         },
     };
 
-    *state.session.lock().unwrap() = Some(user.clone());
+    *state.session.lock().unwrap_or_else(|e| e.into_inner()) = Some(user.clone());
     Ok(user)
 }
 

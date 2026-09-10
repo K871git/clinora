@@ -69,13 +69,6 @@ export default function PharmacyPrescriptionPrintPage() {
     return () => { cancelled = true }
   }, [prescriptionId])
 
-  useEffect(() => {
-    if (status === 'done') {
-      const t = setTimeout(() => window.print(), 450)
-      return () => clearTimeout(t)
-    }
-  }, [status])
-
   if (status === 'loading') {
     return (
       <div className="print-page" style={{ justifyContent: 'center' }}>

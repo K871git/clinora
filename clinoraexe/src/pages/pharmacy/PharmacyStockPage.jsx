@@ -6,6 +6,7 @@ import {
 } from '../../services/medicineService'
 import { getStockItems, createStockItem, updateStockItem, deleteStockItem } from '../../services/stockItemService'
 import Spinner from '../../components/ui/Spinner'
+import MedicineImportModal from '../../components/medicines/MedicineImportModal'
 
 const UNIT_OPTIONS = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Drops', 'Cream', 'Gel', 'Powder', 'Sachet', 'Inhaler', 'Patch']
 const FALLBACK_CATS = ['Analgesic', 'Antibiotic', 'Antacid', 'Antifungal', 'Antihistamine', 'Antiseptic', 'Vitamin', 'Syrup', 'Tablet', 'Injection']
@@ -347,9 +348,14 @@ function MedicineTab() {
     if (field === 'price' && rawValue === '' && current == null) { clear(); return }
     setSavingId(med.id)
     try {
-      const payload = field === 'quantity'
-        ? { quantity: parsed }
-        : { price: rawValue === '' ? null : parseFloat(rawValue) }
+      const payload = {
+        name:         med.name,
+        generic_name: med.generic_name ?? null,
+        category:     med.category ?? null,
+        unit:         med.unit ?? null,
+        quantity:     field === 'quantity' ? parsed : (med.quantity ?? 0),
+        price:        field === 'price' ? (rawValue === '' ? null : parseFloat(rawValue)) : (med.price ?? null),
+      }
       const { data } = await patchMedicine(med.id, payload)
       setMedicines(prev => prev.map(m => m.id === med.id ? data : m))
       toast.success(`Updated ${field === 'quantity' ? 'stock' : 'price'} for ${med.name}`)
@@ -656,7 +662,7 @@ function MedicineTab() {
 
       {/* Import modal */}
       {showImport && (
-        <ImportModal
+        <MedicineImportModal
           onClose={() => setShowImport(false)}
           onDone={() => { load(); setShowImport(false) }}
         />
