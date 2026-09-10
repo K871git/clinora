@@ -21,6 +21,9 @@
 }
 
 .lg-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 16px;
 }
 
@@ -29,6 +32,7 @@
   height: 72px;
   object-fit: contain;
   border-radius: 14px;
+  display: block;
 }
 
 .lg-title {

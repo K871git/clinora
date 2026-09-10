@@ -2,9 +2,28 @@ mod commands;
 mod error;
 mod state;
 
+#[cfg(windows)]
+extern crate windows;
+
 use state::AppState;
 use sqlx::mysql::MySqlPoolOptions;
 use tauri::Manager;
+
+fn fatal_error(msg: &str) -> ! {
+    #[cfg(windows)]
+    {
+        use windows::core::PCWSTR;
+        use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+        let title: Vec<u16> = "Clinora — Configuration Error\0".encode_utf16().collect();
+        let text: Vec<u16> = format!("{}\0", msg).encode_utf16().collect();
+        unsafe {
+            MessageBoxW(None, PCWSTR(text.as_ptr()), PCWSTR(title.as_ptr()), MB_OK | MB_ICONERROR);
+        }
+    }
+    #[cfg(not(windows))]
+    eprintln!("FATAL: {}", msg);
+    std::process::exit(1);
+}
 
 /// Load the database URL from (in order):
 ///   1. CLINORA_DB_URL environment variable  — used during development
@@ -27,14 +46,18 @@ fn load_db_url() -> String {
                     }
                 }
             }
+            fatal_error(&format!(
+                "Database configuration file not found.\n\n\
+                 Please create the file:\n\
+                 {}\n\n\
+                 with the following content:\n\
+                 {{\"db_url\":\"mysql://root:password@127.0.0.1:3306/clinoradb\"}}\n\n\
+                 Replace 'root' and 'password' with your MySQL credentials.",
+                dir.join("data").join("clinora.cfg").display()
+            ));
         }
     }
-    panic!(
-        "\n\nClinora: No database configuration found.\n\
-         Set the CLINORA_DB_URL environment variable, or create data/clinora.cfg\n\
-         next to the executable with content:\n\
-         {{\"db_url\":\"mysql://user:password@127.0.0.1:3306/clinoradb\"}}\n\n"
-    );
+    fatal_error("Cannot determine the installation directory.");
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -48,14 +71,19 @@ pub fn run() {
                     .max_connections(5)
                     .connect(&db_url)
                     .await
-                    .expect("Failed to connect to the database. Check your configuration.");
+                    .unwrap_or_else(|e| fatal_error(&format!(
+                        "Cannot connect to the database.\n\nError: {}\n\nCheck that:\n\
+                         • MySQL is running\n\
+                         • The credentials in data/clinora.cfg are correct\n\
+                         • The database 'clinoradb' exists", e
+                    )));
 
-                // Run migrations automatically — creates all tables on first launch,
-                // applies only new migrations on subsequent launches.
                 sqlx::migrate!("./migrations")
                     .run(&pool)
                     .await
-                    .expect("Database migration failed. The database may be corrupted.");
+                    .unwrap_or_else(|e| fatal_error(&format!(
+                        "Database setup failed.\n\nError: {}", e
+                    )));
 
                 pool
             });

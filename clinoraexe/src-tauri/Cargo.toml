@@ -31,6 +31,8 @@ lopdf = "0.32"
 zip = "2"
 sha2 = "0.10"
 
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_UI_WindowsAndMessaging"] }
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
