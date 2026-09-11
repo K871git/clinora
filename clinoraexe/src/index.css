@@ -436,6 +436,116 @@ body {
   color: var(--clr-primary);
 }
 
+/* ─── Skeleton / shimmer ─────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton-block {
+  background: linear-gradient(
+    90deg,
+    var(--clr-border) 25%,
+    var(--clr-surface-hover) 50%,
+    var(--clr-border) 75%
+  );
+  background-size: 1200px 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+[data-theme="dark"] .skeleton-block {
+  background: linear-gradient(
+    90deg,
+    #1e293b 25%,
+    #273548 50%,
+    #1e293b 75%
+  );
+  background-size: 1200px 100%;
+}
+
+.page-loader-skeleton {
+  margin-top: 4px;
+}
+
+.skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.skeleton-table-head {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--clr-border);
+  margin-bottom: 4px;
+}
+
+.skeleton-table-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--clr-border-subtle);
+  animation: skeleton-row-in 0.3s ease both;
+}
+
+.skeleton-table-row:nth-child(2) { animation-delay: 0.04s; }
+.skeleton-table-row:nth-child(3) { animation-delay: 0.08s; }
+.skeleton-table-row:nth-child(4) { animation-delay: 0.12s; }
+.skeleton-table-row:nth-child(5) { animation-delay: 0.16s; }
+.skeleton-table-row:nth-child(6) { animation-delay: 0.20s; }
+.skeleton-table-row:nth-child(7) { animation-delay: 0.24s; }
+.skeleton-table-row:nth-child(8) { animation-delay: 0.28s; }
+
+@keyframes skeleton-row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.skeleton-card {
+  padding: 20px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  background: var(--clr-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block { animation: none; }
+  .skeleton-table-row { animation: none; }
+}
+
+/* ─── Button loading state ────────────────────────────────────────────── */
+.btn-with-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+}
+
+.btn-spinner-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  animation: spinner-fade-in 0.15s ease;
+}
+
+@keyframes spinner-fade-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.btn-label-loading {
+  opacity: 0.75;
+}
+
+.btn-is-loading {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ─── Secondary button ───────────────────────────────────────────────── */
 .btn-secondary {
   display: inline-flex;

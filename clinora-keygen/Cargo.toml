@@ -1,0 +1,21 @@
+[package]
+name = "clinora-keygen"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "clinora-keygen"
+path = "src/main.rs"
+
+[dependencies]
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
+sha2 = "0.10"
+base64 = "0.22"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+
+[profile.release]
+opt-level = 3
+strip = true

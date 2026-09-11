@@ -14,7 +14,7 @@ fn fatal_error(msg: &str) -> ! {
     {
         use windows::core::PCWSTR;
         use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
-        let title: Vec<u16> = "Clinora — Configuration Error\0".encode_utf16().collect();
+        let title: Vec<u16> = "Clinora — Error\0".encode_utf16().collect();
         let text: Vec<u16> = format!("{}\0", msg).encode_utf16().collect();
         unsafe {
             MessageBoxW(None, PCWSTR(text.as_ptr()), PCWSTR(title.as_ptr()), MB_OK | MB_ICONERROR);
@@ -25,9 +25,23 @@ fn fatal_error(msg: &str) -> ! {
     std::process::exit(1);
 }
 
-/// Load the database URL from (in order):
-///   1. CLINORA_DB_URL environment variable  — used during development
-///   2. data/clinora.cfg next to the executable — written by the installer
+/// Returns true if clinora.cfg has "configured": true
+fn is_configured() -> bool {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let cfg = dir.join("data").join("clinora.cfg");
+            if let Ok(contents) = std::fs::read_to_string(&cfg) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&contents) {
+                    return val.get("configured")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false);
+                }
+            }
+        }
+    }
+    false
+}
+
 fn load_db_url() -> String {
     if let Ok(url) = std::env::var("CLINORA_DB_URL") {
         if !url.trim().is_empty() {
@@ -46,51 +60,88 @@ fn load_db_url() -> String {
                     }
                 }
             }
-            fatal_error(&format!(
-                "Database configuration file not found.\n\n\
-                 Please create the file:\n\
-                 {}\n\n\
-                 with the following content:\n\
-                 {{\"db_url\":\"mysql://root:password@127.0.0.1:3306/clinoradb\"}}\n\n\
-                 Replace 'root' and 'password' with your MySQL credentials.",
-                dir.join("data").join("clinora.cfg").display()
-            ));
         }
     }
-    fatal_error("Cannot determine the installation directory.");
+    fatal_error("Cannot load database URL from config.");
+}
+
+#[cfg(windows)]
+fn show_error_dialog(msg: &str) {
+    use windows::core::PCWSTR;
+    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+    let title: Vec<u16> = "Clinora — Error\0".encode_utf16().collect();
+    let text: Vec<u16> = format!("{}\0", msg).encode_utf16().collect();
+    unsafe {
+        MessageBoxW(None, PCWSTR(text.as_ptr()), PCWSTR(title.as_ptr()), MB_OK | MB_ICONERROR);
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Catch every Rust panic and show it as a dialog instead of silently exiting.
+    std::panic::set_hook(Box::new(|info| {
+        let msg = format!("Clinora encountered an unexpected error and must close.\n\n{}", info);
+        #[cfg(windows)]
+        show_error_dialog(&msg);
+        #[cfg(not(windows))]
+        eprintln!("CRASH: {}", msg);
+    }));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let db_url = load_db_url();
-            let pool = tauri::async_runtime::block_on(async {
-                let pool = MySqlPoolOptions::new()
-                    .max_connections(5)
-                    .connect(&db_url)
-                    .await
-                    .unwrap_or_else(|e| fatal_error(&format!(
-                        "Cannot connect to the database.\n\nError: {}\n\nCheck that:\n\
-                         • MySQL is running\n\
-                         • The credentials in data/clinora.cfg are correct\n\
-                         • The database 'clinoradb' exists", e
-                    )));
+            let configured = is_configured();
 
-                sqlx::migrate!("./migrations")
-                    .run(&pool)
-                    .await
-                    .unwrap_or_else(|e| fatal_error(&format!(
-                        "Database setup failed.\n\nError: {}", e
-                    )));
+            let pool = if configured {
+                // Full connection + migrations
+                tauri::async_runtime::block_on(async {
+                    let db_url = load_db_url();
+                    let pool = MySqlPoolOptions::new()
+                        .max_connections(5)
+                        .connect(&db_url)
+                        .await
+                        .unwrap_or_else(|e| fatal_error(&format!(
+                            "Cannot connect to the database.\n\nError: {}\n\n\
+                             Check that:\n\
+                             • MySQL is running\n\
+                             • Credentials in data/clinora.cfg are correct\n\
+                             • The database 'clinoradb' exists", e
+                        )));
 
-                pool
-            });
-            app.manage(AppState::new(pool));
+                    sqlx::migrate!("./migrations")
+                        .run(&pool)
+                        .await
+                        .unwrap_or_else(|e| fatal_error(&format!(
+                            "Database setup failed.\n\nError: {}", e
+                        )));
+
+                    pool
+                })
+            } else {
+                // Not yet configured — create a lazy placeholder pool.
+                // connect_lazy still needs a Tokio context even though it never connects.
+                tauri::async_runtime::block_on(async {
+                    MySqlPoolOptions::new()
+                        .max_connections(1)
+                        .connect_lazy("mysql://setup:setup@127.0.0.1:3306/setup")
+                        .unwrap_or_else(|e| fatal_error(&format!("Internal error: {}", e)))
+                })
+            };
+
+            if configured {
+                app.manage(AppState::new(pool));
+            } else {
+                app.manage(AppState::unconfigured(pool));
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            // Setup wizard
+            commands::setup::get_setup_status,
+            commands::setup::test_db_connection,
+            commands::setup::save_setup_config,
+            commands::setup::restart_app,
             // Auth
             commands::auth::login,
             commands::auth::logout,
@@ -157,7 +208,7 @@ pub fn run() {
             commands::settings::set_active_template,
             commands::settings::read_template_file,
             commands::settings::scan_template_layout,
-            // Downloads — save files to user's Downloads folder
+            // Downloads
             commands::downloads::write_text_to_downloads,
             commands::downloads::write_bytes_to_downloads,
             // License

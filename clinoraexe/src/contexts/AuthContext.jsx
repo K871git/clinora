@@ -1,11 +1,19 @@
-import { createContext, useState, useCallback } from 'react'
+import { createContext, useState, useCallback, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 
 export const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [loading] = useState(false)
+  const [loading, setLoading] = useState(true) // true until session check completes
+
+  // On every mount (including Ctrl+R reload) restore session from Rust backend
+  useEffect(() => {
+    invoke('get_me')
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false))
+  }, [])
 
   const login = useCallback(async (email, password, role = 'doctor') => {
     const newUser = await invoke('login', { payload: { email, password, role } })

@@ -60,12 +60,12 @@
   padding: 12px 14px;
   border: 1.5px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 13px;
   font-family: 'Consolas', 'Courier New', monospace;
-  letter-spacing: 1.5px;
+  letter-spacing: 0;
   color: #0f172a;
   background: #f8fafc;
-  text-align: center;
+  text-align: left;
   outline: none;
   transition: border-color 0.15s;
   box-sizing: border-box;
