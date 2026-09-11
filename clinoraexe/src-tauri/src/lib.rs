@@ -65,8 +65,28 @@ fn load_db_url() -> String {
     fatal_error("Cannot load database URL from config.");
 }
 
+#[cfg(windows)]
+fn show_error_dialog(msg: &str) {
+    use windows::core::PCWSTR;
+    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+    let title: Vec<u16> = "Clinora — Error\0".encode_utf16().collect();
+    let text: Vec<u16> = format!("{}\0", msg).encode_utf16().collect();
+    unsafe {
+        MessageBoxW(None, PCWSTR(text.as_ptr()), PCWSTR(title.as_ptr()), MB_OK | MB_ICONERROR);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Catch every Rust panic and show it as a dialog instead of silently exiting.
+    std::panic::set_hook(Box::new(|info| {
+        let msg = format!("Clinora encountered an unexpected error and must close.\n\n{}", info);
+        #[cfg(windows)]
+        show_error_dialog(&msg);
+        #[cfg(not(windows))]
+        eprintln!("CRASH: {}", msg);
+    }));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
@@ -99,11 +119,13 @@ pub fn run() {
                 })
             } else {
                 // Not yet configured — create a lazy placeholder pool.
-                // The setup wizard will save real config and restart the app.
-                MySqlPoolOptions::new()
-                    .max_connections(1)
-                    .connect_lazy("mysql://setup:setup@127.0.0.1:3306/setup")
-                    .unwrap_or_else(|e| fatal_error(&format!("Internal error: {}", e)))
+                // connect_lazy still needs a Tokio context even though it never connects.
+                tauri::async_runtime::block_on(async {
+                    MySqlPoolOptions::new()
+                        .max_connections(1)
+                        .connect_lazy("mysql://setup:setup@127.0.0.1:3306/setup")
+                        .unwrap_or_else(|e| fatal_error(&format!("Internal error: {}", e)))
+                })
             };
 
             if configured {
