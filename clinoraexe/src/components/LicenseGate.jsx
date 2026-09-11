@@ -60,12 +60,11 @@ export default function LicenseGate({ children }) {
             <input
               className={`lg-input${error ? ' lg-input--error' : ''}`}
               type="text"
-              placeholder="CLIN-XXXX-XXXX-XXXX-XXXX"
+              placeholder="Paste your license key here"
               value={key}
-              onChange={e => { setKey(e.target.value.toUpperCase()); setError('') }}
+              onChange={e => { setKey(e.target.value); setError('') }}
               spellCheck={false}
               autoComplete="off"
-              maxLength={24}
               disabled={loading}
             />
             {error && <p className="lg-error">{error}</p>}

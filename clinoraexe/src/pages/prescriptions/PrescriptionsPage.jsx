@@ -126,7 +126,7 @@ const COLUMNS = [
       const display = first.length > 16 ? first.slice(0, 15) + '…' : first
       return `<div class="rx-medicine-cell">
         <span class="rx-med-badge">${display}</span>
-        ${allNames.length > 1 ? `<button class="rx-eye-btn" onclick="event.stopPropagation();window.__rxMedModal&&window.__rxMedModal(${row.id})" title="View all medicines">
+        ${allNames.length > 1 ? `<button class="rx-eye-btn" data-action="med-modal" data-id="${row.id}" title="View all medicines">
           ${ICON_EYE}
         </button>` : ''}
       </div>`
@@ -151,14 +151,14 @@ const COLUMNS = [
       if (type !== 'display') return ''
       const isDraft = row.status === 'draft'
       return `<div class="rx-row-actions">
-        <button class="rx-act-btn" onclick="event.stopPropagation();window.__rxViewPdf&&window.__rxViewPdf(${row.id})" title="View PDF">
+        <button class="rx-act-btn" data-action="view-pdf" data-id="${row.id}" title="View PDF">
           ${ICON_EYE} PDF
         </button>
         ${isDraft ? `
-        <button class="rx-act-btn" onclick="event.stopPropagation();window.__rxEditRx&&window.__rxEditRx(${row.id})" title="Edit">
+        <button class="rx-act-btn" data-action="edit" data-id="${row.id}" title="Edit">
           ${ICON_EDIT}
         </button>
-        <button class="rx-act-btn rx-act-btn--del" onclick="event.stopPropagation();window.__rxDeleteRx&&window.__rxDeleteRx(${row.id})" title="Delete">
+        <button class="rx-act-btn rx-act-btn--del" data-action="delete" data-id="${row.id}" title="Delete">
           ${ICON_TRASH}
         </button>` : ''}
       </div>`
@@ -193,7 +193,6 @@ function TemplatesPanel() {
   const [templates,  setTemplates]  = useState([])
   const [tplStatus,  setTplStatus]  = useState('loading')
   const [uploading,  setUploading]  = useState(false)
-  const [uploadPct,  setUploadPct]  = useState(0)
   const [settingId,  setSettingId]  = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const fileRef = useRef(null)
@@ -214,9 +213,7 @@ function TemplatesPanel() {
     setUploading(true)
     setUploadPct(0)
     try {
-      const { data } = await uploadTemplate(file, (ev) => {
-        if (ev.total) setUploadPct(Math.round((ev.loaded / ev.total) * 100))
-      })
+      const { data } = await uploadTemplate(file)
       setTemplates(prev => [...prev, data])
     } catch {
       alert('Upload failed. Check file type (PDF/PNG/JPG/WebP) and size (max 10 MB).')
@@ -272,7 +269,7 @@ function TemplatesPanel() {
           {uploading ? (
             <>
               <Spinner size={14} />
-              {uploadPct > 0 ? `${uploadPct}%` : 'Uploading…'}
+              Uploading…
             </>
           ) : (
             <>
@@ -386,6 +383,7 @@ export default function PrescriptionsPage() {
   const [dateRange,      setDateRange]      = useState('')
   const [dateDropdown,   setDateDropdown]   = useState(false)
   const [medModal,       setMedModal]       = useState(null)
+  const tableWrapRef = useRef(null)
 
   // Filter entirely in React — no DT.ext.search needed
   const filteredPrescriptions = useMemo(() => {
@@ -415,31 +413,36 @@ export default function PrescriptionsPage() {
       .catch(() => setLoadStatus('error'))
   }, [])
 
-  // Medicine modal
+  // Delegated click handler for all DataTable action buttons (data-action attributes).
+  // Avoids inline onclick strings which are blocked by CSP in the built app.
   useEffect(() => {
-    window.__rxMedModal = (id) => setMedModal(_medsCache.get(id) ?? [])
-    return () => { delete window.__rxMedModal }
-  }, [])
-
-  // Row action handlers
-  useEffect(() => {
-    window.__rxViewPdf = (id) => navigate(`/prescriptions/${id}/print`)
-    window.__rxEditRx = (id) => navigate(`/prescriptions/${id}`)
-    window.__rxDeleteRx = async (id) => {
-      const ok = await confirmDelete({ title: 'Delete prescription?', text: 'This cannot be undone.' })
-      if (!ok) return
-      try {
-        await deletePrescription(id)
-        setPrescriptions(prev => prev.filter(p => p.id !== Number(id)))
-      } catch {
-        alert('Could not delete — please try again.')
+    const el = tableWrapRef.current
+    if (!el) return
+    const handler = async (e) => {
+      const btn = e.target.closest('[data-action]')
+      if (!btn) return
+      e.stopPropagation()
+      const action = btn.dataset.action
+      const id     = Number(btn.dataset.id)
+      if (action === 'med-modal') {
+        setMedModal(_medsCache.get(id) ?? [])
+      } else if (action === 'view-pdf') {
+        navigate(`/prescriptions/${id}/print`)
+      } else if (action === 'edit') {
+        navigate(`/prescriptions/${id}`)
+      } else if (action === 'delete') {
+        const ok = await confirmDelete({ title: 'Delete prescription?', text: 'This cannot be undone.' })
+        if (!ok) return
+        try {
+          await deletePrescription(id)
+          setPrescriptions(prev => prev.filter(p => p.id !== id))
+        } catch {
+          alert('Could not delete — please try again.')
+        }
       }
     }
-    return () => {
-      delete window.__rxViewPdf
-      delete window.__rxEditRx
-      delete window.__rxDeleteRx
-    }
+    el.addEventListener('click', handler)
+    return () => el.removeEventListener('click', handler)
   }, [navigate])
 
   // Close date dropdown on outside click
@@ -475,7 +478,7 @@ export default function PrescriptionsPage() {
   const dateLabel = DATE_RANGES.find(r => r.key === dateRange)?.label ?? 'All Time'
 
   return (
-    <div>
+    <div ref={tableWrapRef}>
       {/* Page-level tabs */}
       <div className="rx-page-tabs">
         <button

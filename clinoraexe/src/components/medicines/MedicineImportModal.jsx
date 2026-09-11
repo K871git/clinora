@@ -9,57 +9,147 @@ const ACCEPT = '.csv,.txt,.xls,.xlsx,.pdf,.docx'
 
 // ── Column detection ─────────────────────────────────────────────────────────
 
-function detectCols(headers) {
-  const n = s => String(s ?? '').toLowerCase().replace(/[\s_\-]+/g, ' ').trim()
-  const taken = new Set()
+// Normalize header text: lowercase + collapse all punctuation/whitespace to spaces
+function normH(s) {
+  return String(s ?? '').toLowerCase()
+    .replace(/[_\-\/|:().]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
-  function pick(patterns) {
-    for (const p of patterns) {
-      const i = headers.findIndex((h, idx) => !taken.has(idx) && n(h) === p)
-      if (i >= 0) { taken.add(i); return i }
-    }
-    for (const p of patterns) {
-      const i = headers.findIndex((h, idx) => !taken.has(idx) && n(h).includes(p))
-      if (i >= 0) { taken.add(i); return i }
-    }
-    return -1
+// Serial-number columns — never map these to any field
+const SERIAL_RE = /^(sr\.?\s*no\.?|s\.?\s*no\.?|sl\.?\s*no\.?|no\.?|#|index|row|sn|serial|id)$/i
+
+const FIELD_PATTERNS = {
+  name: {
+    exact:   ['name', 'medicine name', 'drug name', 'brand name', 'product name', 'item name',
+              'tab and companies name', 'companies name', 'tab name', 'medicine', 'drug', 'brand',
+              'product', 'item', 'tablet name', 'capsule name'],
+    partial: ['medicine name', 'drug name', 'brand name', 'product name', 'item name', 'company name'],
+  },
+  generic_name: {
+    exact:   ['generic name', 'generic', 'salt', 'salt name', 'composition', 'active ingredient',
+              'content', 'contents', 'molecule', 'ingredient', 'ingredients', 'formula', 'inn',
+              'chemical name', 'api'],
+    partial: ['generic', 'salt name', 'composit', 'ingredient', 'content', 'molecule', 'formula'],
+  },
+  category: {
+    exact:   ['category', 'cat', 'drug category', 'medicine category', 'therapeutic class',
+              'drug class', 'class', 'group', 'drug type', 'uses', 'use',
+              'indication', 'indications', 'therapeutic area', 'therapeutic', 'pharmacology'],
+    partial: ['categor', 'therapeut', 'indicat', 'pharmacol'],
+  },
+  unit: {
+    exact:   ['unit', 'uom', 'form', 'dosage form', 'unit of measure', 'pack type',
+              'pack', 'formulation', 'route', 'strength unit', 'dosage unit'],
+    partial: ['dosage form', 'formulat', 'pack type'],
+  },
+  quantity: {
+    exact:   ['quantity', 'qty', 'stock', 'stocks', 'stock qty', 'available', 'available qty',
+              'current stock', 'opening stock', 'inventory', 'units in stock', 'balance', 'closing stock'],
+    partial: ['quantity', 'stock', 'inventor', 'available qty', 'balance'],
+  },
+  price: {
+    exact:   ['price', 'mrp', 'rate', 'cost', 'sp', 'selling price', 'sale price',
+              'unit price', 'retail price', 'amount', 'unit cost', 'trade price'],
+    partial: ['price', 'mrp', 'rate', 'cost', 'amount'],
+  },
+}
+
+function detectCols(headers) {
+  const fields = Object.keys(FIELD_PATTERNS)
+
+  // Score every (field, column) pair
+  const candidates = []
+  headers.forEach((h, ci) => {
+    const nh = normH(h)
+    if (!nh || SERIAL_RE.test(nh)) return   // skip empty / serial-number columns
+
+    fields.forEach(field => {
+      const { exact, partial } = FIELD_PATTERNS[field]
+      let score = 0
+      if (exact.some(p => nh === p))                                   score = 10
+      else if (exact.some(p => nh.includes(p) || p.includes(nh) && nh.length > 4)) score = 7
+      else if (partial.some(p => nh.includes(p) && p.length >= 4))    score = 4
+      if (score > 0) candidates.push({ field, col: ci, score })
+    })
+  })
+
+  // Greedy: assign highest-score pairs first, one field ↔ one column
+  candidates.sort((a, b) => b.score - a.score)
+  const takenCols   = new Set()
+  const takenFields = new Set()
+  const result      = {}
+
+  for (const { field, col, score } of candidates) {
+    if (takenCols.has(col) || takenFields.has(field)) continue
+    result[field] = col
+    takenCols.add(col)
+    takenFields.add(field)
   }
 
   return {
-    name:         pick(['name', 'medicine name', 'drug name', 'medicine', 'drug', 'item name', 'item', 'tab and companies name', 'companies name', 'brand name', 'brand']),
-    generic_name: pick(['generic name', 'generic', 'salt', 'composition', 'active ingredient', 'content', 'contents', 'molecule', 'ingredient']),
-    category:     pick(['category', 'drug category', 'type', 'drug type', 'class', 'group', 'uses', 'use', 'indication', 'indications', 'therapeutic']),
-    unit:         pick(['unit', 'form', 'dosage form', 'uom', 'unit form']),
-    quantity:     pick(['quantity', 'qty', 'stock qty', 'stock', 'stocks', 'inventory']),
-    price:        pick(['price', 'selling price', 'unit price', 'mrp', 'rate', 'cost', 'sp', 'sale price']),
+    name:         result.name         ?? -1,
+    generic_name: result.generic_name ?? -1,
+    category:     result.category     ?? -1,
+    unit:         result.unit         ?? -1,
+    quantity:     result.quantity     ?? -1,
+    price:        result.price        ?? -1,
   }
+}
+
+// ── Row interpretation ───────────────────────────────────────────────────────
+
+// A row looks like a header if ≥2 of its non-empty cells are short label-like text
+// matching known field keywords — and are NOT pure numbers
+const HEADER_KW = /name|generic|categor|unit|qty|quantity|price|rate|mrp|stock|brand|salt|compos|drug|medicine|dosage|form|uom|inventor|content|uses|indicat|therapeut|product|item|type|class|group|formula|ingredient/i
+
+function rowIsHeader(row) {
+  const cells = row.map(c => String(c ?? '').trim()).filter(Boolean)
+  if (cells.length === 0) return false
+  const hits = cells.filter(c =>
+    c.length < 80 &&
+    !/^\d+(\.\d+)?$/.test(c) &&   // not a pure number
+    HEADER_KW.test(c)
+  )
+  // Require at least 2 header-like cells (or 1 if the file only has 1 column)
+  return hits.length >= Math.min(2, cells.length)
 }
 
 function interpretRows(rawRows) {
   if (!rawRows || rawRows.length === 0) throw new Error('No data found in file')
 
-  const first = rawRows[0].map(c => String(c ?? ''))
-  const isHeader = first.some(c => /name|generic|category|unit|qty|quantity|price|rate|mrp|stock/i.test(c))
+  // Search first 6 rows for a header (handles title rows above the real header)
+  let headerIdx = -1
+  for (let i = 0; i < Math.min(6, rawRows.length); i++) {
+    if (rowIsHeader(rawRows[i].map(c => String(c ?? '').trim()))) {
+      headerIdx = i
+      break
+    }
+  }
 
   let colMap, dataRows
-  if (isHeader) {
-    colMap = detectCols(first)
-    dataRows = rawRows.slice(1)
+  if (headerIdx >= 0) {
+    colMap   = detectCols(rawRows[headerIdx].map(c => String(c ?? '').trim()))
+    dataRows = rawRows.slice(headerIdx + 1)
   } else {
-    colMap = { name: 0, generic_name: 1, category: 2, unit: 3, quantity: 4, price: 5 }
+    // No header detected — only assume column 0 is the name, leave others unguessed
+    colMap   = { name: 0, generic_name: -1, category: -1, unit: -1, quantity: -1, price: -1 }
     dataRows = rawRows
   }
 
   if (colMap.name < 0) colMap.name = 0
 
-  return dataRows.map(row => ({
-    name:         String(row[colMap.name] ?? '').trim(),
-    generic_name: colMap.generic_name >= 0 ? (String(row[colMap.generic_name] ?? '').trim() || null) : null,
-    category:     colMap.category >= 0 ? (String(row[colMap.category] ?? '').trim() || null) : null,
-    unit:         colMap.unit >= 0 ? (String(row[colMap.unit] ?? '').trim() || null) : null,
-    quantity:     colMap.quantity >= 0 ? (parseInt(String(row[colMap.quantity] ?? '0').replace(/[^\d]/g, ''), 10) || 0) : 0,
-    price:        colMap.price >= 0 ? (parseFloat(String(row[colMap.price] ?? '').replace(/[₹,\s]/g, '')) || null) : null,
-  })).filter(item => item.name)
+  return dataRows
+    .map(row => ({
+      name:         String(row[colMap.name] ?? '').trim(),
+      generic_name: colMap.generic_name >= 0 ? (String(row[colMap.generic_name] ?? '').trim() || null) : null,
+      category:     colMap.category     >= 0 ? (String(row[colMap.category]     ?? '').trim() || null) : null,
+      unit:         colMap.unit         >= 0 ? (String(row[colMap.unit]         ?? '').trim() || null) : null,
+      quantity:     colMap.quantity     >= 0 ? (parseInt(String(row[colMap.quantity] ?? '0').replace(/[^\d]/g, ''), 10) || 0) : 0,
+      price:        colMap.price        >= 0 ? (parseFloat(String(row[colMap.price] ?? '').replace(/[₹,\s]/g, '')) || null) : null,
+    }))
+    .filter(item => item.name && !/^\d+$/.test(item.name))  // drop pure-number rows (serial numbers)
 }
 
 // ── File parsing ─────────────────────────────────────────────────────────────

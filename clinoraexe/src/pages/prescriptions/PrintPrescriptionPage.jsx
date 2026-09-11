@@ -111,31 +111,38 @@ export default function PrintPrescriptionPage() {
     return () => { cancelled = true }
   }, [prescriptionId])
 
-  // For PDF templates: read file as blob URL (avoids asset:// D%3A encoding on Windows)
-  // and scan the PDF text coordinates to position the overlay at exact mm positions.
+  // Read template file as blob URL (works for both PDF and image templates).
+  // Using blob URLs avoids asset:// path encoding issues on Windows.
   useEffect(() => {
     if (pageStatus !== 'done' || !settings) return
     const templatePath = settings.prescription_template_path
-    const ext = settings.prescription_template?.split('.').pop()?.toLowerCase() ?? ''
-    if (ext !== 'pdf' || !templatePath) return
+    const ext = (settings.prescription_template ?? '').split('.').pop()?.toLowerCase() ?? ''
+    if (!templatePath || !ext) return
 
-    let blobUrl = null
+    const isPdfExt   = ext === 'pdf'
+    const isImageExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext)
+    if (!isPdfExt && !isImageExt) return
+
+    let createdUrl = null
 
     invoke('read_template_file', { path: templatePath })
       .then(b64 => {
         const binary = atob(b64)
         const bytes = new Uint8Array(binary.length)
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-        blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
-        setPdfBlobUrl(blobUrl)
+        const mime = isPdfExt ? 'application/pdf' : `image/${ext === 'jpg' ? 'jpeg' : ext}`
+        createdUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
+        setPdfBlobUrl(createdUrl)
       })
       .catch(() => setPdfBlobUrl(null))
 
-    invoke('scan_template_layout', { path: templatePath })
-      .then(layout => setPdfLayout(layout))
-      .catch(() => setPdfLayout(null))
+    if (isPdfExt) {
+      invoke('scan_template_layout', { path: templatePath })
+        .then(layout => setPdfLayout(layout))
+        .catch(() => setPdfLayout(null))
+    }
 
-    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl) }
+    return () => { if (createdUrl) URL.revokeObjectURL(createdUrl) }
   }, [pageStatus, settings])
 
   /* ── Loading / error ── */
@@ -170,11 +177,11 @@ export default function PrintPrescriptionPage() {
       ? `Dr. ${prescription.doctor.name}`
       : 'Doctor'
 
-  const templateUrl = ps.prescription_template_url ?? null
-  const templateExt = ps.prescription_template?.split('.').pop()?.toLowerCase() ?? ''
-  const isPdf   = !!templateUrl && templateExt === 'pdf'
-  const isImage = !!templateUrl && !isPdf
-  const hasTemplate = isPdf || isImage
+  const templatePath = ps.prescription_template_path ?? null
+  const templateExt  = (ps.prescription_template ?? '').split('.').pop()?.toLowerCase() ?? ''
+  const isPdf        = !!templatePath && templateExt === 'pdf'
+  const isImage      = !!templatePath && !isPdf && ['jpg', 'jpeg', 'png', 'webp'].includes(templateExt)
+  const hasTemplate  = isPdf || isImage
 
   /* ── No-template warning ── */
   const noTemplateWarn = !hasTemplate && (
@@ -305,10 +312,10 @@ export default function PrintPrescriptionPage() {
 
       <div className="print-paper print-paper--template">
 
-        {/* Background — image template */}
-        {isImage && (
+        {/* Background — image template (blob URL) */}
+        {isImage && pdfBlobUrl && (
           <img
-            src={templateUrl}
+            src={pdfBlobUrl}
             alt=""
             className="print-template-bg-img"
             aria-hidden="true"

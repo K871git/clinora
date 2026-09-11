@@ -24,12 +24,12 @@ export default function App() {
   if (!configured) return <SetupWizard />
 
   return (
-    // <LicenseGate>
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
-    // </LicenseGate>
+    <LicenseGate>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </LicenseGate>
   )
 }
