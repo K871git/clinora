@@ -1,6 +1,7 @@
 pub mod utils;
 pub mod downloads;
 pub mod license;
+pub mod setup;
 pub mod auth;
 pub mod dashboard;
 pub mod patients;

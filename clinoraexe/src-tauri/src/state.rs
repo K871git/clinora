@@ -25,8 +25,8 @@ pub struct SessionUser {
 pub struct AppState {
     pub db: MySqlPool,
     pub session: Mutex<Option<SessionUser>>,
-    /// Tracks (failure_count, time_of_first_failure) per email for login rate-limiting.
     pub login_attempts: Mutex<HashMap<String, (u32, Instant)>>,
+    pub is_configured: bool,
 }
 
 impl AppState {
@@ -35,6 +35,16 @@ impl AppState {
             db,
             session: Mutex::new(None),
             login_attempts: Mutex::new(HashMap::new()),
+            is_configured: true,
+        }
+    }
+
+    pub fn unconfigured(db: MySqlPool) -> Self {
+        AppState {
+            db,
+            session: Mutex::new(None),
+            login_attempts: Mutex::new(HashMap::new()),
+            is_configured: false,
         }
     }
 }

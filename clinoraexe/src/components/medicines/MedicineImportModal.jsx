@@ -171,7 +171,7 @@ export default function MedicineImportModal({ onClose, onDone }) {
 
         {/* ── Pick step ── */}
         {(step === 'pick' || step === 'parsing') && (
-          <div className="mim-body">
+          <div key="step-pick" className="mim-body">
             <div
               className={`mim-drop-zone${drag ? ' mim-drop-zone--drag' : ''}`}
               onDragOver={e => { e.preventDefault(); setDrag(true) }}
@@ -226,7 +226,7 @@ export default function MedicineImportModal({ onClose, onDone }) {
 
         {/* ── Preview step ── */}
         {(step === 'preview' || step === 'importing') && (
-          <div className="mim-body mim-body--preview">
+          <div key="step-preview" className="mim-body mim-body--preview">
             <div className="mim-preview-bar">
               <span className="mim-preview-count">
                 <strong>{rows.length}</strong> medicine{rows.length !== 1 ? 's' : ''} detected
