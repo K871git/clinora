@@ -27,6 +27,10 @@ import VisitsPage from '../pages/visits/VisitsPage'
 import DoctorHelpPage from '../pages/help/DoctorHelpPage'
 import DoctorRevenuePage from '../pages/revenue/DoctorRevenuePage'
 import PharmacyRevenuePage from '../pages/revenue/PharmacyRevenuePage'
+import GamesHubPage from '../pages/games/GamesHubPage'
+import SnakeGame from '../pages/games/SnakeGame'
+import TetrisGame from '../pages/games/TetrisGame'
+import FlappyGame from '../pages/games/FlappyGame'
 
 /* Forces PatientDetailPage to fully remount when :id changes, resetting all state */
 function KeyedPatientDetail() {
@@ -74,6 +78,10 @@ export default function AppRoutes() {
             <Route path="/revenue" element={<DoctorRevenuePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/help" element={<DoctorHelpPage />} />
+            <Route path="/games" element={<GamesHubPage />} />
+            <Route path="/games/snake" element={<SnakeGame />} />
+            <Route path="/games/tetris" element={<TetrisGame />} />
+            <Route path="/games/flappy" element={<FlappyGame />} />
           </Route>
 
           {/* Pharmacy */}
@@ -85,6 +93,10 @@ export default function AppRoutes() {
             <Route path="/pharmacy/help" element={<PharmacyHelpPage />} />
             <Route path="/pharmacy/revenue" element={<PharmacyRevenuePage />} />
             <Route path="/pharmacy/prescriptions/:prescriptionId" element={<PharmacyPrescriptionPage />} />
+            <Route path="/pharmacy/games" element={<GamesHubPage />} />
+            <Route path="/pharmacy/games/snake" element={<SnakeGame />} />
+            <Route path="/pharmacy/games/tetris" element={<TetrisGame />} />
+            <Route path="/pharmacy/games/flappy" element={<FlappyGame />} />
           </Route>
 
         </Route>

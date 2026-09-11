@@ -43,6 +43,7 @@ const DOCTOR_NAV = [
   { to: '/prescriptions', label: 'Prescriptions', icon: IconPrescription },
   { to: '/medicines',     label: 'Medicines',     icon: IconMedicines },
   { to: '/revenue',       label: 'Revenue',       icon: IconRevenue },
+  { to: '/games',         label: 'Games',         icon: IconGames },
 ]
 
 const PHARMACY_NAV = [
@@ -50,24 +51,33 @@ const PHARMACY_NAV = [
   { to: '/pharmacy/history', label: 'History', icon: IconHistory },
   { to: '/pharmacy/stock',   label: 'Stock',   icon: IconStock },
   { to: '/pharmacy/revenue', label: 'Revenue', icon: IconRevenue },
+  { to: '/pharmacy/games',   label: 'Games',   icon: IconGames },
 ]
 
 const PAGE_TITLES = {
-  '/':                   'Dashboard',
-  '/patients':           'Patients',
-  '/prescriptions':      'Prescriptions',
-  '/medicines':          'Medicine Library',
-  '/settings':           'Settings',
-  '/profile':            'My Profile',
-  '/pharmacy':           'Queue',
-  '/pharmacy/history':   'History',
-  '/pharmacy/stock':     'Stock',
-  '/pharmacy/settings':  'Settings',
-  '/visits':             'Visits',
-  '/pharmacy/help':      'How to Use',
-  '/help':               'How to Use',
-  '/revenue':            'Revenue',
-  '/pharmacy/revenue':   'Revenue',
+  '/':                    'Dashboard',
+  '/patients':            'Patients',
+  '/prescriptions':       'Prescriptions',
+  '/medicines':           'Medicine Library',
+  '/settings':            'Settings',
+  '/profile':             'My Profile',
+  '/pharmacy':            'Queue',
+  '/pharmacy/history':    'History',
+  '/pharmacy/stock':      'Stock',
+  '/pharmacy/settings':   'Settings',
+  '/visits':              'Visits',
+  '/pharmacy/help':       'How to Use',
+  '/help':                'How to Use',
+  '/revenue':             'Revenue',
+  '/pharmacy/revenue':    'Revenue',
+  '/games':               'Game Room',
+  '/games/snake':         'Snake',
+  '/games/tetris':        'Tetris',
+  '/games/flappy':        'Flappy Bird',
+  '/pharmacy/games':      'Game Room',
+  '/pharmacy/games/snake':'Snake',
+  '/pharmacy/games/tetris':'Tetris',
+  '/pharmacy/games/flappy':'Flappy Bird',
 }
 
 export default function AppLayout() {
@@ -629,6 +639,18 @@ function IconRx() {
       <path d="M10 8 v36" />
       <path d="M10 8 h16 a13 13 0 0 1 0 22 H10" />
       <path d="M26 30 L44 46" />
+    </svg>
+  )
+}
+
+function IconGames() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="6" width="20" height="12" rx="4" />
+      <path d="M8 12h4M10 10v4" />
+      <circle cx="16" cy="11" r="1" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="13" r="1" fill="currentColor" stroke="none" />
     </svg>
   )
 }
