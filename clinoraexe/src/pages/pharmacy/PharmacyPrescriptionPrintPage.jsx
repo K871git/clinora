@@ -177,8 +177,16 @@ export default function PharmacyPrescriptionPrintPage() {
         {prescription.doctor_notes && (
           <div className="print-notes-section" style={{ marginTop: 14 }}>
             <hr className="print-rule" />
-            <div className="print-notes-label">Notes</div>
+            <div className="print-notes-label">Doctor Notes</div>
             <div className="print-notes-text">{prescription.doctor_notes}</div>
+          </div>
+        )}
+
+        {/* Pharmacist notes */}
+        {prescription.pharmacist_notes && (
+          <div className="print-notes-section" style={{ marginTop: 10 }}>
+            <div className="print-notes-label">Pharmacist Notes</div>
+            <div className="print-notes-text">{prescription.pharmacist_notes}</div>
           </div>
         )}
 

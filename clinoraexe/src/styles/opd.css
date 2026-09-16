@@ -1,0 +1,111 @@
+/* ── OPD Register ─────────────────────────────────────────────────────── */
+.opd-page { padding: var(--space-lg); max-width: 1200px; }
+
+.opd-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+.opd-title { font-size: 22px; font-weight: 700; color: var(--clr-text); margin: 0 0 2px; }
+.opd-date-label { font-size: 13px; color: var(--clr-text-muted); }
+.opd-new-btn { font-size: 13px; }
+
+/* Date nav */
+.opd-date-nav {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: var(--space-md);
+}
+.opd-nav-btn {
+  padding: 6px 14px; border-radius: var(--radius-md);
+  border: 1px solid var(--clr-border); background: var(--clr-surface);
+  color: var(--clr-text); font-size: 13px; cursor: pointer; transition: border-color .15s;
+}
+.opd-nav-btn:hover:not(:disabled) { border-color: var(--clr-primary); color: var(--clr-primary); }
+.opd-nav-btn:disabled { opacity: .45; cursor: not-allowed; }
+.opd-nav-btn--today { color: var(--clr-primary); border-color: var(--clr-primary); }
+.opd-date-input {
+  padding: 6px 10px; border-radius: var(--radius-md); border: 1px solid var(--clr-border);
+  background: var(--clr-surface); color: var(--clr-text); font-size: 13px; cursor: pointer;
+}
+
+/* Stats bar */
+.opd-stats {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+.opd-stat {
+  background: var(--clr-surface); border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md); padding: 10px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 80px;
+}
+.opd-stat-val { font-size: 20px; font-weight: 700; color: var(--clr-text); }
+.opd-stat-lbl { font-size: 11px; color: var(--clr-text-muted); text-transform: uppercase; letter-spacing: .4px; }
+.opd-stat--open .opd-stat-val  { color: var(--clr-warning); }
+.opd-stat--done .opd-stat-val  { color: var(--clr-success); }
+.opd-stat--fee  .opd-stat-val  { color: var(--clr-primary); }
+.opd-stat--paid .opd-stat-val  { color: var(--clr-success); }
+
+/* Empty */
+.opd-empty {
+  text-align: center; padding: 60px 20px;
+  color: var(--clr-text-muted); font-size: 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+
+/* Table */
+.opd-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--clr-border); }
+.opd-table { width: 100%; border-collapse: collapse; background: var(--clr-surface); font-size: 13px; }
+.opd-table thead th {
+  padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .4px; color: var(--clr-text-muted);
+  background: var(--clr-bg); border-bottom: 1px solid var(--clr-border);
+}
+.opd-tr {
+  cursor: pointer; transition: background .1s;
+  border-bottom: 1px solid var(--clr-border);
+}
+.opd-tr:last-child { border-bottom: none; }
+.opd-tr:hover { background: var(--clr-bg); }
+.opd-table td { padding: 10px 12px; vertical-align: middle; }
+
+.opd-th-num,  .opd-td-num  { width: 36px; text-align: center; color: var(--clr-text-muted); font-size: 12px; }
+.opd-th-time, .opd-td-time { width: 72px; color: var(--clr-text-muted); font-size: 12px; white-space: nowrap; }
+.opd-th-age,  .opd-td-age  { width: 72px; color: var(--clr-text-muted); font-size: 12px; }
+.opd-th-status,.opd-td-status{ width: 80px; text-align: center; }
+.opd-th-fee,  .opd-td-fee  { width: 90px; text-align: right; font-weight: 600; }
+.opd-th-pay,  .opd-td-pay  { width: 100px; }
+.opd-th-fu,   .opd-td-fu   { width: 90px; }
+
+.opd-td-name { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+.opd-avatar {
+  width: 32px; height: 32px; border-radius: 50%; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.opd-patient-name { font-weight: 600; color: var(--clr-text); }
+.opd-patient-mob  { font-size: 11px; color: var(--clr-text-muted); }
+.opd-gender { font-size: 11px; color: var(--clr-text-muted); }
+
+.opd-td-notes { max-width: 220px; color: var(--clr-text-muted); font-size: 12px; }
+.opd-muted    { color: var(--clr-text-muted); opacity: .5; }
+
+/* Status pill */
+.opd-status-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  letter-spacing: .3px;
+}
+.opd-status-pill--open      { background: rgba(245,158,11,.12); color: #b45309; }
+.opd-status-pill--completed { background: rgba(16,185,129,.12); color: #065f46; }
+
+[data-theme="dark"] .opd-status-pill--open      { color: #fcd34d; }
+[data-theme="dark"] .opd-status-pill--completed { color: #6ee7b7; }
+
+/* Payment dot */
+.opd-pay-dot { font-size: 12px; white-space: nowrap; }
+
+/* Follow-up badge */
+.opd-fu-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 99px;
+  background: rgba(99,102,241,.12); color: var(--clr-primary);
+  font-size: 11px; font-weight: 600;
+}

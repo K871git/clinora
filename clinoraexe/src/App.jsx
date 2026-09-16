@@ -23,13 +23,12 @@ export default function App() {
 
   if (!configured) return <SetupWizard />
 
+  /* DEV MODE — re-wrap with <LicenseGate> before production build */
   return (
-    <LicenseGate>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </LicenseGate>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   )
 }

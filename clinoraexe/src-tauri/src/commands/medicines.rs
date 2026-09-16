@@ -13,20 +13,30 @@ pub struct MedicinePayload {
     pub unit: Option<String>,
     pub quantity: Option<u32>,
     pub price: Option<f64>,
+    pub batch_number: Option<String>,
+    pub expiry_date: Option<String>,
+    pub received_date: Option<String>,
+    pub reorder_level: Option<u32>,
 }
 
 const MEDICINE_COLS: &str =
-    "id, clinic_id, name, generic_name, category, unit, quantity, price * 1e0 as price";
+    "id, clinic_id, name, generic_name, category, unit, quantity, price * 1e0 as price, \
+     batch_number, DATE_FORMAT(expiry_date, '%Y-%m-%d') as expiry_date, \
+     DATE_FORMAT(received_date, '%Y-%m-%d') as received_date, reorder_level";
 
 fn medicine_row(r: &sqlx::mysql::MySqlRow) -> Value {
     json!({
-        "id": r.get::<u64, _>("id"),
-        "name": r.get::<String, _>("name"),
-        "generic_name": r.get::<Option<String>, _>("generic_name"),
-        "category": r.get::<Option<String>, _>("category"),
-        "unit": r.get::<Option<String>, _>("unit"),
-        "quantity": r.get::<u32, _>("quantity"),
-        "price": r.get::<Option<f64>, _>("price")
+        "id":            r.get::<u64, _>("id"),
+        "name":          r.get::<String, _>("name"),
+        "generic_name":  r.get::<Option<String>, _>("generic_name"),
+        "category":      r.get::<Option<String>, _>("category"),
+        "unit":          r.get::<Option<String>, _>("unit"),
+        "quantity":      r.get::<u32, _>("quantity"),
+        "price":         r.get::<Option<f64>, _>("price"),
+        "batch_number":  r.get::<Option<String>, _>("batch_number"),
+        "expiry_date":   r.get::<Option<String>, _>("expiry_date"),
+        "received_date": r.get::<Option<String>, _>("received_date"),
+        "reorder_level": r.get::<u32, _>("reorder_level"),
     })
 }
 
@@ -55,16 +65,24 @@ pub async fn list_medicines(q: Option<String>, per_page: Option<u32>, state: Sta
 
 #[tauri::command]
 pub async fn create_medicine(data: MedicinePayload, state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session      = get_session(&state)?;
     let generic_name = data.generic_name.filter(|s| !s.trim().is_empty());
     let category     = data.category.filter(|s| !s.trim().is_empty());
     let unit         = data.unit.filter(|s| !s.trim().is_empty());
+    let batch_number = data.batch_number.filter(|s| !s.trim().is_empty());
+    let expiry_date  = data.expiry_date.filter(|s| !s.trim().is_empty());
+    let received_date= data.received_date.filter(|s| !s.trim().is_empty());
+    let reorder_level= data.reorder_level.unwrap_or(10);
+
     let result = sqlx::query(
-        "INSERT INTO medicines (clinic_id, name, generic_name, category, unit, quantity, price, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
+        "INSERT INTO medicines
+           (clinic_id, name, generic_name, category, unit, quantity, price,
+            batch_number, expiry_date, received_date, reorder_level, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
     )
     .bind(session.clinic_id).bind(&data.name).bind(&generic_name)
     .bind(&category).bind(&unit).bind(data.quantity.unwrap_or(0)).bind(data.price)
+    .bind(&batch_number).bind(&expiry_date).bind(&received_date).bind(reorder_level)
     .execute(&state.db).await?;
 
     let row = sqlx::query(&format!("SELECT {} FROM medicines WHERE id=?", MEDICINE_COLS))
@@ -74,22 +92,77 @@ pub async fn create_medicine(data: MedicinePayload, state: State<'_, AppState>) 
 
 #[tauri::command]
 pub async fn update_medicine(id: u64, data: MedicinePayload, state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session      = get_session(&state)?;
     let generic_name = data.generic_name.filter(|s| !s.trim().is_empty());
     let category     = data.category.filter(|s| !s.trim().is_empty());
     let unit         = data.unit.filter(|s| !s.trim().is_empty());
+    let batch_number = data.batch_number.filter(|s| !s.trim().is_empty());
+    let expiry_date  = data.expiry_date.filter(|s| !s.trim().is_empty());
+    let received_date= data.received_date.filter(|s| !s.trim().is_empty());
+    let reorder_level= data.reorder_level.unwrap_or(10);
+
     sqlx::query(
-        "UPDATE medicines SET name=?, generic_name=?, category=?, unit=?, quantity=?, price=?, updated_at=NOW()
+        "UPDATE medicines
+         SET name=?, generic_name=?, category=?, unit=?, quantity=?, price=?,
+             batch_number=?, expiry_date=?, received_date=?, reorder_level=?, updated_at=NOW()
          WHERE id=? AND clinic_id=?"
     )
     .bind(&data.name).bind(&generic_name).bind(&category)
     .bind(&unit).bind(data.quantity.unwrap_or(0)).bind(data.price)
+    .bind(&batch_number).bind(&expiry_date).bind(&received_date).bind(reorder_level)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
 
     let row = sqlx::query(&format!("SELECT {} FROM medicines WHERE id=?", MEDICINE_COLS))
         .bind(id).fetch_one(&state.db).await?;
     Ok(medicine_row(&row))
+}
+
+#[tauri::command]
+pub async fn get_stock_alerts(state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+
+    let expired_rows = sqlx::query(
+        "SELECT id, name, batch_number, DATE_FORMAT(expiry_date,'%Y-%m-%d') as expiry_date, quantity
+         FROM medicines
+         WHERE clinic_id=? AND expiry_date IS NOT NULL AND expiry_date < CURDATE() AND quantity > 0
+         ORDER BY expiry_date ASC LIMIT 20"
+    ).bind(session.clinic_id).fetch_all(&state.db).await?;
+
+    let expiring_rows = sqlx::query(
+        "SELECT id, name, batch_number, DATE_FORMAT(expiry_date,'%Y-%m-%d') as expiry_date, quantity
+         FROM medicines
+         WHERE clinic_id=? AND expiry_date IS NOT NULL
+           AND expiry_date >= CURDATE() AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+           AND quantity > 0
+         ORDER BY expiry_date ASC LIMIT 20"
+    ).bind(session.clinic_id).fetch_all(&state.db).await?;
+
+    let low_rows = sqlx::query(
+        "SELECT id, name, quantity, reorder_level
+         FROM medicines
+         WHERE clinic_id=? AND quantity <= reorder_level
+         ORDER BY quantity ASC LIMIT 20"
+    ).bind(session.clinic_id).fetch_all(&state.db).await?;
+
+    let map_exp = |r: &sqlx::mysql::MySqlRow| json!({
+        "id":           r.get::<u64, _>("id"),
+        "name":         r.get::<String, _>("name"),
+        "batch_number": r.get::<Option<String>, _>("batch_number"),
+        "expiry_date":  r.get::<Option<String>, _>("expiry_date"),
+        "quantity":     r.get::<u32, _>("quantity"),
+    });
+
+    Ok(json!({
+        "expired":       expired_rows.iter().map(&map_exp).collect::<Vec<_>>(),
+        "expiring_soon": expiring_rows.iter().map(&map_exp).collect::<Vec<_>>(),
+        "low_stock":     low_rows.iter().map(|r| json!({
+            "id":            r.get::<u64, _>("id"),
+            "name":          r.get::<String, _>("name"),
+            "quantity":      r.get::<u32, _>("quantity"),
+            "reorder_level": r.get::<u32, _>("reorder_level"),
+        })).collect::<Vec<_>>(),
+    }))
 }
 
 #[tauri::command]

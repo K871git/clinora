@@ -26,8 +26,8 @@ pub struct PaymentPayload {
 
 async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::MySqlPool) -> AppResult<Value> {
     let row = sqlx::query(
-        "SELECT pr.id, pr.status, pr.doctor_notes, pr.payment_status, pr.payment_notes,
-                pr.amount_paid * 1e0 as amount_paid,
+        "SELECT pr.id, pr.status, pr.doctor_notes, pr.pharmacist_notes, pr.payment_status, pr.payment_notes,
+                pr.amount_paid * 1e0 as amount_paid, pr.patient_id,
                 DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                 DATE_FORMAT(pr.sent_to_pharmacy_at, '%Y-%m-%dT%H:%i:%s') as sent_to_pharmacy_at,
                 DATE_FORMAT(pr.dispensed_at, '%Y-%m-%dT%H:%i:%s') as dispensed_at,
@@ -70,12 +70,15 @@ async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::My
         "dispensed_at": row.get::<Option<String>, _>("dispensed_at"),
         "completed_at": row.get::<Option<String>, _>("completed_at"),
         "doctor_notes": row.get::<Option<String>, _>("doctor_notes"),
+        "pharmacist_notes": row.get::<Option<String>, _>("pharmacist_notes"),
+        "consultation_notes": row.get::<Option<String>, _>("consultation_notes"),
         "payment_status": row.get::<String, _>("payment_status"),
         "amount_paid": row.get::<f64, _>("amount_paid"),
         "payment_notes": row.get::<Option<String>, _>("payment_notes"),
         "total_amount": total_amount,
         "items": items_json,
         "patient": {
+            "id": row.get::<u64, _>("patient_id"),
             "name": row.get::<String, _>("patient_name"),
             "mobile": row.get::<Option<String>, _>("patient_mobile"),
             "age": row.get::<Option<u32>, _>("age"),
@@ -424,4 +427,94 @@ pub async fn get_pharmacy_revenue_transactions(
     })).collect();
 
     Ok(json!({ "data": data }))
+}
+
+#[tauri::command]
+pub async fn save_pharmacist_notes(id: u64, notes: Option<String>, state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let notes = notes.filter(|s| !s.trim().is_empty());
+    sqlx::query(
+        "UPDATE prescriptions SET pharmacist_notes=?, updated_at=NOW()
+         WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
+    )
+    .bind(&notes).bind(id).bind(session.clinic_id)
+    .execute(&state.db).await?;
+    get_pharmacy_prescription_detail(id, session.clinic_id, &state.db).await
+}
+
+#[tauri::command]
+pub async fn get_pharmacy_stock_summary(state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let row = sqlx::query(
+        "SELECT
+           COUNT(*) as total_skus,
+           COALESCE(SUM(quantity), 0) as total_qty,
+           COALESCE(SUM(CASE WHEN price IS NOT NULL THEN quantity * price ELSE 0 END), 0) * 1e0 as stock_value,
+           SUM(quantity = 0) as out_of_stock,
+           SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date < CURDATE()) as expired,
+           SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date >= CURDATE()
+               AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)) as expiring_soon,
+           SUM(quantity <= reorder_level) as low_stock
+         FROM medicines WHERE clinic_id=?"
+    ).bind(session.clinic_id).fetch_one(&state.db).await?;
+
+    Ok(json!({
+        "total_skus":    row.get::<i64, _>("total_skus"),
+        "total_qty":     row.get::<i64, _>("total_qty"),
+        "stock_value":   row.get::<f64, _>("stock_value"),
+        "out_of_stock":  row.get::<i64, _>("out_of_stock"),
+        "expired":       row.get::<i64, _>("expired"),
+        "expiring_soon": row.get::<i64, _>("expiring_soon"),
+        "low_stock":     row.get::<i64, _>("low_stock"),
+    }))
+}
+
+#[tauri::command]
+pub async fn get_patient_dispense_history(
+    patient_id: u64,
+    exclude_id: u64,
+    state: State<'_, AppState>,
+) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let db = &state.db;
+
+    let rows = sqlx::query(
+        "SELECT pr.id,
+                DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
+                DATE_FORMAT(pr.completed_at, '%Y-%m-%dT%H:%i:%s') as completed_at,
+                u.name as doctor_name
+         FROM prescriptions pr
+         JOIN users u ON u.id = pr.doctor_id
+         WHERE pr.clinic_id = ? AND pr.patient_id = ? AND pr.id != ?
+           AND pr.status = 'completed' AND pr.deleted_at IS NULL
+         ORDER BY pr.completed_at DESC
+         LIMIT 5"
+    ).bind(session.clinic_id).bind(patient_id).bind(exclude_id).fetch_all(db).await?;
+
+    let mut history: Vec<Value> = Vec::new();
+    for row in &rows {
+        let rx_id: u64 = row.get("id");
+        let items = sqlx::query(
+            "SELECT medicine_name, dosage, frequency, duration
+             FROM prescription_items WHERE prescription_id = ? AND deleted_at IS NULL
+             ORDER BY sort_order ASC"
+        ).bind(rx_id).fetch_all(db).await?;
+
+        let medicines: Vec<Value> = items.iter().map(|r| json!({
+            "medicine_name": r.get::<String, _>("medicine_name"),
+            "dosage": r.get::<Option<String>, _>("dosage"),
+            "frequency": r.get::<Option<String>, _>("frequency"),
+            "duration": r.get::<Option<String>, _>("duration"),
+        })).collect();
+
+        history.push(json!({
+            "id": rx_id,
+            "prescribed_at": row.get::<Option<String>, _>("prescribed_at"),
+            "completed_at": row.get::<Option<String>, _>("completed_at"),
+            "doctor_name": row.get::<String, _>("doctor_name"),
+            "medicines": medicines,
+        }));
+    }
+
+    Ok(json!({ "data": history }))
 }

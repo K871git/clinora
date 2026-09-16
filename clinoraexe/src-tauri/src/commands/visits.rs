@@ -1,10 +1,12 @@
 use super::utils::parse_datetime;
+use serde::Serialize;
 use crate::error::AppResult;
 use crate::state::{get_session, AppState};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::Row;
 use tauri::State;
+use chrono::Local;
 
 #[derive(Deserialize)]
 pub struct VisitPayload {
@@ -32,6 +34,8 @@ fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
         "payment_status": r.get::<String, _>("payment_status"),
         "amount_paid": r.get::<f64, _>("amount_paid"),
         "payment_notes": r.get::<Option<String>, _>("payment_notes"),
+        "followup_date": r.get::<Option<String>, _>("followup_date"),
+        "followup_notes": r.get::<Option<String>, _>("followup_notes"),
         "patient": {
             "id": r.get::<u64, _>("patient_id"),
             "name": r.get::<String, _>("patient_name"),
@@ -50,6 +54,8 @@ static VISIT_COLS: &str =
      v.amount_paid * 1e0 as amount_paid,
      DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
      DATE_FORMAT(v.invoiced_at, '%Y-%m-%dT%H:%i:%s') as invoiced_at,
+     DATE_FORMAT(v.followup_date, '%Y-%m-%d') as followup_date,
+     v.followup_notes,
      p.name as patient_name, p.mobile as patient_mobile, u.name as doctor_name";
 
 #[tauri::command]
@@ -211,3 +217,157 @@ pub async fn record_visit_payment(id: u64, data: PaymentPayload, state: State<'_
     .execute(&state.db).await?;
     get_visit(id, state).await
 }
+
+// ── SOAP Notes ──────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct SoapPayload {
+    pub soap_subjective: Option<String>,
+    pub soap_objective:  Option<String>,
+    pub soap_assessment: Option<String>,
+    pub soap_plan:       Option<String>,
+}
+
+#[tauri::command]
+pub async fn get_soap_notes(id: u64, state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let row = sqlx::query(
+        "SELECT id, soap_subjective, soap_objective, soap_assessment, soap_plan
+         FROM visits WHERE id = ? AND clinic_id = ? AND deleted_at IS NULL"
+    )
+    .bind(id).bind(session.clinic_id)
+    .fetch_optional(&state.db).await?
+    .ok_or("Visit not found.")?;
+
+    Ok(json!({
+        "visit_id":        id,
+        "soap_subjective": row.get::<Option<String>, _>("soap_subjective"),
+        "soap_objective":  row.get::<Option<String>, _>("soap_objective"),
+        "soap_assessment": row.get::<Option<String>, _>("soap_assessment"),
+        "soap_plan":       row.get::<Option<String>, _>("soap_plan"),
+    }))
+}
+
+#[tauri::command]
+pub async fn save_soap_notes(id: u64, data: SoapPayload, state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+
+    sqlx::query(
+        "UPDATE visits SET soap_subjective=?, soap_objective=?, soap_assessment=?, soap_plan=?, updated_at=NOW()
+         WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
+    )
+    .bind(&data.soap_subjective)
+    .bind(&data.soap_objective)
+    .bind(&data.soap_assessment)
+    .bind(&data.soap_plan)
+    .bind(id).bind(session.clinic_id)
+    .execute(&state.db).await?;
+
+    get_soap_notes(id, state).await
+}
+
+// ── Follow-up ────────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn update_followup(
+    id:             u64,
+    followup_date:  Option<String>,
+    followup_notes: Option<String>,
+    state:          State<'_, AppState>,
+) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    sqlx::query(
+        "UPDATE visits SET followup_date=?, followup_notes=?, updated_at=NOW()
+         WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
+    )
+    .bind(&followup_date).bind(&followup_notes)
+    .bind(id).bind(session.clinic_id)
+    .execute(&state.db).await?;
+    get_visit(id, state).await
+}
+
+#[tauri::command]
+pub async fn list_followups(state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let rows = sqlx::query(
+        "SELECT v.id,
+                DATE_FORMAT(v.followup_date, '%Y-%m-%d') as followup_date,
+                v.followup_notes,
+                DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
+                p.id as patient_id, p.name as patient_name, p.mobile as patient_mobile
+         FROM visits v
+         JOIN patients p ON p.id = v.patient_id
+         WHERE v.doctor_id = ? AND v.clinic_id = ?
+           AND v.followup_date IS NOT NULL
+           AND v.followup_date >= CURDATE()
+           AND v.deleted_at IS NULL AND p.deleted_at IS NULL
+         ORDER BY v.followup_date ASC
+         LIMIT 50"
+    )
+    .bind(session.id).bind(session.clinic_id)
+    .fetch_all(&state.db).await?;
+
+    let result: Vec<Value> = rows.iter().map(|r| json!({
+        "id":             r.get::<u64, _>("id"),
+        "followup_date":  r.get::<Option<String>, _>("followup_date"),
+        "followup_notes": r.get::<Option<String>, _>("followup_notes"),
+        "visited_at":     r.get::<Option<String>, _>("visited_at"),
+        "patient": {
+            "id":     r.get::<u64, _>("patient_id"),
+            "name":   r.get::<String, _>("patient_name"),
+            "mobile": r.get::<Option<String>, _>("patient_mobile"),
+        }
+    })).collect();
+
+    Ok(json!(result))
+}
+
+// ── OPD Daily Register ───────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn list_opd_register(
+    date:  Option<String>,
+    state: State<'_, AppState>,
+) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let target = date.unwrap_or_else(|| Local::now().format("%Y-%m-%d").to_string());
+
+    let rows = sqlx::query(
+        "SELECT v.id,
+                DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
+                v.consultation_notes, v.status,
+                v.consultation_fee * 1e0 as consultation_fee,
+                v.payment_status,
+                DATE_FORMAT(v.followup_date, '%Y-%m-%d') as followup_date,
+                p.id as patient_id, p.name as patient_name,
+                p.mobile as patient_mobile, p.age as patient_age,
+                p.gender as patient_gender
+         FROM visits v
+         JOIN patients p ON p.id = v.patient_id
+         WHERE v.clinic_id = ? AND DATE(v.visited_at) = ?
+           AND v.deleted_at IS NULL AND p.deleted_at IS NULL
+         ORDER BY v.visited_at ASC"
+    )
+    .bind(session.clinic_id).bind(&target)
+    .fetch_all(&state.db).await?;
+
+    let result: Vec<Value> = rows.iter().map(|r| json!({
+        "id":                 r.get::<u64, _>("id"),
+        "visited_at":         r.get::<Option<String>, _>("visited_at"),
+        "consultation_notes": r.get::<Option<String>, _>("consultation_notes"),
+        "status":             r.get::<String, _>("status"),
+        "consultation_fee":   r.get::<f64, _>("consultation_fee"),
+        "payment_status":     r.get::<String, _>("payment_status"),
+        "followup_date":      r.get::<Option<String>, _>("followup_date"),
+        "patient": {
+            "id":     r.get::<u64, _>("patient_id"),
+            "name":   r.get::<String, _>("patient_name"),
+            "mobile": r.get::<Option<String>, _>("patient_mobile"),
+            "age":    r.get::<Option<u32>, _>("patient_age"),
+            "gender": r.get::<Option<String>, _>("patient_gender"),
+        }
+    })).collect();
+
+    Ok(json!(result))
+}
+

@@ -1,8 +1,10 @@
 import '../../styles/settings-page.css'
 import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { getSettings, updateClinic, updatePrescriptionSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
+import { sanitizeMobile, validateMobile } from '../../lib/inputValidators'
 
 function flattenErrors(errors) {
   const out = {}
@@ -78,6 +80,10 @@ export default function SettingsPage() {
   const [clinicSaved,  setClinicSaved]  = useState(false)
   const [clinicErrors, setClinicErrors] = useState({})
   const [clinicApiErr, setClinicApiErr] = useState(null)
+
+  /* backup */
+  const [backing,     setBacking]     = useState(false)
+  const [backupMsg,   setBackupMsg]   = useState(null)
 
   /* prescription settings form */
   const [presc,       setPresc]       = useState(PRESC_DEFAULTS)
@@ -248,8 +254,15 @@ export default function SettingsPage() {
                 <input
                   className={`stg-input${clinicErrors.contact ? ' has-error' : ''}`}
                   value={clinic.contact}
-                  onChange={e => setClinicField('contact', e.target.value)}
-                  placeholder="e.g. +91 98765-43210"
+                  inputMode="numeric"
+                  maxLength={10}
+                  onChange={e => {
+                    const v = sanitizeMobile(e.target.value)
+                    setClinicField('contact', v)
+                    const err = validateMobile(v)
+                    if (err) setClinicErrors(prev => ({ ...prev, contact: err }))
+                  }}
+                  placeholder="10-digit number"
                 />
                 <span className="stg-hint">Phone number for patient callbacks.</span>
                 {clinicErrors.contact && <span className="stg-error">{clinicErrors.contact}</span>}
@@ -373,6 +386,49 @@ export default function SettingsPage() {
 
         </div>
       </form>
+
+      {/* ── Database Backup ────────────────────────────────────────────── */}
+      <div className="stg-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="stg-card-head">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+          Database Backup
+        </div>
+        <div className="stg-card-body">
+          <p style={{ fontSize: 13, color: 'var(--clr-text-muted)', marginBottom: 12 }}>
+            Export a full backup of your clinic database as a <code>.sql</code> file saved to your Downloads folder.
+            Run this regularly to protect your patient data.
+          </p>
+          {backupMsg && (
+            <div
+              className={`form-alert ${backupMsg.ok ? 'success' : 'danger'}`}
+              style={{ marginBottom: 12 }}
+            >
+              <p className="form-alert-body">{backupMsg.text}</p>
+            </div>
+          )}
+          <button
+            className="stg-save-btn"
+            disabled={backing}
+            onClick={async () => {
+              setBacking(true)
+              setBackupMsg(null)
+              try {
+                const result = await invoke('backup_database')
+                setBackupMsg({ ok: true, text: `Backup saved: ${result.filename} (${result.size_kb} KB)` })
+              } catch (err) {
+                setBackupMsg({ ok: false, text: typeof err === 'string' ? err : 'Backup failed — make sure mysqldump is installed.' })
+              } finally {
+                setBacking(false)
+              }
+            }}
+          >
+            {backing ? 'Creating backup…' : 'Download Backup Now'}
+          </button>
+        </div>
+      </div>
 
     </div>
   )

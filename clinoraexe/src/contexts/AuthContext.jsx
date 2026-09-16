@@ -1,18 +1,42 @@
-import { createContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useState, useCallback, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 
 export const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true) // true until session check completes
+  const [user,    setUser]    = useState(null)
+  const [loading, setLoading] = useState(true)
+  const pingRef = useRef(null)
 
-  // On every mount (including Ctrl+R reload) restore session from Rust backend
+  // Restore session on mount
   useEffect(() => {
     invoke('get_me')
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setLoading(false))
+  }, [])
+
+  function expireSession() {
+    sessionStorage.setItem('session_expired', 'true')
+    setUser(null)
+  }
+
+  // Periodic session ping every 5 minutes
+  useEffect(() => {
+    pingRef.current = setInterval(() => {
+      if (!user) return
+      invoke('get_me').catch((err) => {
+        const msg = typeof err === 'string' ? err : ''
+        if (msg.includes('Not authenticated')) expireSession()
+      })
+    }, 5 * 60 * 1000)
+    return () => clearInterval(pingRef.current)
+  }, [user])
+
+  // Global auth-expired event (from safeInvoke wrapper in invokeAuth.js)
+  useEffect(() => {
+    window.addEventListener('clinora:auth-expired', expireSession)
+    return () => window.removeEventListener('clinora:auth-expired', expireSession)
   }, [])
 
   const login = useCallback(async (email, password, role = 'doctor') => {

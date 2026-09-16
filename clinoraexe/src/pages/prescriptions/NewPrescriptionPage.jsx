@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getVisit } from '../../services/visitService'
 import { createPrescription } from '../../services/prescriptionService'
+import { getPatientAllergies } from '../../services/medicalHistoryService'
 import MedicineEditor from './MedicineEditor'
 import { newMedicineItem } from './medicineUtils'
 import Spinner from '../../components/ui/Spinner'
@@ -61,6 +62,7 @@ export default function NewPrescriptionPage() {
 
   const [visit, setVisit] = useState(null)
   const [visitStatus, setVisitStatus] = useState('loading')
+  const [allergies, setAllergies] = useState([])
 
   const [prescribedAt, setPrescribedAt] = useState(() => nowLocal())
   const [doctorNotes, setDoctorNotes] = useState('')
@@ -77,6 +79,10 @@ export default function NewPrescriptionPage() {
         if (!cancelled) {
           setVisit(data)
           setVisitStatus('done')
+          // Fetch allergies silently after visit loads
+          getPatientAllergies(data.patient_id)
+            .then(a => { if (!cancelled) setAllergies(a ?? []) })
+            .catch(() => {})
         }
       })
       .catch((err) => {
@@ -96,9 +102,9 @@ export default function NewPrescriptionPage() {
   async function handleSubmit(e) {
     e.preventDefault()
 
-    // Client-side validation
     const errs = {}
     if (!prescribedAt) errs.prescribedAt = 'Prescription date is required.'
+
     if (items.length === 0) {
       errs.items = 'Add at least one medicine before saving.'
     } else {
@@ -106,8 +112,30 @@ export default function NewPrescriptionPage() {
         !item.medicine_name.trim() ? { medicine_name: 'Medicine name is required.' } : null
       )
       if (itemErrs.some(Boolean)) errs.itemErrors = itemErrs
+
+      // Duplicate medicine check
+      const names = items.map(i => i.medicine_name.trim().toLowerCase()).filter(Boolean)
+      const dupes = names.filter((n, i) => names.indexOf(n) !== i)
+      if (dupes.length > 0) {
+        errs.items = `Duplicate medicine: "${items.find(i => dupes.includes(i.medicine_name.trim().toLowerCase()))?.medicine_name}" is added more than once.`
+      }
+
+      // Missing dosage warning (non-blocking — stored as warning, not error)
+      const missingDosage = items.filter(i => i.medicine_name.trim() && !i.dosage.trim())
+      if (missingDosage.length > 0) {
+        errs._dosageWarn = missingDosage.map(i => i.medicine_name.trim()).join(', ')
+      }
     }
-    if (Object.keys(errs).length) { setFieldErrors(errs); return }
+
+    // Block on hard errors only (not dosageWarn)
+    const hardErrors = Object.fromEntries(Object.entries(errs).filter(([k]) => k !== '_dosageWarn'))
+    if (Object.keys(hardErrors).length) { setFieldErrors(errs); return }
+
+    // Dosage warning: show and require a second submit to confirm
+    if (errs._dosageWarn && !fieldErrors._dosageWarnConfirmed) {
+      setFieldErrors({ _dosageWarn: errs._dosageWarn, _dosageWarnConfirmed: false })
+      return
+    }
 
     setSubmitting(true)
     setApiError(null)
@@ -150,11 +178,54 @@ export default function NewPrescriptionPage() {
         )}
       </button>
 
+      {/* ── Allergy alert ─────────────────────────────────────────────── */}
+      {allergies.length > 0 && (
+        <div style={{
+          background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.4)',
+          borderRadius: 'var(--radius-md)', padding: '10px 14px',
+          marginBottom: 'var(--space-md)', display: 'flex', gap: 10, alignItems: 'flex-start',
+        }}>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>⚠️</span>
+          <div>
+            <div style={{ fontWeight: 700, color: '#dc2626', fontSize: 13, marginBottom: 3 }}>
+              Allergy Alert — {visit.patient.name}
+            </div>
+            <div style={{ fontSize: 12, color: '#dc2626' }}>
+              {allergies.map((a, i) => (
+                <span key={a.id}>
+                  <strong>{a.title}</strong>
+                  {a.severity && ` (${a.severity})`}
+                  {i < allergies.length - 1 && ' · '}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <h1 className="visit-page-title">New Prescription</h1>
 
       {apiError && (
         <div className="form-alert danger nrx-api-err">
           <p className="form-alert-body">{apiError}</p>
+        </div>
+      )}
+
+      {fieldErrors._dosageWarn && (
+        <div className="form-alert warning nrx-api-err">
+          <strong className="form-alert-title">Missing dosage</strong>
+          <p className="form-alert-body">
+            No dosage set for: <strong>{fieldErrors._dosageWarn}</strong>.
+            Click Save again to proceed without dosage, or go back and add it.
+          </p>
+          <button
+            type="button"
+            className="btn-link"
+            style={{ fontSize: 12, marginTop: 4 }}
+            onClick={() => setFieldErrors(f => ({ ...f, _dosageWarnConfirmed: true }))}
+          >
+            Save anyway →
+          </button>
         </div>
       )}
 

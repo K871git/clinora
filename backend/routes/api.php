@@ -9,7 +9,12 @@ use App\Http\Controllers\API\PatientController;
 use App\Http\Controllers\API\PharmacyController;
 use App\Http\Controllers\API\PrescriptionController;
 use App\Http\Controllers\API\PrescriptionPdfController;
+use App\Http\Controllers\API\AppointmentController;
+use App\Http\Controllers\API\LabReportController;
+use App\Http\Controllers\API\MedicalHistoryController;
+use App\Http\Controllers\API\SoapNoteController;
 use App\Http\Controllers\API\StockItemController;
+use App\Http\Controllers\API\VitalSignController;
 use App\Http\Controllers\API\VisitController;
 use Illuminate\Support\Facades\Route;
 
@@ -101,6 +106,38 @@ Route::middleware(['stale-token', 'auth:sanctum', 'active', 'role:doctor', 'thro
     Route::post('/prescriptions/{prescription}/send', [PrescriptionController::class, 'send']);
     Route::get('/prescriptions/{prescription}/pdf', [PrescriptionPdfController::class, 'generate']);
     Route::get('/patients/{patient}/prescriptions', [PrescriptionController::class, 'patientHistory']);
+
+    // Vital Signs
+    Route::get('/patients/{patient}/vitals',             [VitalSignController::class, 'index']);
+    Route::get('/patients/{patient}/vitals/latest',      [VitalSignController::class, 'latest']);
+    Route::post('/patients/{patient}/vitals',            [VitalSignController::class, 'store']);
+    Route::put('/patients/{patient}/vitals/{vitalSign}', [VitalSignController::class, 'update']);
+    Route::delete('/patients/{patient}/vitals/{vitalSign}', [VitalSignController::class, 'destroy']);
+
+    // Medical History
+    Route::get('/patients/{patient}/medical-history',                       [MedicalHistoryController::class, 'index']);
+    Route::post('/patients/{patient}/medical-history',                      [MedicalHistoryController::class, 'store']);
+    Route::put('/patients/{patient}/medical-history/{medicalHistory}',      [MedicalHistoryController::class, 'update']);
+    Route::delete('/patients/{patient}/medical-history/{medicalHistory}',   [MedicalHistoryController::class, 'destroy']);
+
+    // Appointments
+    Route::get('/appointments',                          [AppointmentController::class, 'index']);
+    Route::get('/appointments/calendar',                 [AppointmentController::class, 'daysWithAppointments']);
+    Route::post('/appointments',                         [AppointmentController::class, 'store']);
+    Route::get('/appointments/{appointment}',            [AppointmentController::class, 'show']);
+    Route::put('/appointments/{appointment}',            [AppointmentController::class, 'update']);
+    Route::delete('/appointments/{appointment}',         [AppointmentController::class, 'destroy']);
+    Route::get('/patients/{patient}/appointments',       [AppointmentController::class, 'forPatient']);
+
+    // Lab Reports
+    Route::get('/patients/{patient}/lab-reports',                      [LabReportController::class, 'index']);
+    Route::post('/patients/{patient}/lab-reports',                     [LabReportController::class, 'store']);
+    Route::post('/patients/{patient}/lab-reports/{labReport}',         [LabReportController::class, 'update']);
+    Route::delete('/patients/{patient}/lab-reports/{labReport}',       [LabReportController::class, 'destroy']);
+
+    // SOAP Notes
+    Route::get('/visits/{visit}/soap',  [SoapNoteController::class, 'show']);
+    Route::put('/visits/{visit}/soap',  [SoapNoteController::class, 'upsert']);
 });
 
 /*

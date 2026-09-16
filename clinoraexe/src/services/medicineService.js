@@ -34,3 +34,8 @@ export async function importMedicines(items) {
   const result = await invoke('import_medicines', { items })
   return { data: result }
 }
+
+export async function getStockAlerts() {
+  const result = await invoke('get_stock_alerts')
+  return { data: result }
+}

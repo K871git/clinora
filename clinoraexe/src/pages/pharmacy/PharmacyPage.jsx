@@ -1,7 +1,8 @@
 import '../../styles/pharmacy-pages.css'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPharmacyPrescriptions, getPharmacyStats } from '../../services/pharmacyService'
+import { getPharmacyPrescriptions, getPharmacyStats, getPharmacyStockSummary } from '../../services/pharmacyService'
+import { getStockAlerts } from '../../services/medicineService'
 import Spinner from '../../components/ui/Spinner'
 
 const POLL_MS   = 30_000
@@ -111,7 +112,9 @@ export default function PharmacyPage() {
   const [stats,       setStats]       = useState({ pending: 0, dispensing: 0, today_done: 0 })
   const [statsStatus, setStatsStatus] = useState('loading')
 
-  const [search, setSearch] = useState('')
+  const [search,       setSearch]       = useState('')
+  const [alerts,       setAlerts]       = useState(null)
+  const [stockSummary, setStockSummary] = useState(null)
 
   const loadQueue = useCallback((silent = false) => {
     if (!silent) setQueueStatus('loading')
@@ -134,7 +137,11 @@ export default function PharmacyPage() {
       .catch(() => setStatsStatus(prev => prev === 'loading' ? 'error' : prev))
   }, [])
 
-  useEffect(() => { loadQueue(); loadStats() }, [loadQueue, loadStats])
+  useEffect(() => {
+    loadQueue(); loadStats()
+    getStockAlerts().then(({ data }) => setAlerts(data)).catch(() => {})
+    getPharmacyStockSummary().then(({ data }) => setStockSummary(data)).catch(() => {})
+  }, [loadQueue, loadStats])
 
   useEffect(() => {
     const qt = setInterval(() => loadQueue(true), POLL_MS)
@@ -228,6 +235,76 @@ export default function PharmacyPage() {
           }
         />
       </div>
+
+      {/* ── Inventory Health ─────────────────────────────────────────────── */}
+      {stockSummary && (
+        <div className="card" style={{ padding: '14px 18px', marginBottom: 'var(--space-md)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--clr-text-muted)', marginBottom: 12 }}>
+            Inventory Health
+          </div>
+
+          {/* Stock summary stat row */}
+          <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--clr-border)', marginBottom: 12 }}>
+            {[
+              { label: 'Total SKUs',   value: stockSummary.total_skus,  color: 'var(--clr-text)' },
+              { label: 'Total Qty',    value: stockSummary.total_qty,   color: 'var(--clr-text)' },
+              { label: 'Out of Stock', value: stockSummary.out_of_stock, color: stockSummary.out_of_stock > 0 ? '#ef4444' : 'var(--clr-success)' },
+              { label: 'Low Stock',    value: stockSummary.low_stock,   color: stockSummary.low_stock > 0 ? '#f59e0b' : 'var(--clr-success)' },
+              { label: 'Expiring Soon',value: stockSummary.expiring_soon, color: stockSummary.expiring_soon > 0 ? '#d97706' : 'var(--clr-success)' },
+              { label: 'Expired',      value: stockSummary.expired,     color: stockSummary.expired > 0 ? '#dc2626' : 'var(--clr-success)' },
+              { label: 'Stock Value',  value: `₹${Number(stockSummary.stock_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: 'var(--clr-primary)' },
+            ].map((s, i, arr) => (
+              <div key={s.label} style={{
+                flex: '1 1 80px', padding: '10px 14px', textAlign: 'center',
+                background: 'var(--clr-surface)',
+                borderRight: i < arr.length - 1 ? '1px solid var(--clr-border)' : 'none',
+              }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: 'var(--clr-text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginTop: 3 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Alert rows — only show if there are issues */}
+          {alerts && (alerts.expired?.length > 0 || alerts.expiring_soon?.length > 0 || alerts.low_stock?.length > 0) && (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {alerts.expired?.length > 0 && (
+                <div style={{ flex: '1 1 180px', background: 'rgba(220,38,38,.07)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 8, padding: '8px 12px' }}>
+                  <div style={{ fontWeight: 700, fontSize: 11, color: '#dc2626', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Expired ({alerts.expired.length})</div>
+                  {alerts.expired.slice(0, 3).map(m => (
+                    <div key={m.id} style={{ fontSize: 11, color: '#dc2626', marginBottom: 1 }}>
+                      <strong>{m.name}</strong>{m.batch_number && ` · ${m.batch_number}`} · exp {m.expiry_date}
+                    </div>
+                  ))}
+                  {alerts.expired.length > 3 && <div style={{ fontSize: 10, color: '#dc2626', opacity: .6 }}>+{alerts.expired.length - 3} more</div>}
+                </div>
+              )}
+              {alerts.expiring_soon?.length > 0 && (
+                <div style={{ flex: '1 1 180px', background: 'rgba(217,119,6,.07)', border: '1px solid rgba(217,119,6,.25)', borderRadius: 8, padding: '8px 12px' }}>
+                  <div style={{ fontWeight: 700, fontSize: 11, color: '#d97706', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Expiring in 30d ({alerts.expiring_soon.length})</div>
+                  {alerts.expiring_soon.slice(0, 3).map(m => (
+                    <div key={m.id} style={{ fontSize: 11, color: '#d97706', marginBottom: 1 }}>
+                      <strong>{m.name}</strong>{m.batch_number && ` · ${m.batch_number}`} · {m.expiry_date}
+                    </div>
+                  ))}
+                  {alerts.expiring_soon.length > 3 && <div style={{ fontSize: 10, color: '#d97706', opacity: .6 }}>+{alerts.expiring_soon.length - 3} more</div>}
+                </div>
+              )}
+              {alerts.low_stock?.length > 0 && (
+                <div style={{ flex: '1 1 180px', background: 'rgba(99,102,241,.07)', border: '1px solid rgba(99,102,241,.25)', borderRadius: 8, padding: '8px 12px' }}>
+                  <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--clr-primary)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Low Stock ({alerts.low_stock.length})</div>
+                  {alerts.low_stock.slice(0, 3).map(m => (
+                    <div key={m.id} style={{ fontSize: 11, color: 'var(--clr-primary)', marginBottom: 1 }}>
+                      <strong>{m.name}</strong> · {m.quantity} left (min {m.reorder_level})
+                    </div>
+                  ))}
+                  {alerts.low_stock.length > 3 && <div style={{ fontSize: 10, color: 'var(--clr-primary)', opacity: .6 }}>+{alerts.low_stock.length - 3} more</div>}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Search ────────────────────────────────────────────────────────── */}
       {(queueStatus === 'done' && allRx.length > 0) && (

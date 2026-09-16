@@ -4,11 +4,14 @@ import '../../styles/pharmacy-stock.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { invoke } from '@tauri-apps/api/core'
 import {
   getPharmacyPrescription,
   startDispensingPharmacyPrescription,
   completePharmacyPrescription,
   recordPrescriptionPayment,
+  savePharmacistNotes,
+  getPatientDispenseHistory,
 } from '../../services/pharmacyService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
@@ -93,6 +96,15 @@ export default function PharmacyPrescriptionPage() {
   const [paymentNotes,   setPaymentNotes]   = useState('')
   const [savingPayment,  setSavingPayment]  = useState(false)
 
+  /* notes state */
+  const [pharmNotes,     setPharmNotes]     = useState('')
+  const [savingNotes,    setSavingNotes]    = useState(false)
+  const [notesTimer,     setNotesTimer]     = useState(null)
+
+  /* medication history */
+  const [medHistory,     setMedHistory]     = useState([])
+  const [histOpen,       setHistOpen]       = useState(true)
+
   useEffect(() => {
     let cancelled = false
     getPharmacyPrescription(prescriptionId)
@@ -103,7 +115,13 @@ export default function PharmacyPrescriptionPage() {
           setPaymentStatus(rx.payment_status ?? 'unpaid')
           setAmountPaid(rx.amount_paid > 0 ? String(rx.amount_paid) : '')
           setPaymentNotes(rx.payment_notes ?? '')
+          setPharmNotes(rx.pharmacist_notes ?? '')
           setPageStatus('done')
+          if (rx.patient?.id) {
+            getPatientDispenseHistory(rx.patient.id, prescriptionId)
+              .then(({ data: hist }) => { if (!cancelled) setMedHistory(hist) })
+              .catch(() => {})
+          }
         }
       })
       .catch((err) => {
@@ -206,6 +224,63 @@ export default function PharmacyPrescriptionPage() {
           : 'Could not complete — check your connection and try again.'
       )
     } finally { setCompleting(false) }
+  }
+
+  function handlePharmNotesChange(val) {
+    setPharmNotes(val)
+    if (notesTimer) clearTimeout(notesTimer)
+    const t = setTimeout(() => {
+      setSavingNotes(true)
+      savePharmacistNotes(prescriptionId, val)
+        .then(() => setSavingNotes(false))
+        .catch(() => { setSavingNotes(false); toast.error('Could not save notes') })
+    }, 900)
+    setNotesTimer(t)
+  }
+
+  async function handleExportText() {
+    if (!prescription) return
+    const p = prescription.patient
+    const items = (prescription.items ?? [])
+      .map((it, i) => `  ${i + 1}. ${it.medicine_name}${it.dosage ? ' — ' + it.dosage : ''}${it.frequency ? ', ' + it.frequency : ''}${it.duration ? ', ' + it.duration : ''}${it.instructions ? '\n     ' + it.instructions : ''}`)
+      .join('\n')
+
+    const lines = [
+      `PRESCRIPTION DETAIL`,
+      `===================`,
+      `Date       : ${fmtDateTime(prescription.prescribed_at)}`,
+      `Patient    : ${p.name}${p.age != null ? ', ' + p.age + ' yrs' : ''}${p.gender ? ', ' + p.gender : ''}`,
+      p.mobile ? `Mobile     : ${p.mobile}` : '',
+      prescription.doctor ? `Doctor     : ${doctorLabel(prescription.doctor.name)}` : '',
+      `Status     : ${STATUS_LABEL[prescription.status] ?? prescription.status}`,
+      ``,
+      `MEDICINES`,
+      `---------`,
+      items || '  (none)',
+      prescription.total_amount > 0 ? `\nTotal      : ₹${parseFloat(prescription.total_amount).toFixed(2)}` : '',
+      ``,
+    ]
+
+    if (prescription.consultation_notes) {
+      lines.push('VISIT / CONSULTATION NOTES', '--------------------------', prescription.consultation_notes, '')
+    }
+    if (prescription.doctor_notes) {
+      lines.push('DOCTOR NOTES', '------------', prescription.doctor_notes, '')
+    }
+    if (pharmNotes.trim()) {
+      lines.push('PHARMACIST NOTES', '----------------', pharmNotes.trim(), '')
+    }
+
+    lines.push(`Exported : ${new Date().toLocaleString('en-IN')}`)
+
+    const content = lines.filter(l => l !== null && l !== undefined).join('\n')
+    const filename = `Rx_${p.name.replace(/\s+/g, '_')}_${prescriptionId}.txt`
+    try {
+      await invoke('write_text_to_downloads', { content, filename })
+      toast.success(`Saved to Downloads as ${filename}`)
+    } catch {
+      toast.error('Could not save file')
+    }
   }
 
   /* ── Page states ─────────────────────────────────────────────────────── */
@@ -374,6 +449,22 @@ export default function PharmacyPrescriptionPage() {
               <IconPrint />
               Print Rx
             </button>
+
+            {/* Print dispense labels — available when dispensing or completed */}
+            {(isDispensing || isCompleted) && (
+              <button
+                className="rx-action-btn"
+                onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/label`)}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                  <line x1="12" y1="12" x2="12" y2="16" />
+                  <line x1="10" y1="14" x2="14" y2="14" />
+                </svg>
+                Print Labels
+              </button>
+            )}
 
             {/* Completed notice + View Invoice */}
             {isCompleted && (
@@ -586,15 +677,127 @@ export default function PharmacyPrescriptionPage() {
         </div>
       )}
 
-      {/* ── Doctor notes ──────────────────────────────────────────────── */}
-      {prescription.doctor_notes && (
+      {/* ── Patient Medication History ────────────────────────────────── */}
+      {medHistory.length > 0 && (
         <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
-          <div className="rx-content-header">
-            <span className="rx-content-label">Doctor Notes</span>
+          <div
+            className="rx-content-header"
+            style={{ cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => setHistOpen(o => !o)}
+          >
+            <span className="rx-content-label">Previous Dispense History</span>
+            <span className="rx-content-count">{medHistory.length}</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--clr-text-muted)' }}>
+              {histOpen ? '▲ hide' : '▼ show'}
+            </span>
           </div>
-          <p className="visit-notes-display" style={{ marginTop: 'var(--space-sm)' }}>
-            {prescription.doctor_notes}
-          </p>
+
+          {histOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+              {medHistory.map((rx, i) => (
+                <div
+                  key={rx.id}
+                  style={{
+                    background: 'var(--clr-surface)',
+                    border: '1px solid var(--clr-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '8px 12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)' }}>
+                      #{i + 1}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--clr-text)' }}>
+                      {fmtDateTime(rx.completed_at || rx.prescribed_at)}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginLeft: 'auto' }}>
+                      {rx.doctor_name ? `Dr. ${rx.doctor_name}` : ''}
+                    </span>
+                  </div>
+                  <ul style={{ margin: 0, padding: '0 0 0 16px', listStyle: 'disc' }}>
+                    {(rx.medicines ?? []).map((m, j) => (
+                      <li key={j} style={{ fontSize: 12, color: 'var(--clr-text)', lineHeight: 1.6 }}>
+                        <span style={{ fontWeight: 500 }}>{m.medicine_name}</span>
+                        {(m.dosage || m.frequency || m.duration) && (
+                          <span style={{ color: 'var(--clr-text-muted)', marginLeft: 4 }}>
+                            — {[m.dosage, m.frequency, m.duration].filter(Boolean).join(', ')}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Notes panel ───────────────────────────────────────────────── */}
+      {(prescription.consultation_notes || prescription.doctor_notes || !isCompleted || true) && (
+        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+          <div className="rx-content-header" style={{ justifyContent: 'space-between' }}>
+            <span className="rx-content-label">Notes</span>
+            <button
+              className="rx-action-btn"
+              style={{ fontSize: 11, padding: '3px 10px' }}
+              onClick={handleExportText}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export as Text
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
+            {/* Consultation / Visit notes — read-only */}
+            {prescription.consultation_notes && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)', marginBottom: 4 }}>
+                  Visit / Consultation Notes
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
+                  {prescription.consultation_notes}
+                </p>
+              </div>
+            )}
+
+            {/* Doctor notes — read-only */}
+            {prescription.doctor_notes && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)', marginBottom: 4 }}>
+                  Doctor Notes
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
+                  {prescription.doctor_notes}
+                </p>
+              </div>
+            )}
+
+            {/* Pharmacist notes — editable */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)' }}>
+                  Pharmacist Notes
+                </div>
+                {savingNotes && (
+                  <span style={{ fontSize: 10, color: 'var(--clr-text-muted)' }}>saving…</span>
+                )}
+              </div>
+              <textarea
+                className="field"
+                rows={3}
+                style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
+                placeholder="Add pharmacist notes, dispensing remarks, substitutions…"
+                value={pharmNotes}
+                onChange={e => handlePharmNotesChange(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
