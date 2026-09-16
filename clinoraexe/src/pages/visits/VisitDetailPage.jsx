@@ -1,4 +1,5 @@
 import '../../styles/visit-detail.css'
+import '../../styles/emr.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -6,6 +7,9 @@ import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment } fro
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import { confirmDiscard } from '../../lib/swal'
+import SoapNotesSection from '../../components/emr/SoapNotesSection'
+import VitalSignsTab from '../../components/emr/VitalSignsTab'
+import { updateFollowup } from '../../services/visitService'
 
 /* ── Avatar ──────────────────────────────────────────────────────────────── */
 
@@ -107,6 +111,12 @@ export default function VisitDetailPage() {
   const [paymentNotes,   setPaymentNotes]   = useState('')
   const [savingPayment,  setSavingPayment]  = useState(false)
 
+  /* follow-up */
+  const [followupDate,   setFollowupDate]   = useState('')
+  const [followupNotes,  setFollowupNotes]  = useState('')
+  const [savingFollowup, setSavingFollowup] = useState(false)
+  const [followupSaved,  setFollowupSaved]  = useState(false)
+
   useEffect(() => {
     let cancelled = false
     getVisit(visitId)
@@ -119,6 +129,8 @@ export default function VisitDetailPage() {
           setPaymentStatus(v.payment_status ?? 'unpaid')
           setAmountPaid(v.amount_paid > 0 ? String(v.amount_paid) : '')
           setPaymentNotes(v.payment_notes ?? '')
+          setFollowupDate(v.followup_date ?? '')
+          setFollowupNotes(v.followup_notes ?? '')
           setPageStatus('done')
         }
       })
@@ -214,6 +226,21 @@ export default function VisitDetailPage() {
       toast.error('Could not save payment — try again.')
     } finally {
       setSavingPayment(false)
+    }
+  }
+
+  async function handleSaveFollowup() {
+    setSavingFollowup(true)
+    try {
+      const updated = await updateFollowup(visitId, followupDate || null, followupNotes.trim() || null)
+      setVisit(updated)
+      setFollowupSaved(true)
+      setTimeout(() => setFollowupSaved(false), 2000)
+      toast.success(followupDate ? 'Follow-up scheduled' : 'Follow-up cleared')
+    } catch {
+      toast.error('Could not save follow-up')
+    } finally {
+      setSavingFollowup(false)
     }
   }
 
@@ -341,6 +368,68 @@ export default function VisitDetailPage() {
             )}
           </>
         )}
+      </div>
+
+      {/* ── SOAP Notes ─────────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        <span className="visit-notes-section-label" style={{ display: 'block', marginBottom: 'var(--space-md)' }}>
+          SOAP Notes
+        </span>
+        <SoapNotesSection visitId={visitId} />
+      </div>
+
+      {/* ── Follow-up ──────────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        <span className="visit-notes-section-label" style={{ display: 'block', marginBottom: 'var(--space-md)' }}>
+          Follow-up
+        </span>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 12, color: 'var(--clr-text-muted)', fontWeight: 600 }}>Follow-up Date</label>
+            <input
+              type="date"
+              className="field"
+              style={{ width: 180 }}
+              value={followupDate}
+              min={new Date().toISOString().split('T')[0]}
+              onChange={e => setFollowupDate(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 200 }}>
+            <label style={{ fontSize: 12, color: 'var(--clr-text-muted)', fontWeight: 600 }}>Instructions / Reason</label>
+            <input
+              className="field"
+              placeholder="e.g. Check BP, Review reports…"
+              value={followupNotes}
+              onChange={e => setFollowupNotes(e.target.value)}
+            />
+          </div>
+          <button
+            className={`rx-action-btn${followupSaved ? ' vst-save-fee-btn--saved' : ''}`}
+            onClick={handleSaveFollowup}
+            disabled={savingFollowup}
+            style={{ marginBottom: 1 }}
+          >
+            {savingFollowup ? <Spinner size={12} /> : null}
+            {savingFollowup ? 'Saving…' : followupSaved ? '✓ Saved' : 'Save Follow-up'}
+          </button>
+          {followupDate && (
+            <button className="rx-action-btn" onClick={() => { setFollowupDate(''); setFollowupNotes('') }} style={{ marginBottom: 1, fontSize: 12 }}>
+              Clear
+            </button>
+          )}
+        </div>
+        {visit.followup_date && (
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--clr-primary)', fontWeight: 600 }}>
+            ✓ Follow-up on {new Date(visit.followup_date + 'T00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            {visit.followup_notes && ` — ${visit.followup_notes}`}
+          </div>
+        )}
+      </div>
+
+      {/* ── Visit Vitals ───────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        <VitalSignsTab patientId={String(visit.patient.id)} visitId={visitId} />
       </div>
 
       {/* ── Billing / Invoice card ─────────────────────────────────────── */}

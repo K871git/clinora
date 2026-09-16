@@ -57,6 +57,33 @@
   filter: blur(80px);
 }
 
+/* ── Logo watermark ──────────────────────────────────────────────────── */
+.bg-logo-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.bg-logo-img {
+  width: 680px;
+  max-width: 62vw;
+  pointer-events: none;
+  user-select: none;
+  display: block;
+}
+
+html[data-theme="light"] .bg-logo-img {
+  opacity: 0.07;
+}
+
+html[data-theme="dark"] .bg-logo-img {
+  opacity: 0.09;
+  filter: brightness(5) grayscale(0.2);
+}
+
 /* ── SVG parallax shapes ─────────────────────────────────────────────── */
 .bg-layer {
   position: absolute;

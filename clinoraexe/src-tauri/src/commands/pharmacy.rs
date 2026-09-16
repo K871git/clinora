@@ -26,7 +26,7 @@ pub struct PaymentPayload {
 
 async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::MySqlPool) -> AppResult<Value> {
     let row = sqlx::query(
-        "SELECT pr.id, pr.status, pr.doctor_notes, pr.payment_status, pr.payment_notes,
+        "SELECT pr.id, pr.status, pr.doctor_notes, pr.pharmacist_notes, pr.payment_status, pr.payment_notes,
                 pr.amount_paid * 1e0 as amount_paid,
                 DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                 DATE_FORMAT(pr.sent_to_pharmacy_at, '%Y-%m-%dT%H:%i:%s') as sent_to_pharmacy_at,
@@ -70,6 +70,8 @@ async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::My
         "dispensed_at": row.get::<Option<String>, _>("dispensed_at"),
         "completed_at": row.get::<Option<String>, _>("completed_at"),
         "doctor_notes": row.get::<Option<String>, _>("doctor_notes"),
+        "pharmacist_notes": row.get::<Option<String>, _>("pharmacist_notes"),
+        "consultation_notes": row.get::<Option<String>, _>("consultation_notes"),
         "payment_status": row.get::<String, _>("payment_status"),
         "amount_paid": row.get::<f64, _>("amount_paid"),
         "payment_notes": row.get::<Option<String>, _>("payment_notes"),
@@ -424,4 +426,44 @@ pub async fn get_pharmacy_revenue_transactions(
     })).collect();
 
     Ok(json!({ "data": data }))
+}
+
+#[tauri::command]
+pub async fn save_pharmacist_notes(id: u64, notes: Option<String>, state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let notes = notes.filter(|s| !s.trim().is_empty());
+    sqlx::query(
+        "UPDATE prescriptions SET pharmacist_notes=?, updated_at=NOW()
+         WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
+    )
+    .bind(&notes).bind(id).bind(session.clinic_id)
+    .execute(&state.db).await?;
+    get_pharmacy_prescription_detail(id, session.clinic_id, &state.db).await
+}
+
+#[tauri::command]
+pub async fn get_pharmacy_stock_summary(state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let row = sqlx::query(
+        "SELECT
+           COUNT(*) as total_skus,
+           COALESCE(SUM(quantity), 0) as total_qty,
+           COALESCE(SUM(CASE WHEN price IS NOT NULL THEN quantity * price ELSE 0 END), 0) * 1e0 as stock_value,
+           SUM(quantity = 0) as out_of_stock,
+           SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date < CURDATE()) as expired,
+           SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date >= CURDATE()
+               AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)) as expiring_soon,
+           SUM(quantity <= reorder_level) as low_stock
+         FROM medicines WHERE clinic_id=?"
+    ).bind(session.clinic_id).fetch_one(&state.db).await?;
+
+    Ok(json!({
+        "total_skus":    row.get::<i64, _>("total_skus"),
+        "total_qty":     row.get::<i64, _>("total_qty"),
+        "stock_value":   row.get::<f64, _>("stock_value"),
+        "out_of_stock":  row.get::<i64, _>("out_of_stock"),
+        "expired":       row.get::<i64, _>("expired"),
+        "expiring_soon": row.get::<i64, _>("expiring_soon"),
+        "low_stock":     row.get::<i64, _>("low_stock"),
+    }))
 }

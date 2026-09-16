@@ -40,4 +40,24 @@ class Patient extends Model
     {
         return $this->hasMany(Visit::class);
     }
+
+    public function vitalSigns(): HasMany
+    {
+        return $this->hasMany(VitalSign::class);
+    }
+
+    public function medicalHistories(): HasMany
+    {
+        return $this->hasMany(MedicalHistory::class);
+    }
+
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
+    public function labReports(): HasMany
+    {
+        return $this->hasMany(LabReport::class);
+    }
 }

@@ -185,6 +185,8 @@ pub fn run() {
             commands::pharmacy::record_prescription_payment,
             commands::pharmacy::get_pharmacy_revenue,
             commands::pharmacy::get_pharmacy_revenue_transactions,
+            commands::pharmacy::save_pharmacist_notes,
+            commands::pharmacy::get_pharmacy_stock_summary,
             // Stock Items
             commands::stock_items::list_stock_items,
             commands::stock_items::create_stock_item,
@@ -197,6 +199,7 @@ pub fn run() {
             commands::medicines::delete_medicine,
             commands::medicines::import_medicines,
             commands::medicines::parse_medicine_document,
+            commands::medicines::get_stock_alerts,
             // Settings
             commands::settings::get_settings,
             commands::settings::update_clinic,
@@ -220,6 +223,50 @@ pub fn run() {
             commands::profile::update_password,
             commands::profile::upload_avatar,
             commands::profile::remove_avatar,
+            // Vital Signs
+            commands::vitals::list_vitals,
+            commands::vitals::get_latest_vitals,
+            commands::vitals::create_vital,
+            commands::vitals::update_vital,
+            commands::vitals::delete_vital,
+            // Medical History
+            commands::medical_history::list_medical_history,
+            commands::medical_history::create_medical_history,
+            commands::medical_history::update_medical_history,
+            commands::medical_history::delete_medical_history,
+            // Appointments
+            commands::appointments::list_appointments,
+            commands::appointments::get_appointment_calendar_days,
+            commands::appointments::create_appointment,
+            commands::appointments::update_appointment,
+            commands::appointments::delete_appointment,
+            commands::appointments::list_patient_appointments,
+            // Lab Reports
+            commands::lab_reports::list_lab_reports,
+            commands::lab_reports::create_lab_report,
+            commands::lab_reports::update_lab_report,
+            commands::lab_reports::delete_lab_report,
+            // SOAP Notes
+            commands::visits::get_soap_notes,
+            commands::visits::save_soap_notes,
+            // Follow-up
+            commands::visits::update_followup,
+            commands::visits::list_followups,
+            // OPD Register
+            commands::visits::list_opd_register,
+            // Allergies
+            commands::medical_history::get_patient_allergies,
+            // Patient Timeline
+            commands::timeline::get_patient_timeline,
+            // Notes
+            commands::notes::list_notes,
+            commands::notes::get_note,
+            commands::notes::create_note,
+            commands::notes::update_note,
+            commands::notes::delete_note,
+            commands::notes::save_note_attachment,
+            commands::notes::delete_note_attachment,
+            commands::notes::read_note_attachment,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

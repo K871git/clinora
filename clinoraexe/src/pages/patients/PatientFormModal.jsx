@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPatient, updatePatient } from '../../services/patientService'
 import Modal from '../../components/ui/Modal'
+import { sanitizeMobile, validateMobile, sanitizeAge, validateAge } from '../../lib/inputValidators'
 
 const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#3b82f6']
 function avatarColor(name) { return AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length] }
@@ -132,16 +133,18 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Name is required.'
 
-    const numAge = form.age !== '' ? Number(form.age) : null
-    if (numAge !== null && (isNaN(numAge) || numAge < 0 || numAge > 150)) {
-      errs.age = 'Enter a valid age (0–150).'
-    }
+    const mobileErr = validateMobile(form.mobile)
+    if (mobileErr) errs.mobile = mobileErr
 
+    const ageErr = validateAge(form.age)
+    if (ageErr) errs.age = ageErr
+
+    const numAge = form.age !== '' ? Number(form.age) : null
     const effAge = numAge !== null
       ? numAge
       : (form.date_of_birth ? dobToAge(form.date_of_birth) : null)
 
-    if (effAge !== null && effAge < 55) {
+    if (!errs.mobile && effAge !== null && effAge < 55) {
       if (!form.mobile.trim() && !form.date_of_birth) {
         errs.mobile = 'Patients under 55 need a contact number or date of birth — please add at least one.'
       }
@@ -275,7 +278,9 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
               className={`field${errors.mobile ? ' has-error' : ''}`}
               placeholder="e.g. 9876543210"
               value={form.mobile}
-              onChange={(e) => setField('mobile', e.target.value)}
+              inputMode="numeric"
+              maxLength={10}
+              onChange={(e) => setField('mobile', sanitizeMobile(e.target.value))}
             />
           </Field>
 
@@ -291,13 +296,12 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
             </Field>
             <Field label="Age (years)" icon={<IconAge />} error={errors.age}>
               <input
-                type="number"
                 className={`field${errors.age ? ' has-error' : ''}`}
                 placeholder="e.g. 35"
-                min="0"
-                max="150"
+                inputMode="numeric"
+                maxLength={3}
                 value={form.age}
-                onChange={(e) => setField('age', e.target.value)}
+                onChange={(e) => setField('age', sanitizeAge(e.target.value))}
               />
             </Field>
           </div>

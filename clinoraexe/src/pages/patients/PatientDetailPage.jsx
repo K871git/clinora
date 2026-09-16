@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPatient, getPatientVisits, getPatientPrescriptions } from '../../services/patientService'
+import { getPatientTimeline } from '../../services/timelineService'
 import PatientFormModal from './PatientFormModal'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
+import VitalSignsTab from '../../components/emr/VitalSignsTab'
+import MedicalHistoryTab from '../../components/emr/MedicalHistoryTab'
+import LabReportsTab from '../../components/emr/LabReportsTab'
 import '../../styles/patients.css'
+import '../../styles/emr.css'
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
 
@@ -62,6 +67,9 @@ export default function PatientDetailPage() {
   const [rxPage, setRxPage]               = useState(1)
   const [rxLoadingMore, setRxLoadingMore] = useState(false)
   const [showEdit, setShowEdit]           = useState(false)
+  const [activeTab, setActiveTab]         = useState('overview')
+  const [timeline, setTimeline]           = useState([])
+  const [timelineStatus, setTimelineStatus] = useState('idle')
 
   useEffect(() => {
     let cancelled = false
@@ -91,6 +99,17 @@ export default function PatientDetailPage() {
       .catch(() => { if (!cancelled) setHistoryStatus('error') })
     return () => { cancelled = true }
   }, [id, pageStatus])
+
+  /* ── Load timeline lazily when tab is first opened ─────────────────── */
+  useEffect(() => {
+    if (activeTab !== 'timeline' || timelineStatus !== 'idle' || pageStatus !== 'done') return
+    let cancelled = false
+    setTimelineStatus('loading')
+    getPatientTimeline(id)
+      .then(events => { if (!cancelled) { setTimeline(events ?? []); setTimelineStatus('done') } })
+      .catch(() => { if (!cancelled) setTimelineStatus('error') })
+    return () => { cancelled = true }
+  }, [activeTab, timelineStatus, pageStatus, id])
 
   /* ── Load more prescriptions ────────────────────────────────────────── */
 
@@ -229,115 +248,100 @@ export default function PatientDetailPage() {
         </div>
       )}
 
-      {/* ── History ──────────────────────────────────────────────────── */}
-      <div className="pd-history">
+      {/* ── EMR Tabs ─────────────────────────────────────────────────── */}
+      <div className="pd-tabs" style={{ marginTop: 'var(--space-lg)' }}>
+        {[
+          { key: 'overview',  label: 'Overview' },
+          { key: 'vitals',    label: 'Vitals' },
+          { key: 'history',   label: 'Medical History' },
+          { key: 'lab',       label: 'Lab Reports' },
+          { key: 'timeline',  label: 'Timeline' },
+        ].map(t => (
+          <button key={t.key} className={`pd-tab${activeTab === t.key ? ' pd-tab--active' : ''}`}
+            onClick={() => setActiveTab(t.key)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Visit history */}
-        <div className="card pd-history-panel">
-          <h3 className="pd-history-title">Visit History</h3>
-
-          {historyStatus === 'loading' && (
-            <div className="pd-history-empty">Loading…</div>
-          )}
-          {historyStatus === 'error' && (
-            <div className="pd-history-empty">Could not load visits.</div>
-          )}
-          {historyStatus === 'done' && visits.length === 0 && (
-            <div className="pd-history-empty">No visits recorded yet.</div>
-          )}
-          {historyStatus === 'done' && visits.length > 0 && (
-            <ul className="pd-history-list">
-              {visits.map((v) => (
-                <li
-                  key={v.id}
-                  className="pd-history-item"
-                  onClick={() => navigate(`/visits/${v.id}`)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && navigate(`/visits/${v.id}`)}
-                >
-                  <div className="pd-history-dot" style={{ backgroundColor: 'var(--clr-primary)' }} />
-                  <div className="pd-history-body">
-                    <div className="pd-history-date">{fmtDate(v.visited_at)}</div>
-                    {v.consultation_notes && (
-                      <div className="pd-history-sub">{v.consultation_notes}</div>
-                    )}
-                  </div>
-                  <div className="pd-history-right">
-                    {v.consultation_fee > 0 && (
-                      <span className="pd-fee-tag">
-                        Rs.{' '}{Number(v.consultation_fee).toLocaleString()}
-                      </span>
-                    )}
-                    <span className="pd-arrow" aria-hidden="true">→</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Prescription history */}
-        <div className="card pd-history-panel">
-          <h3 className="pd-history-title">Prescriptions</h3>
-
-          {historyStatus === 'loading' && (
-            <div className="pd-history-empty">Loading…</div>
-          )}
-          {historyStatus === 'error' && (
-            <div className="pd-history-empty">Could not load prescriptions.</div>
-          )}
-          {historyStatus === 'done' && prescriptions.length === 0 && (
-            <div className="pd-history-empty">No prescriptions issued yet.</div>
-          )}
-          {historyStatus === 'done' && prescriptions.length > 0 && (
-            <>
+      {/* Overview tab — visits + prescriptions */}
+      {activeTab === 'overview' && (
+        <div className="pd-history">
+          <div className="card pd-history-panel">
+            <h3 className="pd-history-title">Visit History</h3>
+            {historyStatus === 'loading' && <div className="pd-history-empty">Loading…</div>}
+            {historyStatus === 'error'   && <div className="pd-history-empty">Could not load visits.</div>}
+            {historyStatus === 'done' && visits.length === 0 && (
+              <div className="pd-history-empty">No visits recorded yet.</div>
+            )}
+            {historyStatus === 'done' && visits.length > 0 && (
               <ul className="pd-history-list">
-                {prescriptions.map((rx) => (
-                  <li
-                    key={rx.id}
-                    className="pd-history-item"
-                    onClick={() => navigate(`/prescriptions/${rx.id}`)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && navigate(`/prescriptions/${rx.id}`)}
-                  >
-                    <div
-                      className="pd-history-dot"
-                      style={{ backgroundColor: RX_DOT_COLOR[rx.status] ?? 'var(--clr-text-muted)' }}
-                    />
+                {visits.map((v) => (
+                  <li key={v.id} className="pd-history-item" onClick={() => navigate(`/visits/${v.id}`)}
+                    role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate(`/visits/${v.id}`)}>
+                    <div className="pd-history-dot" style={{ backgroundColor: 'var(--clr-primary)' }} />
                     <div className="pd-history-body">
-                      <div className="pd-history-date">{fmtDate(rx.prescribed_at)}</div>
-                      {rx.items?.length > 0 && (
-                        <div className="pd-history-sub">
-                          {rx.items.length} item{rx.items.length !== 1 ? 's' : ''}
-                        </div>
-                      )}
+                      <div className="pd-history-date">{fmtDate(v.visited_at)}</div>
+                      {v.consultation_notes && <div className="pd-history-sub">{v.consultation_notes}</div>}
                     </div>
                     <div className="pd-history-right">
-                      <span className={`status-badge ${rx.status}`}>
-                        {RX_STATUS_LABEL[rx.status] ?? rx.status}
-                      </span>
+                      {v.consultation_fee > 0 && (
+                        <span className="pd-fee-tag">Rs.{' '}{Number(v.consultation_fee).toLocaleString()}</span>
+                      )}
                       <span className="pd-arrow" aria-hidden="true">→</span>
                     </div>
                   </li>
                 ))}
               </ul>
-              {rxMeta && rxPage < rxMeta.last_page && (
-                <button
-                  className="btn-link"
-                  style={{ marginTop: 'var(--space-sm)', fontSize: '13px', display: 'block' }}
-                  onClick={loadMoreRx}
-                  disabled={rxLoadingMore}
-                >
-                  {rxLoadingMore ? 'Loading…' : `Load more (${rxMeta.total - prescriptions.length} more)`}
-                </button>
-              )}
-            </>
-          )}
-        </div>
+            )}
+          </div>
 
-      </div>
+          <div className="card pd-history-panel">
+            <h3 className="pd-history-title">Prescriptions</h3>
+            {historyStatus === 'loading' && <div className="pd-history-empty">Loading…</div>}
+            {historyStatus === 'error'   && <div className="pd-history-empty">Could not load prescriptions.</div>}
+            {historyStatus === 'done' && prescriptions.length === 0 && (
+              <div className="pd-history-empty">No prescriptions issued yet.</div>
+            )}
+            {historyStatus === 'done' && prescriptions.length > 0 && (
+              <>
+                <ul className="pd-history-list">
+                  {prescriptions.map((rx) => (
+                    <li key={rx.id} className="pd-history-item" onClick={() => navigate(`/prescriptions/${rx.id}`)}
+                      role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate(`/prescriptions/${rx.id}`)}>
+                      <div className="pd-history-dot" style={{ backgroundColor: RX_DOT_COLOR[rx.status] ?? 'var(--clr-text-muted)' }} />
+                      <div className="pd-history-body">
+                        <div className="pd-history-date">{fmtDate(rx.prescribed_at)}</div>
+                        {rx.items?.length > 0 && (
+                          <div className="pd-history-sub">{rx.items.length} item{rx.items.length !== 1 ? 's' : ''}</div>
+                        )}
+                      </div>
+                      <div className="pd-history-right">
+                        <span className={`status-badge ${rx.status}`}>{RX_STATUS_LABEL[rx.status] ?? rx.status}</span>
+                        <span className="pd-arrow" aria-hidden="true">→</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {rxMeta && rxPage < rxMeta.last_page && (
+                  <button className="btn-link"
+                    style={{ marginTop: 'var(--space-sm)', fontSize: '13px', display: 'block' }}
+                    onClick={loadMoreRx} disabled={rxLoadingMore}>
+                    {rxLoadingMore ? 'Loading…' : `Load more (${rxMeta.total - prescriptions.length} more)`}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'vitals'  && <VitalSignsTab  patientId={id} />}
+      {activeTab === 'history' && <MedicalHistoryTab patientId={id} />}
+      {activeTab === 'lab'     && <LabReportsTab   patientId={id} />}
+      {activeTab === 'timeline' && (
+        <PatientTimeline events={timeline} status={timelineStatus} navigate={navigate} />
+      )}
 
       {/* ── Edit modal ───────────────────────────────────────────────── */}
       {showEdit && (
@@ -358,6 +362,79 @@ function MetaItem({ label, value }) {
     <div className="pd-meta-item">
       <span className="pd-meta-label">{label}</span>
       <span className="pd-meta-value">{value}</span>
+    </div>
+  )
+}
+
+const TL_TYPE_LABEL = { visit: 'Visit', vital: 'Vitals', lab: 'Lab Report', appointment: 'Appt' }
+const TL_TYPE_COLOR = {
+  visit:       '#6366f1',
+  vital:       '#10b981',
+  lab:         '#f59e0b',
+  appointment: '#06b6d4',
+}
+
+function PatientTimeline({ events, status, navigate }) {
+  if (status === 'loading') return <div className="pd-history-empty" style={{ padding: '40px 0', textAlign: 'center' }}>Loading…</div>
+  if (status === 'error')   return <div className="pd-history-empty" style={{ padding: '40px 0', textAlign: 'center' }}>Could not load timeline.</div>
+  if (status === 'done' && events.length === 0) return (
+    <div className="pd-history-empty" style={{ padding: '40px 0', textAlign: 'center' }}>No events recorded yet.</div>
+  )
+
+  return (
+    <div style={{ marginTop: 'var(--space-md)', paddingBottom: 'var(--space-lg)' }}>
+      {events.map((ev, idx) => {
+        const color = TL_TYPE_COLOR[ev.type] ?? '#6366f1'
+        const label = TL_TYPE_LABEL[ev.type] ?? ev.type
+        const date  = ev.date ? new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+        const isClickable = ev.type === 'visit' && ev.id
+        return (
+          <div key={`${ev.type}-${ev.id ?? idx}`}
+            style={{ display: 'flex', gap: 14, marginBottom: 0, position: 'relative' }}>
+            {/* Timeline spine */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 28, flexShrink: 0 }}>
+              <div style={{
+                width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0,
+                marginTop: 16, border: `2px solid ${color}`, boxSizing: 'border-box',
+              }} />
+              {idx < events.length - 1 && (
+                <div style={{ width: 2, flex: 1, background: 'var(--clr-border)', minHeight: 24, marginTop: 4 }} />
+              )}
+            </div>
+            {/* Card */}
+            <div
+              style={{
+                flex: 1, background: 'var(--clr-surface)', border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 8,
+                cursor: isClickable ? 'pointer' : 'default',
+                transition: isClickable ? 'border-color .15s' : undefined,
+              }}
+              onClick={isClickable ? () => navigate(`/visits/${ev.id}`) : undefined}
+              onMouseEnter={isClickable ? e => e.currentTarget.style.borderColor = color : undefined}
+              onMouseLeave={isClickable ? e => e.currentTarget.style.borderColor = 'var(--clr-border)' : undefined}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px',
+                  color, background: `${color}20`, padding: '2px 8px', borderRadius: 99,
+                }}>{label}</span>
+                <span style={{ fontSize: 12, color: 'var(--clr-text-muted)' }}>{date}</span>
+              </div>
+              {ev.title && (
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-text)', marginBottom: 2 }}>{ev.title}</div>
+              )}
+              {ev.notes && (
+                <div style={{ fontSize: 12, color: 'var(--clr-text-muted)', lineHeight: 1.5 }}>
+                  {ev.notes.length > 120 ? ev.notes.slice(0, 118) + '…' : ev.notes}
+                </div>
+              )}
+              {ev.sub && (
+                <div style={{ fontSize: 12, color: 'var(--clr-text-muted)' }}>{ev.sub}</div>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

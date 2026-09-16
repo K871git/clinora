@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { getSettings, updateClinic, updatePrescriptionSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
+import { sanitizeMobile, validateMobile } from '../../lib/inputValidators'
 
 function flattenErrors(errors) {
   const out = {}
@@ -248,8 +249,15 @@ export default function SettingsPage() {
                 <input
                   className={`stg-input${clinicErrors.contact ? ' has-error' : ''}`}
                   value={clinic.contact}
-                  onChange={e => setClinicField('contact', e.target.value)}
-                  placeholder="e.g. +91 98765-43210"
+                  inputMode="numeric"
+                  maxLength={10}
+                  onChange={e => {
+                    const v = sanitizeMobile(e.target.value)
+                    setClinicField('contact', v)
+                    const err = validateMobile(v)
+                    if (err) setClinicErrors(prev => ({ ...prev, contact: err }))
+                  }}
+                  placeholder="10-digit number"
                 />
                 <span className="stg-hint">Phone number for patient callbacks.</span>
                 {clinicErrors.contact && <span className="stg-error">{clinicErrors.contact}</span>}

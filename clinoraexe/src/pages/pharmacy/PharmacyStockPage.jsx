@@ -59,22 +59,50 @@ function CategoryPicker({ value, onChange, categories }) {
 }
 
 /* ── Stock level dot ──────────────────────────────────────────────────── */
-function StockDot({ qty }) {
-  const level = qty === 0 ? 'out' : qty <= 5 ? 'low' : 'ok'
+function StockDot({ qty, reorderLevel = 10 }) {
+  const level = qty === 0 ? 'out' : qty <= reorderLevel ? 'low' : 'ok'
   return <span className={`phs-stock-dot phs-stock-dot--${level}`} title={
     level === 'out' ? 'Out of stock' : level === 'low' ? `Low stock (${qty})` : `In stock (${qty})`
   } />
 }
 
+/* ── Expiry badge ─────────────────────────────────────────────────────── */
+function ExpiryBadge({ expiryDate }) {
+  if (!expiryDate) return <span style={{ color: 'var(--clr-text-muted)', fontSize: 11 }}>—</span>
+  const today = new Date(); today.setHours(0,0,0,0)
+  const exp   = new Date(expiryDate)
+  const days  = Math.round((exp - today) / 86400000)
+  const label = days < 0  ? 'Expired'
+              : days === 0 ? 'Today'
+              : days <= 30 ? `${days}d`
+              : exp.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })
+  const color = days < 0  ? '#dc2626'
+              : days <= 30 ? '#d97706'
+              : '#16a34a'
+  const bg    = days < 0  ? 'rgba(220,38,38,.10)'
+              : days <= 30 ? 'rgba(217,119,6,.10)'
+              : 'rgba(22,163,74,.10)'
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 99,
+      background: bg, color, whiteSpace: 'nowrap',
+    }} title={expiryDate}>{label}</span>
+  )
+}
+
 /* ── Edit medicine modal ──────────────────────────────────────────────── */
 function EditMedicineModal({ medicine, categories, medicines, onClose, onSaved }) {
   const [form, setForm] = useState({
-    name:         medicine.name,
-    generic_name: medicine.generic_name ?? '',
-    category:     medicine.category ?? '',
-    unit:         medicine.unit ?? '',
-    quantity:     medicine.quantity != null ? String(medicine.quantity) : '0',
-    price:        medicine.price != null ? String(medicine.price) : '',
+    name:          medicine.name,
+    generic_name:  medicine.generic_name  ?? '',
+    category:      medicine.category      ?? '',
+    unit:          medicine.unit           ?? '',
+    quantity:      medicine.quantity != null ? String(medicine.quantity) : '0',
+    price:         medicine.price != null ? String(medicine.price) : '',
+    batch_number:  medicine.batch_number  ?? '',
+    expiry_date:   medicine.expiry_date   ?? '',
+    received_date: medicine.received_date ?? '',
+    reorder_level: medicine.reorder_level != null ? String(medicine.reorder_level) : '10',
   })
   const [saving, setSaving] = useState(false)
   const [dupWarn, setDupWarn] = useState(false)
@@ -100,12 +128,16 @@ function EditMedicineModal({ medicine, categories, medicines, onClose, onSaved }
     setSaving(true)
     try {
       const { data } = await updateMedicine(medicine.id, {
-        name:         form.name.trim(),
-        generic_name: form.generic_name.trim() || null,
-        category:     form.category.trim()     || null,
-        unit:         form.unit.trim()         || null,
-        quantity:     form.quantity !== '' ? parseInt(form.quantity, 10) : 0,
-        price:        form.price    !== '' ? parseFloat(form.price)     : null,
+        name:          form.name.trim(),
+        generic_name:  form.generic_name.trim()  || null,
+        category:      form.category.trim()       || null,
+        unit:          form.unit.trim()            || null,
+        quantity:      form.quantity !== '' ? parseInt(form.quantity, 10) : 0,
+        price:         form.price    !== '' ? parseFloat(form.price)     : null,
+        batch_number:  form.batch_number.trim()   || null,
+        expiry_date:   form.expiry_date           || null,
+        received_date: form.received_date         || null,
+        reorder_level: form.reorder_level !== '' ? parseInt(form.reorder_level, 10) : 10,
       })
       toast.success(`${data.name} updated`)
       onSaved(data)
@@ -166,6 +198,34 @@ function EditMedicineModal({ medicine, categories, medicines, onClose, onSaved }
                 <input className="field" type="number" min="0" step="0.01" placeholder="0.00"
                   value={form.price}
                   onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+              </div>
+            </div>
+            <div className="phs-modal-row">
+              <div className="field-group">
+                <label className="field-label">Batch Number</label>
+                <input className="field" placeholder="e.g. BT-2024-001"
+                  value={form.batch_number}
+                  onChange={e => setForm(f => ({ ...f, batch_number: e.target.value }))} />
+              </div>
+              <div className="field-group">
+                <label className="field-label">Reorder Level</label>
+                <input className="field" type="number" min="0" step="1" placeholder="10"
+                  value={form.reorder_level}
+                  onChange={e => setForm(f => ({ ...f, reorder_level: e.target.value }))} />
+              </div>
+            </div>
+            <div className="phs-modal-row">
+              <div className="field-group">
+                <label className="field-label">Expiry Date</label>
+                <input className="field" type="date"
+                  value={form.expiry_date}
+                  onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} />
+              </div>
+              <div className="field-group">
+                <label className="field-label">Received Date</label>
+                <input className="field" type="date"
+                  value={form.received_date}
+                  onChange={e => setForm(f => ({ ...f, received_date: e.target.value }))} />
               </div>
             </div>
           </div>
@@ -275,7 +335,7 @@ function MedicineTab() {
 
   /* add form */
   const [showAdd,      setShowAdd]      = useState(false)
-  const [addForm,      setAddForm]      = useState({ name: '', generic_name: '', category: '', unit: '', price: '', quantity: '' })
+  const [addForm,      setAddForm]      = useState({ name: '', generic_name: '', category: '', unit: '', price: '', quantity: '', batch_number: '', expiry_date: '', received_date: '', reorder_level: '10' })
   const [adding,       setAdding]       = useState(false)
   const [addDupWarn,   setAddDupWarn]   = useState(false)
 
@@ -349,12 +409,16 @@ function MedicineTab() {
     setSavingId(med.id)
     try {
       const payload = {
-        name:         med.name,
-        generic_name: med.generic_name ?? null,
-        category:     med.category ?? null,
-        unit:         med.unit ?? null,
-        quantity:     field === 'quantity' ? parsed : (med.quantity ?? 0),
-        price:        field === 'price' ? (rawValue === '' ? null : parseFloat(rawValue)) : (med.price ?? null),
+        name:          med.name,
+        generic_name:  med.generic_name  ?? null,
+        category:      med.category      ?? null,
+        unit:          med.unit           ?? null,
+        quantity:      field === 'quantity' ? parsed : (med.quantity ?? 0),
+        price:         field === 'price' ? (rawValue === '' ? null : parseFloat(rawValue)) : (med.price ?? null),
+        batch_number:  med.batch_number  ?? null,
+        expiry_date:   med.expiry_date   ?? null,
+        received_date: med.received_date ?? null,
+        reorder_level: med.reorder_level ?? 10,
       }
       const { data } = await patchMedicine(med.id, payload)
       setMedicines(prev => prev.map(m => m.id === med.id ? data : m))
@@ -376,16 +440,20 @@ function MedicineTab() {
     setAdding(true)
     try {
       const { data } = await createMedicine({
-        name:         addForm.name.trim(),
-        generic_name: addForm.generic_name.trim() || null,
-        category:     addForm.category.trim()     || null,
-        unit:         addForm.unit.trim()          || null,
-        price:        addForm.price !== '' ? parseFloat(addForm.price) : null,
-        quantity:     addForm.quantity !== '' ? parseInt(addForm.quantity, 10) : 0,
+        name:          addForm.name.trim(),
+        generic_name:  addForm.generic_name.trim()  || null,
+        category:      addForm.category.trim()       || null,
+        unit:          addForm.unit.trim()            || null,
+        price:         addForm.price    !== '' ? parseFloat(addForm.price)      : null,
+        quantity:      addForm.quantity !== '' ? parseInt(addForm.quantity, 10) : 0,
+        batch_number:  addForm.batch_number.trim()   || null,
+        expiry_date:   addForm.expiry_date           || null,
+        received_date: addForm.received_date         || null,
+        reorder_level: addForm.reorder_level !== '' ? parseInt(addForm.reorder_level, 10) : 10,
       })
       setMedicines(prev => [data, ...prev])
       setTotal(t => t + 1)
-      setAddForm({ name: '', generic_name: '', category: '', unit: '', price: '', quantity: '' })
+      setAddForm({ name: '', generic_name: '', category: '', unit: '', price: '', quantity: '', batch_number: '', expiry_date: '', received_date: '', reorder_level: '10' })
       setShowAdd(false)
       setAddDupWarn(false)
       toast.success(`${data.name} added to stock`)
@@ -444,7 +512,7 @@ function MedicineTab() {
             Import
           </button>
           <button className="btn-primary phs-add-btn"
-            onClick={() => { setShowAdd(s => !s); setAddForm({ name: '', generic_name: '', category: '', unit: '', price: '', quantity: '' }); setAddDupWarn(false) }}>
+            onClick={() => { setShowAdd(s => !s); setAddForm({ name: '', generic_name: '', category: '', unit: '', price: '', quantity: '', batch_number: '', expiry_date: '', received_date: '', reorder_level: '10' }); setAddDupWarn(false) }}>
             {showAdd ? 'Cancel' : '+ Add Medicine'}
           </button>
         </div>
@@ -502,6 +570,26 @@ function MedicineTab() {
               <input className="field" type="number" min="0" step="1" placeholder="0"
                 value={addForm.quantity} onChange={e => setAddForm(f => ({ ...f, quantity: e.target.value }))} />
             </div>
+            <div className="field-group">
+              <label className="field-label">Batch Number</label>
+              <input className="field" placeholder="e.g. BT-2024-001"
+                value={addForm.batch_number} onChange={e => setAddForm(f => ({ ...f, batch_number: e.target.value }))} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">Expiry Date</label>
+              <input className="field" type="date"
+                value={addForm.expiry_date} onChange={e => setAddForm(f => ({ ...f, expiry_date: e.target.value }))} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">Received Date</label>
+              <input className="field" type="date"
+                value={addForm.received_date} onChange={e => setAddForm(f => ({ ...f, received_date: e.target.value }))} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">Reorder Level</label>
+              <input className="field" type="number" min="0" step="1" placeholder="10"
+                value={addForm.reorder_level} onChange={e => setAddForm(f => ({ ...f, reorder_level: e.target.value }))} />
+            </div>
           </div>
           <div className="phs-add-actions">
             <button type="button" className="btn-secondary" onClick={() => setShowAdd(false)} disabled={adding}>Cancel</button>
@@ -536,6 +624,7 @@ function MedicineTab() {
                   <th>Generic</th>
                   <th>Category</th>
                   <th>Unit</th>
+                  <th style={{ width: '100px' }}>Expiry</th>
                   <th style={{ textAlign: 'right', width: '80px' }}>Qty</th>
                   <th style={{ textAlign: 'right', width: '110px' }}>Price</th>
                   <th style={{ width: '90px' }}></th>
@@ -551,7 +640,7 @@ function MedicineTab() {
                   return (
                     <tr key={med.id} className="ml-table-row">
                       <td style={{ padding: '10px 6px 10px 16px' }}>
-                        <StockDot qty={med.quantity ?? 0} />
+                        <StockDot qty={med.quantity ?? 0} reorderLevel={med.reorder_level ?? 10} />
                       </td>
                       <td className="ml-td-name">{med.name}</td>
                       <td className="ml-td-muted">{med.generic_name || '—'}</td>
@@ -561,6 +650,9 @@ function MedicineTab() {
                           : <span className="ml-td-muted">—</span>}
                       </td>
                       <td className="ml-td-muted">{med.unit || '—'}</td>
+                      <td style={{ padding: '8px 10px' }}>
+                        <ExpiryBadge expiryDate={med.expiry_date} />
+                      </td>
 
                       {/* Inline qty */}
                       <td style={{ textAlign: 'right', padding: '8px 10px' }}>

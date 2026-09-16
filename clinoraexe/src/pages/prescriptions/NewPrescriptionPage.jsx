@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getVisit } from '../../services/visitService'
 import { createPrescription } from '../../services/prescriptionService'
+import { getPatientAllergies } from '../../services/medicalHistoryService'
 import MedicineEditor from './MedicineEditor'
 import { newMedicineItem } from './medicineUtils'
 import Spinner from '../../components/ui/Spinner'
@@ -61,6 +62,7 @@ export default function NewPrescriptionPage() {
 
   const [visit, setVisit] = useState(null)
   const [visitStatus, setVisitStatus] = useState('loading')
+  const [allergies, setAllergies] = useState([])
 
   const [prescribedAt, setPrescribedAt] = useState(() => nowLocal())
   const [doctorNotes, setDoctorNotes] = useState('')
@@ -77,6 +79,10 @@ export default function NewPrescriptionPage() {
         if (!cancelled) {
           setVisit(data)
           setVisitStatus('done')
+          // Fetch allergies silently after visit loads
+          getPatientAllergies(data.patient_id)
+            .then(a => { if (!cancelled) setAllergies(a ?? []) })
+            .catch(() => {})
         }
       })
       .catch((err) => {
@@ -149,6 +155,31 @@ export default function NewPrescriptionPage() {
           <span className="nrx-sub">/ {fmtDate(visit.visited_at)}</span>
         )}
       </button>
+
+      {/* ── Allergy alert ─────────────────────────────────────────────── */}
+      {allergies.length > 0 && (
+        <div style={{
+          background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.4)',
+          borderRadius: 'var(--radius-md)', padding: '10px 14px',
+          marginBottom: 'var(--space-md)', display: 'flex', gap: 10, alignItems: 'flex-start',
+        }}>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>⚠️</span>
+          <div>
+            <div style={{ fontWeight: 700, color: '#dc2626', fontSize: 13, marginBottom: 3 }}>
+              Allergy Alert — {visit.patient.name}
+            </div>
+            <div style={{ fontSize: 12, color: '#dc2626' }}>
+              {allergies.map((a, i) => (
+                <span key={a.id}>
+                  <strong>{a.title}</strong>
+                  {a.severity && ` (${a.severity})`}
+                  {i < allergies.length - 1 && ' · '}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <h1 className="visit-page-title">New Prescription</h1>
 

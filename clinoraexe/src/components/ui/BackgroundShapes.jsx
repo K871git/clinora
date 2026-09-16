@@ -33,6 +33,11 @@ export default function BackgroundShapes({ pharmacy = false }) {
         {pharmacy && <div className="bg-blob bg-blob-4" />}
       </div>
 
+      {/* ── Logo watermark ────────────────────────────────────────────────── */}
+      <div className="bg-logo-wrap">
+        <img src="/logos/brand2.png" alt="" className="bg-logo-img" draggable="false" />
+      </div>
+
       {/* ── SLOW layer — large hero shapes ───────────────────────────────── */}
       <div className="bg-layer" ref={slowRef}>
 

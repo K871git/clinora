@@ -27,10 +27,14 @@ import VisitsPage from '../pages/visits/VisitsPage'
 import DoctorHelpPage from '../pages/help/DoctorHelpPage'
 import DoctorRevenuePage from '../pages/revenue/DoctorRevenuePage'
 import PharmacyRevenuePage from '../pages/revenue/PharmacyRevenuePage'
+import AppointmentsPage from '../pages/appointments/AppointmentsPage'
+import OPDRegisterPage from '../pages/opd/OPDRegisterPage'
+import PharmacyLabelPage from '../pages/pharmacy/PharmacyLabelPage'
 import GamesHubPage from '../pages/games/GamesHubPage'
 import SnakeGame from '../pages/games/SnakeGame'
 import TetrisGame from '../pages/games/TetrisGame'
 import FlappyGame from '../pages/games/FlappyGame'
+import NotesPage from '../pages/notes/NotesPage'
 
 /* Forces PatientDetailPage to fully remount when :id changes, resetting all state */
 function KeyedPatientDetail() {
@@ -75,6 +79,8 @@ export default function AppRoutes() {
             <Route path="/prescriptions" element={<PrescriptionsPage />} />
             <Route path="/visits" element={<VisitsPage />} />
             <Route path="/medicines" element={<MedicinesPage />} />
+            <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route path="/opd" element={<OPDRegisterPage />} />
             <Route path="/revenue" element={<DoctorRevenuePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/help" element={<DoctorHelpPage />} />
@@ -82,6 +88,7 @@ export default function AppRoutes() {
             <Route path="/games/snake" element={<SnakeGame />} />
             <Route path="/games/tetris" element={<TetrisGame />} />
             <Route path="/games/flappy" element={<FlappyGame />} />
+            <Route path="/notes" element={<NotesPage userRole="doctor" />} />
           </Route>
 
           {/* Pharmacy */}
@@ -97,6 +104,7 @@ export default function AppRoutes() {
             <Route path="/pharmacy/games/snake" element={<SnakeGame />} />
             <Route path="/pharmacy/games/tetris" element={<TetrisGame />} />
             <Route path="/pharmacy/games/flappy" element={<FlappyGame />} />
+            <Route path="/pharmacy/notes" element={<NotesPage userRole="pharmacist" />} />
           </Route>
 
         </Route>
@@ -112,6 +120,7 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute role="pharmacy" />}>
         <Route path="/pharmacy/prescriptions/:prescriptionId/invoice" element={<PharmacyInvoicePage />} />
         <Route path="/pharmacy/prescriptions/:prescriptionId/print" element={<PharmacyPrescriptionPrintPage />} />
+        <Route path="/pharmacy/prescriptions/:prescriptionId/label" element={<PharmacyLabelPage />} />
       </Route>
 
       {/* Unknown paths go to root; ProtectedRoute redirects from there */}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { getDashboardStats, getTodayPatients, getDashboardPendingRx } from '../../services/dashboardService'
+import { listFollowups } from '../../services/visitService'
 import PatientSearchBox from './PatientSearchBox'
 import RevenueModal from './RevenueModal'
 import ErrorBoundary from '../../components/ErrorBoundary'
@@ -53,6 +54,9 @@ export default function DashboardPage() {
   const [pendingRx, setPendingRx] = useState([])
   const [rxStatus, setRxStatus]   = useState('loading')
 
+  const [followups,      setFollowups]      = useState([])
+  const [followupStatus, setFollowupStatus] = useState('loading')
+
   const [revenueOpen, setRevenueOpen] = useState(false)
 
   const fetchStats = useCallback(() => {
@@ -78,6 +82,10 @@ export default function DashboardPage() {
     getDashboardPendingRx()
       .then(({ data }) => { if (!cancelled) { setPendingRx(data.data ?? []); setRxStatus('done') } })
       .catch(() => { if (!cancelled) setRxStatus('error') })
+
+    listFollowups()
+      .then(data => { if (!cancelled) { setFollowups(data ?? []); setFollowupStatus('done') } })
+      .catch(() => { if (!cancelled) setFollowupStatus('done') })
 
     const interval = setInterval(fetchStats, 60_000)
     return () => { cancelled = true; clearInterval(interval) }
@@ -310,6 +318,41 @@ export default function DashboardPage() {
                 </SidePanel>
               </div>
             </ErrorBoundary>
+
+
+            {/* Upcoming follow-ups */}
+            {followupStatus !== 'loading' && followups.length > 0 && (
+              <ErrorBoundary>
+                <div className="card dash-card" style={{ borderLeft: '3px solid var(--clr-primary)' }}>
+                  <div className="dash-card-header">
+                    <span className="dash-card-title">Upcoming Follow-ups</span>
+                    <button className="btn-link" onClick={() => navigate('/opd')}>View OPD</button>
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {followups.slice(0, 8).map(f => {
+                      const isToday = f.followup_date === new Date().toISOString().split('T')[0]
+                      return (
+                        <li key={f.id}>
+                          <button className="dash-list-item" onClick={() => navigate(`/visits/${f.id}`)}>
+                            <div className="dash-avatar" style={{ background: isToday ? 'var(--clr-danger)' : 'var(--clr-primary)', fontSize: 11 }}>
+                              {isToday ? 'NOW' : f.followup_date?.slice(5)}
+                            </div>
+                            <div className="dash-item-body">
+                              <div className="dash-item-name">{f.patient?.name}</div>
+                              <div className="dash-item-sub">
+                                {isToday ? 'Today' : new Date(f.followup_date + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                {f.followup_notes && ` — ${f.followup_notes}`}
+                              </div>
+                            </div>
+                            <span className="dash-arrow" aria-hidden="true">→</span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              </ErrorBoundary>
+            )}
 
           </div>
         </>

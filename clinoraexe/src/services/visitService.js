@@ -46,3 +46,10 @@ export async function getRevenueTransactions(period = 'this_month', filter = 'al
   const result = await invoke('get_revenue_transactions', { period, filter })
   return { data: result }
 }
+
+export const updateFollowup  = (id, followupDate, followupNotes) =>
+  invoke('update_followup', { id: Number(id), followupDate, followupNotes })
+
+export const listFollowups   = () => invoke('list_followups')
+
+export const listOpdRegister = (date) => invoke('list_opd_register', { date })

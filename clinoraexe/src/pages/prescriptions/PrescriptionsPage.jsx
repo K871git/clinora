@@ -211,7 +211,6 @@ function TemplatesPanel() {
     if (!file) return
     e.target.value = ''
     setUploading(true)
-    setUploadPct(0)
     try {
       const { data } = await uploadTemplate(file)
       setTemplates(prev => [...prev, data])
@@ -219,7 +218,6 @@ function TemplatesPanel() {
       alert('Upload failed. Check file type (PDF/PNG/JPG/WebP) and size (max 10 MB).')
     } finally {
       setUploading(false)
-      setUploadPct(0)
     }
   }
 

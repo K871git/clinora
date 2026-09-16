@@ -48,3 +48,13 @@ export async function getPharmacyRevenueTransactions(period = 'this_month', filt
   const result = await invoke('get_pharmacy_revenue_transactions', { period, filter })
   return { data: result }
 }
+
+export async function savePharmacistNotes(id, notes) {
+  const result = await invoke('save_pharmacist_notes', { id: Number(id), notes: notes || null })
+  return { data: result }
+}
+
+export async function getPharmacyStockSummary() {
+  const result = await invoke('get_pharmacy_stock_summary')
+  return { data: result }
+}
