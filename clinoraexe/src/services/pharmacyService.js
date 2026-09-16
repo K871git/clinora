@@ -58,3 +58,11 @@ export async function getPharmacyStockSummary() {
   const result = await invoke('get_pharmacy_stock_summary')
   return { data: result }
 }
+
+export async function getPatientDispenseHistory(patientId, excludeId) {
+  const result = await invoke('get_patient_dispense_history', {
+    patientId: Number(patientId),
+    excludeId: Number(excludeId),
+  })
+  return { data: result }
+}

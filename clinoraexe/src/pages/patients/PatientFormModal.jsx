@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPatient, updatePatient } from '../../services/patientService'
 import Modal from '../../components/ui/Modal'
-import { sanitizeMobile, validateMobile, sanitizeAge, validateAge } from '../../lib/inputValidators'
+import { sanitizeMobile, validateMobile, sanitizeAge, validateAge, validateDob } from '../../lib/inputValidators'
 
 const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#3b82f6']
 function avatarColor(name) { return AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length] }
@@ -138,6 +138,9 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
 
     const ageErr = validateAge(form.age)
     if (ageErr) errs.age = ageErr
+
+    const dobErr = validateDob(form.date_of_birth)
+    if (dobErr) errs.date_of_birth = dobErr
 
     const numAge = form.age !== '' ? Number(form.age) : null
     const effAge = numAge !== null

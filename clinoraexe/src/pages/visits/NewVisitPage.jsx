@@ -6,6 +6,7 @@ import { createVisit, saveFee, completeVisit } from '../../services/visitService
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import { confirmDiscard } from '../../lib/swal'
+import { validateFee } from '../../lib/inputValidators'
 
 function nowLocal() {
   const d = new Date()
@@ -84,10 +85,11 @@ export default function NewVisitPage() {
   }
 
   async function submit(action) {
-    if (!visitedAt) {
-      setFieldErrors({ visitedAt: 'Visit date and time is required.' })
-      return
-    }
+    const errs = {}
+    if (!visitedAt) errs.visitedAt = 'Visit date and time is required.'
+    const feeErr = validateFee(fee)
+    if (feeErr) errs.fee = feeErr
+    if (Object.keys(errs).length) { setFieldErrors(errs); return }
     setSubmitting(true)
     setActiveAction(action)
     setApiError(null)
@@ -214,14 +216,15 @@ export default function NewVisitPage() {
               <span className="nvp-fee-currency">₹</span>
               <input
                 type="number"
-                className="field nvp-fee-input"
+                className={`field nvp-fee-input${fieldErrors.fee ? ' has-error' : ''}`}
                 min="0"
                 step="0.01"
                 placeholder="0.00"
                 value={fee}
-                onChange={e => setFee(e.target.value)}
+                onChange={e => { setFee(e.target.value); setFieldErrors(f => ({ ...f, fee: null })) }}
               />
             </div>
+            {fieldErrors.fee && <span className="field-error-msg">{fieldErrors.fee}</span>}
           </div>
 
           {/* Actions */}

@@ -15,8 +15,24 @@ export function sanitizeMobile(value) {
  */
 export function validateMobile(value) {
   if (!value) return null
-  if (!/^[1-9]/.test(value))  return 'Mobile number cannot start with 0.'
-  if (value.length !== 10)    return 'Mobile number must be exactly 10 digits.'
+  if (value.length !== 10)       return 'Mobile number must be exactly 10 digits.'
+  if (!/^[6-9]/.test(value))     return 'Mobile number must start with 6, 7, 8 or 9.'
+  return null
+}
+
+/** Returns error string if DOB is in the future, or null if valid. */
+export function validateDob(value) {
+  if (!value) return null
+  const dob = new Date(value)
+  if (dob > new Date()) return 'Date of birth cannot be in the future.'
+  return null
+}
+
+/** Returns error string if fee is negative, or null if valid. */
+export function validateFee(value) {
+  if (value === '' || value == null) return null
+  const n = parseFloat(value)
+  if (isNaN(n) || n < 0) return 'Fee cannot be negative.'
   return null
 }
 

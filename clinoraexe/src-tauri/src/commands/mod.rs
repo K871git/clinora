@@ -18,3 +18,4 @@ pub mod appointments;
 pub mod lab_reports;
 pub mod timeline;
 pub mod notes;
+pub mod backup;

@@ -11,6 +11,7 @@ import {
   completePharmacyPrescription,
   recordPrescriptionPayment,
   savePharmacistNotes,
+  getPatientDispenseHistory,
 } from '../../services/pharmacyService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
@@ -100,6 +101,10 @@ export default function PharmacyPrescriptionPage() {
   const [savingNotes,    setSavingNotes]    = useState(false)
   const [notesTimer,     setNotesTimer]     = useState(null)
 
+  /* medication history */
+  const [medHistory,     setMedHistory]     = useState([])
+  const [histOpen,       setHistOpen]       = useState(true)
+
   useEffect(() => {
     let cancelled = false
     getPharmacyPrescription(prescriptionId)
@@ -112,6 +117,11 @@ export default function PharmacyPrescriptionPage() {
           setPaymentNotes(rx.payment_notes ?? '')
           setPharmNotes(rx.pharmacist_notes ?? '')
           setPageStatus('done')
+          if (rx.patient?.id) {
+            getPatientDispenseHistory(rx.patient.id, prescriptionId)
+              .then(({ data: hist }) => { if (!cancelled) setMedHistory(hist) })
+              .catch(() => {})
+          }
         }
       })
       .catch((err) => {
@@ -664,6 +674,63 @@ export default function PharmacyPrescriptionPage() {
               {savingPayment ? 'Saving…' : 'Save Payment'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Patient Medication History ────────────────────────────────── */}
+      {medHistory.length > 0 && (
+        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+          <div
+            className="rx-content-header"
+            style={{ cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => setHistOpen(o => !o)}
+          >
+            <span className="rx-content-label">Previous Dispense History</span>
+            <span className="rx-content-count">{medHistory.length}</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--clr-text-muted)' }}>
+              {histOpen ? '▲ hide' : '▼ show'}
+            </span>
+          </div>
+
+          {histOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+              {medHistory.map((rx, i) => (
+                <div
+                  key={rx.id}
+                  style={{
+                    background: 'var(--clr-surface)',
+                    border: '1px solid var(--clr-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '8px 12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)' }}>
+                      #{i + 1}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--clr-text)' }}>
+                      {fmtDateTime(rx.completed_at || rx.prescribed_at)}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginLeft: 'auto' }}>
+                      {rx.doctor_name ? `Dr. ${rx.doctor_name}` : ''}
+                    </span>
+                  </div>
+                  <ul style={{ margin: 0, padding: '0 0 0 16px', listStyle: 'disc' }}>
+                    {(rx.medicines ?? []).map((m, j) => (
+                      <li key={j} style={{ fontSize: 12, color: 'var(--clr-text)', lineHeight: 1.6 }}>
+                        <span style={{ fontWeight: 500 }}>{m.medicine_name}</span>
+                        {(m.dosage || m.frequency || m.duration) && (
+                          <span style={{ color: 'var(--clr-text-muted)', marginLeft: 4 }}>
+                            — {[m.dosage, m.frequency, m.duration].filter(Boolean).join(', ')}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

@@ -187,6 +187,7 @@ pub fn run() {
             commands::pharmacy::get_pharmacy_revenue_transactions,
             commands::pharmacy::save_pharmacist_notes,
             commands::pharmacy::get_pharmacy_stock_summary,
+            commands::pharmacy::get_patient_dispense_history,
             // Stock Items
             commands::stock_items::list_stock_items,
             commands::stock_items::create_stock_item,
@@ -258,6 +259,8 @@ pub fn run() {
             commands::medical_history::get_patient_allergies,
             // Patient Timeline
             commands::timeline::get_patient_timeline,
+            // Backup
+            commands::backup::backup_database,
             // Notes
             commands::notes::list_notes,
             commands::notes::get_note,
