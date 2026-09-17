@@ -5,32 +5,18 @@ import { getPrescription } from '../../services/prescriptionService'
 import { getSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
 import '../../styles/print-prescription.css'
+import { fmtDateTime, fmtDateParts } from '../../lib/dateUtils'
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  const d = new Date(iso)
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  return `${dd}/${mm}/${d.getFullYear()}`
+  const { dd, mm, yyyy } = fmtDateParts(iso)
+  return `${dd}/${mm}/${yyyy}`
 }
 
 function dateParts(iso) {
-  const d = new Date(iso)
-  return {
-    dd:   String(d.getDate()).padStart(2, '0'),
-    mm:   String(d.getMonth() + 1).padStart(2, '0'),
-    yyyy: String(d.getFullYear()),
-  }
-}
-
-function fmtDateTime(iso) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-IN', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
+  return fmtDateParts(iso)
 }
 
 /* ── Medicine list ───────────────────────────────────────────────────── */

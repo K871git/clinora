@@ -208,13 +208,29 @@ pub async fn record_visit_payment(id: u64, data: PaymentPayload, state: State<'_
     if !["paid", "partial", "unpaid"].contains(&data.payment_status.as_str()) {
         return Err("Invalid payment status.".into());
     }
-    sqlx::query(
-        "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW()
-         WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
-    )
-    .bind(&data.payment_status).bind(data.amount_paid.unwrap_or(0.0))
-    .bind(&data.payment_notes).bind(id).bind(session.clinic_id)
-    .execute(&state.db).await?;
+    // When payment is fully received, mark visit completed and stamp invoiced_at so
+    // it appears in revenue reports. COALESCE preserves an existing invoiced_at date.
+    if data.payment_status == "paid" {
+        sqlx::query(
+            "UPDATE visits
+             SET payment_status=?, amount_paid=?, payment_notes=?,
+                 status='completed',
+                 invoiced_at=COALESCE(invoiced_at, NOW()),
+                 updated_at=NOW()
+             WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
+        )
+        .bind(&data.payment_status).bind(data.amount_paid.unwrap_or(0.0))
+        .bind(&data.payment_notes).bind(id).bind(session.clinic_id)
+        .execute(&state.db).await?;
+    } else {
+        sqlx::query(
+            "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW()
+             WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
+        )
+        .bind(&data.payment_status).bind(data.amount_paid.unwrap_or(0.0))
+        .bind(&data.payment_notes).bind(id).bind(session.clinic_id)
+        .execute(&state.db).await?;
+    }
     get_visit(id, state).await
 }
 

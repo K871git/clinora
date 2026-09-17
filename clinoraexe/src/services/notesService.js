@@ -12,11 +12,17 @@ export async function getNote(id) {
 
 export async function createNote(payload = {}) {
   const result = await invoke('create_note', {
-    title: payload.title || null,
-    body:  payload.body  || null,
-    tags:  payload.tags  || null,
-    role:  payload.role  || null,
+    title:     payload.title      || null,
+    body:      payload.body       || null,
+    tags:      payload.tags       || null,
+    role:      payload.role       || null,
+    patientId: payload.patient_id ? Number(payload.patient_id) : null,
   })
+  return { data: result.data }
+}
+
+export async function listPatientNotes(patientId) {
+  const result = await invoke('list_patient_notes', { patientId: Number(patientId) })
   return { data: result.data }
 }
 

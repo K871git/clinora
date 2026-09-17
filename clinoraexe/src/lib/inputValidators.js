@@ -1,3 +1,10 @@
+/** Returns error string if email format is invalid, or null if valid. */
+export function validateEmail(value) {
+  if (!value) return 'Email is required.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Enter a valid email address.'
+  return null
+}
+
 /**
  * Strips non-digits, leading zeros, and clamps to 10 characters.
  * Safe to call on every keystroke — returns the sanitized value.

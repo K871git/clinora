@@ -1,9 +1,19 @@
 import { invoke } from '@tauri-apps/api/core'
 
+const DB_KEYWORDS = [
+  'lost connection', 'server has gone away', 'pool timed out',
+  'pooltimeout', 'error communicating with database',
+  "can't connect to mysql", 'connection refused',
+]
+
+function isDbError(msg) {
+  const lower = msg.toLowerCase()
+  return DB_KEYWORDS.some(k => lower.includes(k))
+}
+
 /**
- * Wraps invoke() to detect "Not authenticated" errors globally.
- * Dispatches a 'clinora:auth-expired' window event so AuthContext
- * can log the user out immediately without touching every service file.
+ * Wraps invoke() to detect auth expiry and DB connection errors globally.
+ * Dispatches custom window events so AppLayout / AuthContext can react.
  */
 export async function safeInvoke(command, args) {
   try {
@@ -12,6 +22,8 @@ export async function safeInvoke(command, args) {
     const msg = typeof err === 'string' ? err : (err?.message ?? '')
     if (msg.includes('Not authenticated')) {
       window.dispatchEvent(new CustomEvent('clinora:auth-expired'))
+    } else if (isDbError(msg)) {
+      window.dispatchEvent(new CustomEvent('clinora:db-error', { detail: msg }))
     }
     throw err
   }

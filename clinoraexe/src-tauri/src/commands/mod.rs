@@ -19,3 +19,6 @@ pub mod lab_reports;
 pub mod timeline;
 pub mod notes;
 pub mod backup;
+pub mod consent;
+pub mod rx_templates;
+pub mod stock_audit;

@@ -15,19 +15,12 @@ import {
 } from '../../services/pharmacyService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
+import { fmtDateTime } from '../../lib/dateUtils'
 
 const STATUS_LABEL = {
   sent_to_pharmacy: 'Pending',
   dispensing:       'Dispensing',
   completed:        'Completed',
-}
-
-function fmtDateTime(iso) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-IN', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
 }
 
 function fmtPrice(amount) {
@@ -466,21 +459,23 @@ export default function PharmacyPrescriptionPage() {
               </button>
             )}
 
-            {/* Completed notice + View Invoice */}
+            {/* Pharmacy Invoice — available from dispensing onwards */}
+            {(isDispensing || isCompleted) && (
+              <button
+                className="rx-action-btn rx-action-btn--invoice"
+                onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/invoice`)}
+              >
+                <IconPrint />
+                Pharmacy Invoice
+              </button>
+            )}
+
+            {/* Completed notice */}
             {isCompleted && (
-              <>
-                <div className="pharma-done-pill">
-                  <IconCheck size={13} />
-                  Dispensed {prescription.completed_at ? fmtDateTime(prescription.completed_at) : ''}
-                </div>
-                <button
-                  className="rx-action-btn rx-action-btn--invoice"
-                  onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/invoice`)}
-                >
-                  <IconPrint />
-                  Pharmacy Invoice
-                </button>
-              </>
+              <div className="pharma-done-pill">
+                <IconCheck size={13} />
+                Dispensed {prescription.completed_at ? fmtDateTime(prescription.completed_at) : ''}
+              </div>
             )}
           </div>
         </div>

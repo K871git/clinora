@@ -8,6 +8,8 @@ import PageLoader from '../../components/ui/PageLoader'
 import VitalSignsTab from '../../components/emr/VitalSignsTab'
 import MedicalHistoryTab from '../../components/emr/MedicalHistoryTab'
 import LabReportsTab from '../../components/emr/LabReportsTab'
+import PatientNotesTab from '../../components/emr/PatientNotesTab'
+import ErrorBoundary from '../../components/ui/ErrorBoundary'
 import '../../styles/patients.css'
 import '../../styles/emr.css'
 
@@ -255,6 +257,7 @@ export default function PatientDetailPage() {
           { key: 'vitals',    label: 'Vitals' },
           { key: 'history',   label: 'Medical History' },
           { key: 'lab',       label: 'Lab Reports' },
+          { key: 'notes',     label: 'Notes' },
           { key: 'timeline',  label: 'Timeline' },
         ].map(t => (
           <button key={t.key} className={`pd-tab${activeTab === t.key ? ' pd-tab--active' : ''}`}
@@ -336,9 +339,10 @@ export default function PatientDetailPage() {
         </div>
       )}
 
-      {activeTab === 'vitals'  && <VitalSignsTab  patientId={id} />}
-      {activeTab === 'history' && <MedicalHistoryTab patientId={id} />}
-      {activeTab === 'lab'     && <LabReportsTab   patientId={id} />}
+      {activeTab === 'vitals'  && <ErrorBoundary key="vitals"  label="Vitals section failed to load"><VitalSignsTab  patientId={id} /></ErrorBoundary>}
+      {activeTab === 'history' && <ErrorBoundary key="history" label="Medical history failed to load"><MedicalHistoryTab patientId={id} /></ErrorBoundary>}
+      {activeTab === 'lab'     && <ErrorBoundary key="lab"     label="Lab reports failed to load"><LabReportsTab patientId={id} /></ErrorBoundary>}
+      {activeTab === 'notes'   && <ErrorBoundary key="notes"   label="Notes failed to load"><PatientNotesTab patientId={id} userRole="doctor" /></ErrorBoundary>}
       {activeTab === 'timeline' && (
         <PatientTimeline events={timeline} status={timelineStatus} navigate={navigate} />
       )}

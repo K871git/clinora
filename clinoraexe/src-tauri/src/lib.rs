@@ -1,3 +1,4 @@
+// v3
 mod commands;
 mod error;
 mod state;
@@ -137,11 +138,15 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            // Consent
+            commands::consent::check_consent,
+            commands::consent::record_consent,
             // Setup wizard
             commands::setup::get_setup_status,
             commands::setup::test_db_connection,
             commands::setup::save_setup_config,
             commands::setup::restart_app,
+            commands::setup::exit_app,
             // Auth
             commands::auth::login,
             commands::auth::logout,
@@ -203,6 +208,7 @@ pub fn run() {
             commands::medicines::get_stock_alerts,
             // Settings
             commands::settings::get_settings,
+            commands::settings::get_public_clinic_name,
             commands::settings::update_clinic,
             commands::settings::update_prescription_settings,
             commands::settings::update_clinic_name,
@@ -261,6 +267,16 @@ pub fn run() {
             commands::timeline::get_patient_timeline,
             // Backup
             commands::backup::backup_database,
+            commands::backup::update_backup_path,
+            commands::backup::get_backup_path,
+            // Prescription Templates
+            commands::rx_templates::get_rx_templates,
+            commands::rx_templates::save_rx_template,
+            commands::rx_templates::delete_rx_template,
+            // Stock Audit Log
+            commands::stock_audit::get_stock_audit_log,
+            // Pharmacy live counts
+            commands::pharmacy::get_pharmacy_live_counts,
             // Notes
             commands::notes::list_notes,
             commands::notes::get_note,
@@ -270,6 +286,7 @@ pub fn run() {
             commands::notes::save_note_attachment,
             commands::notes::delete_note_attachment,
             commands::notes::read_note_attachment,
+            commands::notes::list_patient_notes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

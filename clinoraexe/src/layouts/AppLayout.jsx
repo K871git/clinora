@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import BackgroundShapes from '../components/ui/BackgroundShapes'
 import PharmacyLoader from '../components/ui/PharmacyLoader'
 import DoctorLoader from '../components/ui/DoctorLoader'
+import ErrorBoundary from '../components/ui/ErrorBoundary'
 import profileService from '../services/profileService'
 import '../styles/app-layout.css'
 
@@ -96,6 +97,7 @@ export default function AppLayout() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [farewell, setFarewell]             = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [dbError, setDbError]         = useState(false)
   const profileRef = useRef(null)
   const avatarFileRef = useRef(null)
 
@@ -110,6 +112,12 @@ export default function AppLayout() {
     document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
     localStorage.setItem('clinora-theme', isDark ? 'dark' : 'light')
   }, [isDark])
+
+  useEffect(() => {
+    function handleDbError() { setDbError(true) }
+    window.addEventListener('clinora:db-error', handleDbError)
+    return () => window.removeEventListener('clinora:db-error', handleDbError)
+  }, [])
 
   useEffect(() => {
     if (user?.role === 'pharmacy') {
@@ -323,6 +331,18 @@ export default function AppLayout() {
                 <IconHelp /> {user?.role === 'pharmacy' ? 'How to Use' : 'Help'}
                 <span className="profile-menu-item-arrow"><IconChevronRight /></span>
               </button>
+
+              <div className="profile-menu-sep" />
+
+              <button className="profile-menu-item" onClick={() => { setProfileOpen(false); navigate('/privacy-policy') }}>
+                <IconShield /> Privacy Policy
+              </button>
+              <button className="profile-menu-item" onClick={() => { setProfileOpen(false); navigate('/terms') }}>
+                <IconDoc /> Terms &amp; Conditions
+              </button>
+
+              <div className="profile-menu-sep" />
+
               <button className="profile-menu-item profile-menu-item--danger" onClick={handleLogout}>
                 <IconLogout /> Log out
               </button>
@@ -385,10 +405,30 @@ export default function AppLayout() {
           </div>
         </header>
 
-        <main className="shell-content">
-          <div key={location.key} className="page-enter">
-            <Outlet />
+        {dbError && (
+          <div style={{
+            background: '#fef2f2', borderBottom: '1px solid #fecaca',
+            padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 13, color: '#7f1d1d', zIndex: 100, flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 16 }}>⚠</span>
+            <span style={{ flex: 1 }}>
+              <strong>Database connection lost.</strong> Check that MySQL is running, then refresh the app.
+            </span>
+            <button
+              onClick={() => setDbError(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#7f1d1d', lineHeight: 1 }}
+              title="Dismiss"
+            >×</button>
           </div>
+        )}
+
+        <main className="shell-content">
+          <ErrorBoundary key={location.key}>
+            <div className="page-enter">
+              <Outlet />
+            </div>
+          </ErrorBoundary>
         </main>
       </div>
     </div>
@@ -569,6 +609,27 @@ function IconLogout() {
       <path d="M7 16H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h4" />
       <path d="M12 13l4-4-4-4" />
       <path d="M16 9H7" />
+    </svg>
+  )
+}
+
+function IconShield() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  )
+}
+
+function IconDoc() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="9" y1="13" x2="15" y2="13" />
+      <line x1="9" y1="17" x2="15" y2="17" />
     </svg>
   )
 }

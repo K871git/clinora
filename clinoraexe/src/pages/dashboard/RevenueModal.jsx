@@ -12,6 +12,81 @@ function pct(paid, total) {
   return Math.round((paid / total) * 100) + '%'
 }
 
+function RingChart({ value, total, color, size = 96, sw = 11 }) {
+  const p = total > 0 ? Math.min(100, (value / total) * 100) : 0
+  const r = (size - sw) / 2
+  const circ = 2 * Math.PI * r
+  const dash = (p / 100) * circ
+  const cx = size / 2, cy = size / 2
+  return (
+    <svg width={size} height={size} style={{ display: 'block', flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--clr-border)" strokeWidth={sw} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={sw}
+        strokeDasharray={`${dash} ${circ - dash}`} strokeLinecap="round"
+        transform={`rotate(-90 ${cx} ${cy})`} style={{ transition: 'stroke-dasharray .5s ease' }} />
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="14" fontWeight="700"
+        style={{ fill: 'var(--clr-text)' }}>{Math.round(p)}%</text>
+      <text x={cx} y={cy + 12} textAnchor="middle" fontSize="9.5"
+        style={{ fill: 'var(--clr-text-muted)' }}>rate</text>
+    </svg>
+  )
+}
+
+function BarChart({ bars, h = 72 }) {
+  const max = Math.max(...bars.map(b => b.v), 1)
+  const W = 38, G = 14
+  const tw = bars.length * (W + G) - G
+  function fmtBar(v) {
+    if (v === 0) return '—'
+    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`
+    if (v >= 1000) return `₹${Math.round(v / 1000)}k`
+    return `₹${Math.round(v)}`
+  }
+  return (
+    <svg width={tw} height={h + 38} style={{ overflow: 'visible', display: 'block' }}>
+      {bars.map((b, i) => {
+        const bh = b.v > 0 ? Math.max(6, (b.v / max) * h) : 4
+        const x = i * (W + G)
+        const y = h - bh
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={W} height={bh} rx={5} fill={b.c} opacity={.85} />
+            <text x={x + W / 2} y={y - 5} textAnchor="middle" fontSize="9" fontWeight="700"
+              style={{ fill: b.c }}>{fmtBar(b.v)}</text>
+            <text x={x + W / 2} y={h + 16} textAnchor="middle" fontSize="9.5"
+              style={{ fill: 'var(--clr-text-muted)' }}>{b.l}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+function DotMatrix({ paid, free }) {
+  const total = paid + free
+  if (total === 0) return null
+  const cols = 10
+  const dots = []
+  let idx = 0
+  for (let i = 0; i < paid; i++, idx++) dots.push({ type: 'paid', i: idx })
+  for (let i = 0; i < free; i++, idx++) dots.push({ type: 'free', i: idx })
+  const rows = Math.ceil(total / cols)
+  const S = 10, G = 3
+  const colors = { paid: '#10b981', free: '#94a3b8' }
+  return (
+    <svg width={cols * (S + G) - G} height={rows * (S + G) - G} style={{ display: 'block' }}>
+      {dots.map(d => {
+        const col = d.i % cols
+        const row = Math.floor(d.i / cols)
+        return (
+          <rect key={d.i} x={col * (S + G)} y={row * (S + G)} width={S} height={S} rx={2}
+            fill={colors[d.type]} opacity={.8} />
+        )
+      })}
+    </svg>
+  )
+}
+
 export default function RevenueModal({ open, onClose }) {
   const [data,   setData]   = useState(null)
   const [status, setStatus] = useState('idle') // idle | loading | done | error
@@ -102,6 +177,71 @@ export default function RevenueModal({ open, onClose }) {
                   icon={<IconTotal />}
                   showAvg
                 />
+              </div>
+
+              {/* ── Charts ────────────────────────────────────────────── */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, margin: '16px 0 20px' }}>
+
+                {/* Collection rate ring */}
+                <div style={{ background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <RingChart value={data.all_time.paid_visits} total={data.all_time.total_visits} color="var(--clr-primary)" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--clr-text-muted)', marginBottom: 10 }}>
+                      Visit Collection · All Time
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      {[
+                        { label: 'Paid visits', value: data.all_time.paid_visits,                                  color: 'var(--clr-primary)' },
+                        { label: 'Free visits', value: data.all_time.total_visits - data.all_time.paid_visits,     color: '#94a3b8' },
+                        { label: 'Avg fee',     value: fmt(data.all_time.avg_fee),                                 color: '#6366f1', str: true },
+                      ].map(r => (
+                        <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 11.5, color: 'var(--clr-text-muted)', flex: 1 }}>{r.label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-text)' }}>{r.str ? r.value : r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Revenue bar chart */}
+                <div style={{ background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 12, padding: '16px 18px' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--clr-text-muted)', marginBottom: 14 }}>
+                    Revenue by Period
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <BarChart bars={[
+                      { l: 'Today', v: data.today.revenue,      c: '#6366f1' },
+                      { l: 'Week',  v: data.this_week.revenue,  c: 'var(--clr-primary)' },
+                      { l: 'Month', v: data.this_month.revenue, c: '#10b981' },
+                    ]} />
+                  </div>
+                </div>
+
+                {/* Dot matrix — visit breakdown */}
+                {data.all_time.total_visits > 0 && (
+                  <div style={{ background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 12, padding: '16px 18px' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--clr-text-muted)', marginBottom: 12 }}>
+                      Visits · {data.all_time.total_visits} total
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <DotMatrix paid={data.all_time.paid_visits} free={data.all_time.total_visits - data.all_time.paid_visits} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Paid', count: data.all_time.paid_visits,                                color: '#10b981' },
+                        { label: 'Free', count: data.all_time.total_visits - data.all_time.paid_visits,   color: '#94a3b8' },
+                      ].map(s => (
+                        <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 11.5, color: 'var(--clr-text-muted)' }}>{s.label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-text)', marginLeft: 2 }}>{s.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Calculations breakdown */}

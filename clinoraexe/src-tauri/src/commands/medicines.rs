@@ -101,6 +101,14 @@ pub async fn update_medicine(id: u64, data: MedicinePayload, state: State<'_, Ap
     let received_date= data.received_date.filter(|s| !s.trim().is_empty());
     let reorder_level= data.reorder_level.unwrap_or(10);
 
+    // Capture old qty before update for audit log
+    let old_qty_row = sqlx::query("SELECT quantity FROM medicines WHERE id=? AND clinic_id=?")
+        .bind(id).bind(session.clinic_id)
+        .fetch_optional(&state.db).await?;
+    let old_qty = old_qty_row.as_ref()
+        .map(|r| r.get::<u32, _>("quantity") as i32)
+        .unwrap_or(0);
+
     sqlx::query(
         "UPDATE medicines
          SET name=?, generic_name=?, category=?, unit=?, quantity=?, price=?,
@@ -112,6 +120,18 @@ pub async fn update_medicine(id: u64, data: MedicinePayload, state: State<'_, Ap
     .bind(&batch_number).bind(&expiry_date).bind(&received_date).bind(reorder_level)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
+
+    let new_qty = data.quantity.unwrap_or(0) as i32;
+    if new_qty != old_qty {
+        let _ = sqlx::query(
+            "INSERT INTO stock_audit_log
+               (clinic_id, item_type, item_id, item_name, old_qty, new_qty, change_delta, reason, created_at)
+             VALUES (?, 'medicine', ?, ?, ?, ?, ?, 'manual_edit', NOW())"
+        )
+        .bind(session.clinic_id).bind(id).bind(&data.name)
+        .bind(old_qty).bind(new_qty).bind(new_qty - old_qty)
+        .execute(&state.db).await;
+    }
 
     let row = sqlx::query(&format!("SELECT {} FROM medicines WHERE id=?", MEDICINE_COLS))
         .bind(id).fetch_one(&state.db).await?;

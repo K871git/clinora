@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment } from '../../services/visitService'
+import { validateFee } from '../../lib/inputValidators'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import { confirmDiscard } from '../../lib/swal'
@@ -20,7 +21,8 @@ function avatarColor(name) { return AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % A
 
 function fmtDateTime(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-IN', {
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleString('en-IN', {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
@@ -34,7 +36,7 @@ function fmtPrice(amount) {
 
 function isoToLocal(iso) {
   if (!iso) return ''
-  const d  = new Date(iso)
+  const d  = new Date(iso.endsWith('Z') ? iso : iso + 'Z')
   const y  = d.getFullYear()
   const mo = String(d.getMonth() + 1).padStart(2, '0')
   const dy = String(d.getDate()).padStart(2, '0')
@@ -192,6 +194,8 @@ export default function VisitDetailPage() {
   }
 
   async function handleSaveFee() {
+    const feeErr = validateFee(feeInput)
+    if (feeErr) { toast.error(feeErr); return }
     setSavingFee(true)
     setFeeSaved(false)
     try {
@@ -208,6 +212,12 @@ export default function VisitDetailPage() {
   }
 
   async function handleSavePayment() {
+    if (paymentStatus === 'partial') {
+      const amt = parseFloat(amountPaid || '0')
+      if (isNaN(amt) || amt < 0) { toast.error('Amount paid cannot be negative.'); return }
+      const fee = parseFloat(feeInput || '0') || 0
+      if (fee > 0 && amt > fee) { toast.error('Amount paid cannot exceed the consultation fee.'); return }
+    }
     setSavingPayment(true)
     try {
       const { data } = await recordVisitPayment(visitId, {
@@ -230,6 +240,13 @@ export default function VisitDetailPage() {
   }
 
   async function handleSaveFollowup() {
+    if (followupDate) {
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      if (new Date(followupDate) < today) {
+        toast.error('Follow-up date must be today or in the future.')
+        return
+      }
+    }
     setSavingFollowup(true)
     try {
       const updated = await updateFollowup(visitId, followupDate || null, followupNotes.trim() || null)

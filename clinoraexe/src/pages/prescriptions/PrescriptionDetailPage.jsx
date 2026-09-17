@@ -24,7 +24,8 @@ const STATUS_LABEL = {
 
 function fmtDateTime(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-IN', {
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleString('en-IN', {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
@@ -32,9 +33,13 @@ function fmtDateTime(iso) {
 
 function isoToLocal(iso) {
   if (!iso) return ''
-  const d = new Date(iso)
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
-  return d.toISOString().slice(0, 16)
+  const d  = new Date(iso.endsWith('Z') ? iso : iso + 'Z')
+  const y  = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const dy = String(d.getDate()).padStart(2, '0')
+  const h  = String(d.getHours()).padStart(2, '0')
+  const m  = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${mo}-${dy}T${h}:${m}`
 }
 
 function itemsFromApi(apiItems) {

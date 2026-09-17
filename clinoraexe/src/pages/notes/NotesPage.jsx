@@ -75,13 +75,14 @@ function IconSearch() {
 
 function fmtDate(iso) {
   if (!iso) return ''
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function fmtTime(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
 }
 
 function bodyPreview(body) {
