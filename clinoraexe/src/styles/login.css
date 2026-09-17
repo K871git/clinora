@@ -145,6 +145,8 @@
   opacity: 1;
   transform: scale(1) rotate(0deg);
   transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.4,0,0.2,1);
+  filter: drop-shadow(0 0 38px rgba(253,211,77,0.55))
+          drop-shadow(0 0 90px rgba(250,170,20,0.25));
 }
 .login-scene[data-theme="dark"] .login-deco-sun {
   opacity: 0;
@@ -309,6 +311,30 @@
 .login-cross-1 { animation: cross-pulse-1 4.5s ease-in-out infinite; }
 .login-cross-2 { animation: cross-pulse-2 5.5s ease-in-out infinite 1.8s; }
 
+/* ── Horizon ─────────────────────────────────────────────────────────── */
+
+.login-horizon {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.login-horizon--day {
+  opacity: 1;
+  transition: opacity 0.55s ease;
+}
+.login-scene[data-theme="dark"] .login-horizon--day  { opacity: 0; }
+.login-scene[data-role="pharmacy"] .login-horizon--day { opacity: 0; }
+
+.login-horizon--night {
+  opacity: 0;
+  transition: opacity 0.55s ease 0.1s;
+}
+.login-scene[data-theme="dark"] .login-horizon--night { opacity: 1; }
+.login-scene[data-role="pharmacy"] .login-horizon     { opacity: 0 !important; }
+
 /* ── Warning alert ───────────────────────────────────────────────────── */
 .form-alert.warning {
   background: #fffbeb;
@@ -411,11 +437,8 @@
   transition: background 0.5s ease;
 }
 
-.login-brand--pharmacy {
-  background: linear-gradient(155deg, #055e44, #0f766e, #0369a1, #059669, #055e44);
-  background-size: 280% 280%;
-  animation: brand-gradient-shift 11s ease infinite;
-}
+/* pharmacy bg handled by .login-brand-morph wipe */
+.login-brand--pharmacy { /* intentionally empty — morph div covers it */ }
 
 /* Subtle noise texture */
 .login-brand::before {
@@ -425,10 +448,10 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
   opacity: 0.028;
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
 }
 
-/* Decorative blur circles */
+/* Decorative blur circle */
 .login-brand::after {
   content: '';
   position: absolute;
@@ -439,28 +462,54 @@
   border-radius: 50%;
   background: rgba(255,255,255,0.07);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
-.login-brand > * { position: relative; z-index: 1; }
+/* Content above morph + noise */
+.login-brand > * { position: relative; z-index: 3; }
+
+/* ── Pharmacy gradient morph wipe ───────────────────────────────────── */
+.login-brand-morph {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(155deg, #055e44, #0f766e, #0369a1, #059669, #055e44);
+  background-size: 280% 280%;
+  animation: brand-gradient-shift 11s ease infinite;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.65s cubic-bezier(0.7, 0, 0.3, 1);
+}
+.login-brand--pharmacy .login-brand-morph {
+  clip-path: inset(0 0% 0 0);
+}
 
 /* Logo */
 .login-logo-wrap {
-  width: 68px;
-  height: 68px;
-  border-radius: 18px;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 22px;
-  background: rgba(255,255,255,0.16);
-  border: 1px solid rgba(255,255,255,0.28);
+  background: linear-gradient(145deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08));
   flex-shrink: 0;
-  transition: box-shadow 0.25s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  box-shadow:
+    0 0 0 1.5px rgba(255,255,255,0.42),
+    0 0 0 4px  rgba(255,255,255,0.09),
+    0 8px 28px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.38);
 }
 .login-logo-wrap:hover {
-  box-shadow: 0 0 0 6px rgba(255,255,255,0.12), 0 0 20px rgba(255,255,255,0.1);
+  box-shadow:
+    0 0 0 1.5px rgba(255,255,255,0.60),
+    0 0 0 6px  rgba(255,255,255,0.14),
+    0 12px 36px rgba(0,0,0,0.34),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+  transform: scale(1.04);
 }
 .login-logo-img {
   width: 100%;
@@ -594,11 +643,31 @@
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
-.login-welcome-role--doctor   { color: #2563eb; }
-.login-welcome-role--pharmacy { color: #059669; }
+.login-welcome-role--doctor {
+  background: linear-gradient(135deg, #1d4ed8 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.login-welcome-role--pharmacy {
+  background: linear-gradient(135deg, #047857 0%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
-.login-scene[data-theme="dark"] .login-welcome-role--doctor   { color: #60a5fa; }
-.login-scene[data-theme="dark"] .login-welcome-role--pharmacy { color: #34d399; }
+.login-scene[data-theme="dark"] .login-welcome-role--doctor {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.login-scene[data-theme="dark"] .login-welcome-role--pharmacy {
+  background: linear-gradient(135deg, #34d399 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .login-day {
   font-size: 0.7rem;
@@ -630,8 +699,19 @@
   content: '';
   display: block;
   height: 1px;
-  background: var(--clr-border);
-  margin-bottom: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(203,213,225,0.9) 25%,
+    rgba(203,213,225,0.9) 75%,
+    transparent 100%);
+  margin-bottom: 4px;
+}
+.login-scene[data-theme="dark"] .login-form::before {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(51,65,85,0.9) 25%,
+    rgba(51,65,85,0.9) 75%,
+    transparent 100%);
 }
 
 /* Fields */
@@ -639,9 +719,13 @@
   height: 44px !important;
   border-radius: 11px !important;
   font-size: 0.9rem !important;
-  background: var(--clr-surface-hover) !important;
-  border-color: var(--clr-border) !important;
+  background: rgba(255,255,255,0.88) !important;
+  border: 1.5px solid #cbd5e1 !important;
   transition: border-color 0.18s, box-shadow 0.18s, background 0.18s !important;
+}
+.login-scene[data-theme="dark"] .login-form .field {
+  background: rgba(22,32,54,0.80) !important;
+  border-color: rgba(71,85,105,0.95) !important;
 }
 
 .login-form .field:focus {
@@ -686,6 +770,94 @@
   font-size: 0.8rem !important;
   font-weight: 600 !important;
   color: var(--clr-text) !important;
+}
+
+/* ── Floating label fields ───────────────────────────────────────────── */
+
+.login-float-group {
+  position: relative;
+}
+
+/* icon inside float group */
+.login-float-group .login-field-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  color: var(--clr-text-muted);
+  pointer-events: none;
+  z-index: 2;
+  transition: color 0.2s;
+}
+.login-float-group:focus-within .login-field-icon { color: var(--clr-primary); }
+.login-scene[data-role="pharmacy"] .login-float-group:focus-within .login-field-icon { color: #059669; }
+
+.login-float-field {
+  width: 100%;
+  height: 52px;
+  padding: 20px 12px 6px 40px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 11px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: rgba(255,255,255,0.90);
+  color: var(--clr-text);
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.login-float-field--eye { padding-right: 44px; }
+
+.login-scene[data-theme="dark"] .login-float-field {
+  background: rgba(22,32,54,0.82);
+  border-color: rgba(71,85,105,0.95);
+  color: #f1f5f9;
+}
+
+.login-float-field:focus {
+  outline: none;
+  border-color: var(--clr-primary);
+  background: rgba(255,255,255,0.97);
+  box-shadow: inset 3px 0 0 var(--clr-primary), 0 0 0 3px rgba(37,99,235,0.10);
+}
+.login-scene[data-theme="dark"] .login-float-field:focus {
+  background: rgba(30,41,59,0.92);
+  box-shadow: inset 3px 0 0 var(--clr-primary), 0 0 0 3px rgba(59,130,246,0.14);
+}
+.login-scene[data-role="pharmacy"] .login-float-field:focus {
+  border-color: #059669;
+  box-shadow: inset 3px 0 0 #059669, 0 0 0 3px rgba(5,150,105,0.12);
+}
+
+/* Floating label */
+.login-float-label {
+  position: absolute;
+  left: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  pointer-events: none;
+  transition: top 0.2s ease, font-size 0.2s ease, color 0.2s ease,
+              transform 0.2s ease, font-weight 0.2s ease, letter-spacing 0.2s ease;
+  line-height: 1;
+}
+
+/* Float up when focused or has content */
+.login-float-field:focus           ~ .login-float-label,
+.login-float-field:not(:placeholder-shown) ~ .login-float-label {
+  top: 10px;
+  transform: translateY(0);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--clr-primary);
+}
+.login-scene[data-role="pharmacy"] .login-float-field:focus ~ .login-float-label,
+.login-scene[data-role="pharmacy"] .login-float-field:not(:placeholder-shown) ~ .login-float-label {
+  color: #059669;
 }
 
 /* Eye toggle button */
@@ -775,7 +947,29 @@
   font-family: inherit;
   letter-spacing: 0.15px;
   color: #ffffff;
+  position: relative;
+  overflow: hidden;
   transition: background 0.22s, box-shadow 0.2s, transform 0.15s;
+}
+
+/* Shimmer sweep on hover */
+.login-submit-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255,255,255,0.22),
+    transparent);
+  transform: skewX(-18deg);
+  transition: left 0s;
+  pointer-events: none;
+}
+.login-submit-btn:hover:not(:disabled)::after {
+  left: 140%;
+  transition: left 0.55s ease;
 }
 
 .login-submit-btn--doctor {

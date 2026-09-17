@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import { useAuth } from '../../hooks/useAuth'
@@ -134,6 +134,65 @@ function MoonDeco() {
   )
 }
 
+/* ── Horizon silhouette ──────────────────────────────────────────────── */
+
+function HorizonDeco() {
+  return (
+    <>
+      {/* Day treeline */}
+      <svg className="login-horizon login-horizon--day" viewBox="0 0 1440 130" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+        <path d="M0,130 L0,88 C200,38 400,78 600,52 C800,26 1000,66 1200,44 C1300,33 1370,50 1440,46 L1440,130 Z" fill="rgba(134,239,172,0.18)" />
+        <path d="M0,130 L0,108 C180,88 360,104 540,96 C720,88 900,104 1080,96 C1260,88 1360,100 1440,98 L1440,130 Z" fill="rgba(74,222,128,0.26)" />
+        <path d="M0,130 L0,120 L1440,120 L1440,130 Z" fill="rgba(34,197,94,0.30)" />
+        {/* trees */}
+        <polygon points="48,120 60,86 72,120"   fill="rgba(21,128,61,0.68)" />
+        <polygon points="62,120 77,74 92,120"   fill="rgba(16,100,48,0.75)" />
+        <polygon points="84,120 96,88 108,120"  fill="rgba(21,128,61,0.62)" />
+        <polygon points="200,120 211,90 222,120" fill="rgba(21,128,61,0.58)" />
+        <polygon points="216,120 230,80 244,120" fill="rgba(16,100,48,0.70)" />
+        <polygon points="238,120 248,93 258,120" fill="rgba(21,128,61,0.55)" />
+        <polygon points="400,120 414,82 428,120" fill="rgba(16,100,48,0.72)" />
+        <polygon points="422,120 434,91 446,120" fill="rgba(21,128,61,0.62)" />
+        <polygon points="682,120 696,84 710,120" fill="rgba(21,128,61,0.65)" />
+        <polygon points="704,120 720,74 736,120" fill="rgba(16,100,48,0.73)" />
+        <polygon points="730,120 742,87 754,120" fill="rgba(21,128,61,0.58)" />
+        <polygon points="924,120 937,86 950,120" fill="rgba(16,100,48,0.68)" />
+        <polygon points="944,120 958,80 972,120" fill="rgba(21,128,61,0.72)" />
+        <polygon points="1202,120 1215,84 1228,120" fill="rgba(21,128,61,0.62)" />
+        <polygon points="1222,120 1237,74 1252,120" fill="rgba(16,100,48,0.75)" />
+        <polygon points="1246,120 1258,88 1270,120" fill="rgba(21,128,61,0.58)" />
+        <polygon points="1384,120 1395,90 1406,120" fill="rgba(16,100,48,0.65)" />
+        <polygon points="1400,120 1414,82 1428,120" fill="rgba(21,128,61,0.68)" />
+      </svg>
+
+      {/* Night treeline */}
+      <svg className="login-horizon login-horizon--night" viewBox="0 0 1440 130" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+        <path d="M0,130 L0,88 C200,38 400,78 600,52 C800,26 1000,66 1200,44 C1300,33 1370,50 1440,46 L1440,130 Z" fill="rgba(15,23,42,0.35)" />
+        <path d="M0,130 L0,108 C180,88 360,104 540,96 C720,88 900,104 1080,96 C1260,88 1360,100 1440,98 L1440,130 Z" fill="rgba(10,16,35,0.55)" />
+        <path d="M0,130 L0,120 L1440,120 L1440,130 Z" fill="rgba(6,10,22,0.75)" />
+        <polygon points="48,120 60,86 72,120"   fill="rgba(5,10,22,0.92)" />
+        <polygon points="62,120 77,74 92,120"   fill="rgba(4,8,18,0.95)" />
+        <polygon points="84,120 96,88 108,120"  fill="rgba(5,10,22,0.88)" />
+        <polygon points="200,120 211,90 222,120" fill="rgba(5,10,22,0.88)" />
+        <polygon points="216,120 230,80 244,120" fill="rgba(4,8,18,0.93)" />
+        <polygon points="238,120 248,93 258,120" fill="rgba(5,10,22,0.85)" />
+        <polygon points="400,120 414,82 428,120" fill="rgba(4,8,18,0.93)" />
+        <polygon points="422,120 434,91 446,120" fill="rgba(5,10,22,0.88)" />
+        <polygon points="682,120 696,84 710,120" fill="rgba(5,10,22,0.90)" />
+        <polygon points="704,120 720,74 736,120" fill="rgba(4,8,18,0.95)" />
+        <polygon points="730,120 742,87 754,120" fill="rgba(5,10,22,0.86)" />
+        <polygon points="924,120 937,86 950,120" fill="rgba(4,8,18,0.92)" />
+        <polygon points="944,120 958,80 972,120" fill="rgba(5,10,22,0.90)" />
+        <polygon points="1202,120 1215,84 1228,120" fill="rgba(5,10,22,0.88)" />
+        <polygon points="1222,120 1237,74 1252,120" fill="rgba(4,8,18,0.95)" />
+        <polygon points="1246,120 1258,88 1270,120" fill="rgba(5,10,22,0.85)" />
+        <polygon points="1384,120 1395,90 1406,120" fill="rgba(4,8,18,0.90)" />
+        <polygon points="1400,120 1414,82 1428,120" fill="rgba(5,10,22,0.88)" />
+      </svg>
+    </>
+  )
+}
+
 /* ── Pharmacy decorations (streamlined — 2 pills, 2 crosses) ─────────── */
 
 function PillsDeco() {
@@ -183,10 +242,14 @@ function IlloDoctor() {
         stroke="rgba(255,255,255,0.90)" strokeWidth="3"
         fill="rgba(255,255,255,0.10)" />
       <circle cx="60" cy="110" r="10" fill="rgba(255,255,255,0.22)" />
+      {/* EKG line draws in on loop */}
       <path d="M43 110 L50 110 L53 100 L57 120 L61 100 L65 110 L72 110 L78 110"
         stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
         <animate attributeName="stroke-dasharray" from="0 130" to="130 0" dur="2s" begin="0s" repeatCount="indefinite" />
       </path>
+      {/* Glow ring pulses at the heartbeat spike (fires ~44% into each 2s cycle) */}
+      <circle cx="60" cy="110" r="16" stroke="rgba(180,210,255,0.85)" fill="none" strokeWidth="1.2"
+        className="hb-ring" />
     </svg>
   )
 }
@@ -234,6 +297,50 @@ function IconEyeOff() {
   )
 }
 
+/* ── Time-of-day icon ────────────────────────────────────────────────── */
+
+function TimeIcon({ hour }) {
+  if (hour >= 21 || hour < 5) return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
+      <path d="M11.5 9.5A6 6 0 1 1 4.5 2.5a4.5 4.5 0 0 0 7 7z" fill="currentColor" opacity="0.75"/>
+    </svg>
+  )
+  if (hour < 12) return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
+      <circle cx="7" cy="8" r="2.8" fill="currentColor" opacity="0.82"/>
+      <line x1="7" y1="1" x2="7" y2="3"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.6"/>
+      <line x1="2.5" y1="3.6" x2="3.8" y2="4.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
+      <line x1="11.5" y1="3.6" x2="10.2" y2="4.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
+      <line x1="0.5" y1="8" x2="2.3" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+      <line x1="11.7" y1="8" x2="13.5" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+      <path d="M1 12.5 Q7 6.5 13 12.5" stroke="currentColor" strokeWidth="1.1" fill="none" opacity="0.38"/>
+    </svg>
+  )
+  if (hour < 17) return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
+      <circle cx="7" cy="7" r="2.8" fill="currentColor" opacity="0.88"/>
+      <line x1="7" y1="0.5" x2="7" y2="2.3"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
+      <line x1="7" y1="11.7" x2="7" y2="13.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
+      <line x1="0.5" y1="7" x2="2.3" y2="7"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
+      <line x1="11.7" y1="7" x2="13.5" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
+      <line x1="2.2" y1="2.2" x2="3.5" y2="3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
+      <line x1="10.5" y1="10.5" x2="11.8" y2="11.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
+      <line x1="11.8" y1="2.2" x2="10.5" y2="3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
+      <line x1="2.2" y1="11.8" x2="3.5" y2="10.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
+    </svg>
+  )
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
+      <path d="M2 9.5 Q7 3 12 9.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.65"/>
+      <circle cx="7" cy="9.5" r="2.4" fill="currentColor" opacity="0.82"/>
+      <line x1="7" y1="1.2" x2="7" y2="3"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.48"/>
+      <line x1="1.5" y1="5.2" x2="3" y2="6.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.45"/>
+      <line x1="12.5" y1="5.2" x2="11" y2="6.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.45"/>
+      <line x1="0" y1="11.5" x2="14" y2="11.5" stroke="currentColor" strokeWidth="0.9" opacity="0.32"/>
+    </svg>
+  )
+}
+
 /* ── Role icons ──────────────────────────────────────────────────────── */
 
 function IconDoctor() {
@@ -276,6 +383,8 @@ export default function LoginPage() {
   const [submitting, setSubmitting]   = useState(false)
   const [error, setError]             = useState('')
   const [welcomeUser, setWelcomeUser] = useState(null)
+  const [mountComplete, setMountComplete] = useState(false)
+  const cardRef = useRef(null)
 
   const [sessionExpired] = useState(() => {
     const flag = sessionStorage.getItem('session_expired')
@@ -284,9 +393,27 @@ export default function LoginPage() {
   })
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 200)
+    const t = setTimeout(() => {
+      setMounted(true)
+      setTimeout(() => setMountComplete(true), 750)
+    }, 200)
     return () => clearTimeout(t)
   }, [])
+
+  function handleCardMouseMove(e) {
+    if (!mountComplete || !cardRef.current) return
+    const rect = cardRef.current.getBoundingClientRect()
+    const dx = (e.clientX - (rect.left + rect.width  / 2)) / (rect.width  / 2)
+    const dy = (e.clientY - (rect.top  + rect.height / 2)) / (rect.height / 2)
+    cardRef.current.style.transform = `perspective(1200px) rotateX(${-dy * 3}deg) rotateY(${dx * 5}deg)`
+    cardRef.current.style.transition = 'transform 0.08s linear'
+  }
+
+  function handleCardMouseLeave() {
+    if (!cardRef.current) return
+    cardRef.current.style.transform = 'perspective(1200px) rotateX(0deg) rotateY(0deg)'
+    cardRef.current.style.transition = 'transform 0.55s cubic-bezier(0.16,1,0.3,1)'
+  }
 
   useEffect(() => {
     invoke('get_public_clinic_name').then(n => setClinicName(n)).catch(() => {})
@@ -353,11 +480,15 @@ export default function LoginPage() {
       <PillsDeco />
       <CrossesDeco />
 
+      {/* Horizon treeline */}
+      <HorizonDeco />
+
       {/* Card */}
-      <div className="login-card">
+      <div className="login-card" ref={cardRef} onMouseMove={handleCardMouseMove} onMouseLeave={handleCardMouseLeave}>
 
         {/* Left brand panel */}
         <div className={`login-brand${isPharmacy ? ' login-brand--pharmacy' : ''}`}>
+          <div className="login-brand-morph" aria-hidden="true" />
           <div className="login-logo-wrap">
             <img src="/logos/clinoraLogo.png" alt="Clinora" className="login-logo-img" />
           </div>
@@ -416,47 +547,42 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="field-group">
-            <label htmlFor="email" className="field-label">Email</label>
-            <div className="login-field-wrap">
-              <svg className="login-field-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-              </svg>
-              <input id="email" className="field login-field-padded" type="email" autoComplete="email"
-                placeholder={isPharmacy ? 'pharmacy@clinic.com' : 'doctor@clinic.com'}
-                required value={email} onChange={e => setEmail(e.target.value)} disabled={submitting} />
-            </div>
+          <div className="login-float-group">
+            <svg className="login-field-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+            </svg>
+            <input id="email" className="login-float-field" type="email" autoComplete="email"
+              placeholder=" " required value={email}
+              onChange={e => setEmail(e.target.value)} disabled={submitting} />
+            <label htmlFor="email" className="login-float-label">Email address</label>
           </div>
 
-          <div className="field-group">
-            <label htmlFor="password" className="field-label">Password</label>
-            <div className="login-field-wrap" style={{ position: 'relative' }}>
-              <svg className="login-field-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
-              </svg>
-              <input
-                id="password"
-                className="field login-field-padded"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                disabled={submitting}
-                style={{ paddingRight: '40px' }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                tabIndex={-1}
-                className="login-eye-btn"
-              >
-                {showPassword ? <IconEyeOff /> : <IconEye />}
-              </button>
-            </div>
+          <div className="login-float-group">
+            <svg className="login-field-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
+            </svg>
+            <input
+              id="password"
+              className="login-float-field login-float-field--eye"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder=" "
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              disabled={submitting}
+            />
+            <label htmlFor="password" className="login-float-label">Password</label>
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              tabIndex={-1}
+              className="login-eye-btn"
+            >
+              {showPassword ? <IconEyeOff /> : <IconEye />}
+            </button>
           </div>
 
           {error && (
