@@ -62,7 +62,9 @@ export default function SetupWizard() {
     }
   }
 
-  const canTest = form.host.trim() && form.username.trim() && form.password.trim() && form.database.trim()
+  const portNum = parseInt(form.port, 10)
+  const portValid = form.port && !isNaN(portNum) && portNum >= 1 && portNum <= 65535
+  const canTest = form.host.trim() && portValid && form.username.trim() && form.password.trim() && form.database.trim()
 
   return (
     <div className="sw-overlay">
@@ -121,9 +123,13 @@ export default function SetupWizard() {
                   <label>Port</label>
                   <input
                     value={form.port}
-                    onChange={e => set('port', e.target.value)}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 5)
+                      set('port', v)
+                    }}
                     className="sw-input"
                     placeholder="3306"
+                    inputMode="numeric"
                   />
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import '../../styles/prescriptions-detail.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { invoke } from '@tauri-apps/api/core'
 import { getVisit } from '../../services/visitService'
 import { createPrescription } from '../../services/prescriptionService'
 import { getPatientAllergies } from '../../services/medicalHistoryService'
@@ -22,7 +23,8 @@ function nowLocal() {
 
 function fmtDate(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 /** Convert editor items to the API payload shape */
@@ -71,6 +73,14 @@ export default function NewPrescriptionPage() {
   const [apiError, setApiError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // Templates
+  const [templates,      setTemplates]      = useState([])
+  const [tmplOpen,       setTmplOpen]       = useState(false)
+  const [saveTmplOpen,   setSaveTmplOpen]   = useState(false)
+  const [tmplName,       setTmplName]       = useState('')
+  const [tmplSaving,     setTmplSaving]     = useState(false)
+  const saveTmplRef = useRef(null)
+
   // Load visit for patient context — setState only in async callbacks
   useEffect(() => {
     let cancelled = false
@@ -90,6 +100,49 @@ export default function NewPrescriptionPage() {
       })
     return () => { cancelled = true }
   }, [visitId])
+
+  function loadTemplates() {
+    invoke('get_rx_templates').then(res => setTemplates(res.data ?? [])).catch(() => {})
+  }
+
+  function applyTemplate(tmpl) {
+    const meds = (tmpl.medicines ?? []).map(m => ({
+      ...newMedicineItem(),
+      medicine_name: m.medicine_name ?? '',
+      dosage:        m.dosage        ?? '',
+      frequency:     m.frequency     ?? '',
+      duration:      m.duration      ?? '',
+      instructions:  m.instructions  ?? '',
+    }))
+    if (meds.length > 0) setItems(meds)
+    if (tmpl.notes) setDoctorNotes(tmpl.notes)
+    setTmplOpen(false)
+  }
+
+  async function handleSaveTemplate() {
+    const name = tmplName.trim()
+    if (!name) return
+    const meds = items
+      .filter(i => i.medicine_name.trim())
+      .map(i => ({
+        medicine_name: i.medicine_name.trim(),
+        dosage:        i.dosage.trim()       || null,
+        frequency:     i.frequency.trim()    || null,
+        duration:      i.duration.trim()     || null,
+        instructions:  i.instructions.trim() || null,
+      }))
+    if (meds.length === 0) return
+    setTmplSaving(true)
+    try {
+      await invoke('save_rx_template', {
+        data: { name, medicines: meds, notes: doctorNotes.trim() || null },
+      })
+      setTmplName('')
+      setSaveTmplOpen(false)
+    } catch (err) {
+      alert(typeof err === 'string' ? err : 'Could not save template.')
+    } finally { setTmplSaving(false) }
+  }
 
   async function handleCancel() {
     if (items.length > 0) {
@@ -251,7 +304,63 @@ export default function NewPrescriptionPage() {
 
         {/* Medicine list */}
         <div className="card nrx-section">
-          <h2 className="rx-section-title">Medicines</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h2 className="rx-section-title" style={{ margin: 0 }}>Medicines</h2>
+            <button
+              type="button"
+              style={{
+                fontSize: 12, padding: '5px 12px', borderRadius: 6,
+                border: '1px solid var(--clr-primary)', color: 'var(--clr-primary)',
+                background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+              }}
+              onClick={() => { loadTemplates(); setTmplOpen(true) }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Load Template
+            </button>
+          </div>
+
+          {/* Template picker */}
+          {tmplOpen && (
+            <div style={{
+              background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8,
+              padding: '12px 14px', marginBottom: 12,
+            }}>
+              {templates.length === 0 ? (
+                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>
+                  No templates saved yet. Save one from the bottom of this page.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {templates.map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      style={{
+                        fontSize: 12, padding: '5px 12px', borderRadius: 20,
+                        border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer',
+                        color: '#334155',
+                      }}
+                      onClick={() => applyTemplate(t)}
+                    >
+                      {t.name}
+                      <span style={{ color: '#94a3b8', marginLeft: 5 }}>({t.medicines?.length ?? 0})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                style={{ fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', marginTop: 6 }}
+                onClick={() => setTmplOpen(false)}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {fieldErrors.items && (
             <span className="field-error-msg nrx-items-err">{fieldErrors.items}</span>
           )}
@@ -277,7 +386,7 @@ export default function NewPrescriptionPage() {
           </div>
         </div>
 
-        <div className="visit-form-actions">
+        <div className="visit-form-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
           <button
             type="button"
             className="btn-secondary"
@@ -286,6 +395,62 @@ export default function NewPrescriptionPage() {
           >
             Cancel
           </button>
+
+          {/* Save as template */}
+          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }} ref={saveTmplRef}>
+            <button
+              type="button"
+              style={{
+                fontSize: 12, padding: '6px 12px', borderRadius: 6,
+                border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', color: '#64748b',
+              }}
+              onClick={() => setSaveTmplOpen(o => !o)}
+              disabled={submitting}
+            >
+              Save as Template
+            </button>
+            {saveTmplOpen && (
+              <div style={{
+                position: 'absolute', bottom: '110%', left: 0, zIndex: 50,
+                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                padding: '12px 14px', boxShadow: '0 4px 16px rgba(0,0,0,.1)',
+                minWidth: 240,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#0f172a' }}>Template Name</div>
+                <input
+                  className="field"
+                  style={{ fontSize: 12, marginBottom: 8 }}
+                  placeholder="e.g. Upper Respiratory Infection"
+                  value={tmplName}
+                  onChange={e => setTmplName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
+                  autoFocus
+                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    style={{
+                      flex: 1, fontSize: 12, padding: '5px 0',
+                      background: 'var(--clr-primary)', color: '#fff',
+                      border: 'none', borderRadius: 5, cursor: 'pointer',
+                    }}
+                    disabled={tmplSaving || !tmplName.trim()}
+                    onClick={handleSaveTemplate}
+                  >
+                    {tmplSaving ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    style={{ fontSize: 12, padding: '5px 10px', background: '#f1f5f9', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                    onClick={() => { setSaveTmplOpen(false); setTmplName('') }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button type="submit" className="btn-primary" disabled={submitting}>
             {submitting ? 'Saving…' : 'Save Prescription'}
           </button>

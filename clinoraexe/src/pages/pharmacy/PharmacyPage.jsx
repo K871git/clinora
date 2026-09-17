@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getPharmacyPrescriptions, getPharmacyStats, getPharmacyStockSummary } from '../../services/pharmacyService'
 import { getStockAlerts } from '../../services/medicineService'
+import { getStockItems } from '../../services/stockItemService'
 import Spinner from '../../components/ui/Spinner'
 
 const POLL_MS   = 30_000
@@ -115,6 +116,7 @@ export default function PharmacyPage() {
   const [search,       setSearch]       = useState('')
   const [alerts,       setAlerts]       = useState(null)
   const [stockSummary, setStockSummary] = useState(null)
+  const [itemSummary,  setItemSummary]  = useState(null)
 
   const loadQueue = useCallback((silent = false) => {
     if (!silent) setQueueStatus('loading')
@@ -141,6 +143,15 @@ export default function PharmacyPage() {
     loadQueue(); loadStats()
     getStockAlerts().then(({ data }) => setAlerts(data)).catch(() => {})
     getPharmacyStockSummary().then(({ data }) => setStockSummary(data)).catch(() => {})
+    getStockItems().then(({ data }) => {
+      const items = data.data ?? []
+      setItemSummary({
+        total:        items.length,
+        out_of_stock: items.filter(i => (i.stock_quantity ?? 0) === 0).length,
+        low_stock:    items.filter(i => (i.stock_quantity ?? 0) > 0 && (i.stock_quantity ?? 0) <= 5).length,
+        stock_value:  items.reduce((s, i) => s + ((i.selling_price ?? 0) * (i.stock_quantity ?? 0)), 0),
+      })
+    }).catch(() => {})
   }, [loadQueue, loadStats])
 
   useEffect(() => {
@@ -238,70 +249,264 @@ export default function PharmacyPage() {
 
       {/* ── Inventory Health ─────────────────────────────────────────────── */}
       {stockSummary && (
-        <div className="card" style={{ padding: '14px 18px', marginBottom: 'var(--space-md)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--clr-text-muted)', marginBottom: 12 }}>
-            Inventory Health
-          </div>
+        <div className="pharma-inv-panel">
 
-          {/* Stock summary stat row */}
-          <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--clr-border)', marginBottom: 12 }}>
-            {[
-              { label: 'Total SKUs',   value: stockSummary.total_skus,  color: 'var(--clr-text)' },
-              { label: 'Total Qty',    value: stockSummary.total_qty,   color: 'var(--clr-text)' },
-              { label: 'Out of Stock', value: stockSummary.out_of_stock, color: stockSummary.out_of_stock > 0 ? '#ef4444' : 'var(--clr-success)' },
-              { label: 'Low Stock',    value: stockSummary.low_stock,   color: stockSummary.low_stock > 0 ? '#f59e0b' : 'var(--clr-success)' },
-              { label: 'Expiring Soon',value: stockSummary.expiring_soon, color: stockSummary.expiring_soon > 0 ? '#d97706' : 'var(--clr-success)' },
-              { label: 'Expired',      value: stockSummary.expired,     color: stockSummary.expired > 0 ? '#dc2626' : 'var(--clr-success)' },
-              { label: 'Stock Value',  value: `₹${Number(stockSummary.stock_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: 'var(--clr-primary)' },
-            ].map((s, i, arr) => (
-              <div key={s.label} style={{
-                flex: '1 1 80px', padding: '10px 14px', textAlign: 'center',
-                background: 'var(--clr-surface)',
-                borderRight: i < arr.length - 1 ? '1px solid var(--clr-border)' : 'none',
-              }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
-                <div style={{ fontSize: 10, color: 'var(--clr-text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginTop: 3 }}>{s.label}</div>
+          {/* Panel header */}
+          <div className="pharma-inv-panel-hdr">
+            <div className="pharma-inv-panel-title">
+              <div className="pharma-inv-panel-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
               </div>
-            ))}
+              Inventory Health
+            </div>
+            <button className="pharma-inv-view-btn" onClick={() => navigate('/pharmacy/stock')}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              View Stock
+            </button>
           </div>
 
-          {/* Alert rows — only show if there are issues */}
+          {/* Medicines sub-section */}
+          <div className="pharma-inv-sub-row">
+            <span className="pharma-inv-sub-icon pharma-inv-sub-icon--med">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="1" width="12" height="16" rx="2" /><path d="M6 6h6M6 9h6M6 12h4" />
+              </svg>
+            </span>
+            <span className="pharma-inv-sub-label">Medicines</span>
+            <span className="pharma-inv-sub-count">{stockSummary.total_skus} SKUs</span>
+          </div>
+
+          <div className="pharma-inv-grid">
+            {/* Out of Stock */}
+            <button
+              className={`pharma-inv-scard pharma-inv-scard--${stockSummary.out_of_stock > 0 ? 'red' : 'green'}`}
+              onClick={() => navigate('/pharmacy/stock?filter=out_of_stock')}
+            >
+              <div className="pharma-inv-scard-top">
+                <span className="pharma-inv-scard-label">Out of{'\n'}Stock</span>
+                <span className="pharma-inv-scard-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                  </svg>
+                </span>
+              </div>
+              <div className="pharma-inv-scard-value">{stockSummary.out_of_stock}</div>
+            </button>
+
+            {/* Low Stock */}
+            <button
+              className={`pharma-inv-scard pharma-inv-scard--${stockSummary.low_stock > 0 ? 'amber' : 'green'}`}
+              onClick={() => navigate('/pharmacy/stock?filter=low_stock')}
+            >
+              <div className="pharma-inv-scard-top">
+                <span className="pharma-inv-scard-label">Low{'\n'}Stock</span>
+                <span className="pharma-inv-scard-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </span>
+              </div>
+              <div className="pharma-inv-scard-value">{stockSummary.low_stock}</div>
+            </button>
+
+            {/* Expiring Soon */}
+            <button
+              className={`pharma-inv-scard pharma-inv-scard--${stockSummary.expiring_soon > 0 ? 'amber' : 'green'}`}
+              onClick={() => navigate('/pharmacy/stock?filter=expiring_soon')}
+            >
+              <div className="pharma-inv-scard-top">
+                <span className="pharma-inv-scard-label">Expiring{'\n'}Soon</span>
+                <span className="pharma-inv-scard-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                  </svg>
+                </span>
+              </div>
+              <div className="pharma-inv-scard-value">{stockSummary.expiring_soon}</div>
+            </button>
+
+            {/* Expired */}
+            <button
+              className={`pharma-inv-scard pharma-inv-scard--${stockSummary.expired > 0 ? 'crimson' : 'green'}`}
+              onClick={() => navigate('/pharmacy/stock?filter=expired')}
+            >
+              <div className="pharma-inv-scard-top">
+                <span className="pharma-inv-scard-label">Expired</span>
+                <span className="pharma-inv-scard-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" />
+                  </svg>
+                </span>
+              </div>
+              <div className="pharma-inv-scard-value">{stockSummary.expired}</div>
+            </button>
+
+            {/* Total SKUs */}
+            <button
+              className="pharma-inv-scard pharma-inv-scard--teal"
+              onClick={() => navigate('/pharmacy/stock')}
+            >
+              <div className="pharma-inv-scard-top">
+                <span className="pharma-inv-scard-label">Total{'\n'}SKUs</span>
+                <span className="pharma-inv-scard-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="1" width="12" height="16" rx="2" /><path d="M6 6h6M6 9h6M6 12h4" />
+                  </svg>
+                </span>
+              </div>
+              <div className="pharma-inv-scard-value">{stockSummary.total_skus}</div>
+            </button>
+
+            {/* Stock Value */}
+            <button
+              className="pharma-inv-scard pharma-inv-scard--indigo"
+              onClick={() => navigate('/pharmacy/stock')}
+            >
+              <div className="pharma-inv-scard-top">
+                <span className="pharma-inv-scard-label">Stock{'\n'}Value</span>
+                <span className="pharma-inv-scard-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                </span>
+              </div>
+              <div className="pharma-inv-scard-value" style={{ fontSize: '1.1rem' }}>
+                ₹{Number(stockSummary.stock_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+              </div>
+            </button>
+          </div>
+
+          {/* Alert detail rows */}
           {alerts && (alerts.expired?.length > 0 || alerts.expiring_soon?.length > 0 || alerts.low_stock?.length > 0) && (
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div className="pharma-inv-alerts">
               {alerts.expired?.length > 0 && (
-                <div style={{ flex: '1 1 180px', background: 'rgba(220,38,38,.07)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 8, padding: '8px 12px' }}>
-                  <div style={{ fontWeight: 700, fontSize: 11, color: '#dc2626', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Expired ({alerts.expired.length})</div>
+                <button className="pharma-inv-alert pharma-inv-alert--expired" onClick={() => navigate('/pharmacy/stock?filter=expired')}>
+                  <div className="pharma-inv-alert-hdr">
+                    Expired · {alerts.expired.length}
+                    <svg className="pharma-inv-alert-arrow" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                  </div>
                   {alerts.expired.slice(0, 3).map(m => (
-                    <div key={m.id} style={{ fontSize: 11, color: '#dc2626', marginBottom: 1 }}>
-                      <strong>{m.name}</strong>{m.batch_number && ` · ${m.batch_number}`} · exp {m.expiry_date}
+                    <div key={m.id} className="pharma-inv-alert-item">
+                      <strong>{m.name}</strong>{m.batch_number ? ` · ${m.batch_number}` : ''} · {m.expiry_date}
                     </div>
                   ))}
-                  {alerts.expired.length > 3 && <div style={{ fontSize: 10, color: '#dc2626', opacity: .6 }}>+{alerts.expired.length - 3} more</div>}
-                </div>
+                  {alerts.expired.length > 3 && <div className="pharma-inv-alert-more">+{alerts.expired.length - 3} more</div>}
+                </button>
               )}
               {alerts.expiring_soon?.length > 0 && (
-                <div style={{ flex: '1 1 180px', background: 'rgba(217,119,6,.07)', border: '1px solid rgba(217,119,6,.25)', borderRadius: 8, padding: '8px 12px' }}>
-                  <div style={{ fontWeight: 700, fontSize: 11, color: '#d97706', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Expiring in 30d ({alerts.expiring_soon.length})</div>
+                <button className="pharma-inv-alert pharma-inv-alert--expiring" onClick={() => navigate('/pharmacy/stock?filter=expiring_soon')}>
+                  <div className="pharma-inv-alert-hdr">
+                    Expiring · {alerts.expiring_soon.length}
+                    <svg className="pharma-inv-alert-arrow" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                  </div>
                   {alerts.expiring_soon.slice(0, 3).map(m => (
-                    <div key={m.id} style={{ fontSize: 11, color: '#d97706', marginBottom: 1 }}>
-                      <strong>{m.name}</strong>{m.batch_number && ` · ${m.batch_number}`} · {m.expiry_date}
+                    <div key={m.id} className="pharma-inv-alert-item">
+                      <strong>{m.name}</strong>{m.batch_number ? ` · ${m.batch_number}` : ''} · {m.expiry_date}
                     </div>
                   ))}
-                  {alerts.expiring_soon.length > 3 && <div style={{ fontSize: 10, color: '#d97706', opacity: .6 }}>+{alerts.expiring_soon.length - 3} more</div>}
-                </div>
+                  {alerts.expiring_soon.length > 3 && <div className="pharma-inv-alert-more">+{alerts.expiring_soon.length - 3} more</div>}
+                </button>
               )}
               {alerts.low_stock?.length > 0 && (
-                <div style={{ flex: '1 1 180px', background: 'rgba(99,102,241,.07)', border: '1px solid rgba(99,102,241,.25)', borderRadius: 8, padding: '8px 12px' }}>
-                  <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--clr-primary)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Low Stock ({alerts.low_stock.length})</div>
+                <button className="pharma-inv-alert pharma-inv-alert--lowstock" onClick={() => navigate('/pharmacy/stock?filter=low_stock')}>
+                  <div className="pharma-inv-alert-hdr">
+                    Low Stock · {alerts.low_stock.length}
+                    <svg className="pharma-inv-alert-arrow" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                  </div>
                   {alerts.low_stock.slice(0, 3).map(m => (
-                    <div key={m.id} style={{ fontSize: 11, color: 'var(--clr-primary)', marginBottom: 1 }}>
+                    <div key={m.id} className="pharma-inv-alert-item">
                       <strong>{m.name}</strong> · {m.quantity} left (min {m.reorder_level})
                     </div>
                   ))}
-                  {alerts.low_stock.length > 3 && <div style={{ fontSize: 10, color: 'var(--clr-primary)', opacity: .6 }}>+{alerts.low_stock.length - 3} more</div>}
-                </div>
+                  {alerts.low_stock.length > 3 && <div className="pharma-inv-alert-more">+{alerts.low_stock.length - 3} more</div>}
+                </button>
               )}
             </div>
+          )}
+
+          {/* Other Items sub-section */}
+          {itemSummary !== null && (
+            <>
+              <div className="pharma-inv-divider" />
+              <div className="pharma-inv-sub-row">
+                <span className="pharma-inv-sub-icon pharma-inv-sub-icon--item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  </svg>
+                </span>
+                <span className="pharma-inv-sub-label">Other Items</span>
+                <span className="pharma-inv-sub-count">{itemSummary.total} items</span>
+                <button className="pharma-inv-sub-link" onClick={() => navigate('/pharmacy/stock?tab=stock')}>
+                  View
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              </div>
+
+              <div className="pharma-inv-grid">
+                <button className="pharma-inv-scard pharma-inv-scard--teal" onClick={() => navigate('/pharmacy/stock?tab=stock')}>
+                  <div className="pharma-inv-scard-top">
+                    <span className="pharma-inv-scard-label">Total{'\n'}Items</span>
+                    <span className="pharma-inv-scard-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="pharma-inv-scard-value">{itemSummary.total}</div>
+                </button>
+
+                <button
+                  className={`pharma-inv-scard pharma-inv-scard--${itemSummary.out_of_stock > 0 ? 'red' : 'green'}`}
+                  onClick={() => navigate('/pharmacy/stock?tab=stock')}
+                >
+                  <div className="pharma-inv-scard-top">
+                    <span className="pharma-inv-scard-label">Out of{'\n'}Stock</span>
+                    <span className="pharma-inv-scard-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="pharma-inv-scard-value">{itemSummary.out_of_stock}</div>
+                </button>
+
+                <button
+                  className={`pharma-inv-scard pharma-inv-scard--${itemSummary.low_stock > 0 ? 'amber' : 'green'}`}
+                  onClick={() => navigate('/pharmacy/stock?tab=stock')}
+                >
+                  <div className="pharma-inv-scard-top">
+                    <span className="pharma-inv-scard-label">Low{'\n'}Stock</span>
+                    <span className="pharma-inv-scard-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="pharma-inv-scard-value">{itemSummary.low_stock}</div>
+                </button>
+
+                <button className="pharma-inv-scard pharma-inv-scard--indigo" onClick={() => navigate('/pharmacy/stock?tab=stock')}>
+                  <div className="pharma-inv-scard-top">
+                    <span className="pharma-inv-scard-label">Stock{'\n'}Value</span>
+                    <span className="pharma-inv-scard-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="pharma-inv-scard-value" style={{ fontSize: '1.1rem' }}>
+                    ₹{Number(itemSummary.stock_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  </div>
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}

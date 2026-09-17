@@ -16,7 +16,8 @@ const PAPERS = [
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', {
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleDateString('en-IN', {
     year: 'numeric', month: 'long', day: 'numeric',
   })
 }
@@ -58,6 +59,7 @@ export default function PharmacyInvoicePage() {
   const navigate = useNavigate()
   const [prescription, setPrescription] = useState(null)
   const [clinicName,   setClinicName]   = useState('')
+  const [gstPercent,   setGstPercent]   = useState(0)
   const [status,       setStatus]       = useState('loading')
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -72,6 +74,7 @@ export default function PharmacyInvoicePage() {
       .then(([rxRes, stgRes]) => {
         setPrescription(rxRes.data)
         setClinicName(stgRes.data.clinic.name ?? '')
+        setGstPercent(parseFloat(stgRes.data.gst_percent ?? 0))
         setStatus('done')
       })
       .catch(() => setStatus('error'))
@@ -82,8 +85,10 @@ export default function PharmacyInvoicePage() {
 
   const p        = prescription.patient
   const items    = prescription.items ?? []
-  const total    = prescription.total_amount ?? 0
+  const total    = parseFloat(prescription.total_amount ?? 0)
   const hasPrice = items.some(i => i.unit_price != null)
+  const gstAmount = (gstPercent > 0 && hasPrice && total > 0) ? (total * gstPercent / 100) : 0
+  const grandTotal = total + gstAmount
   const rxNum    = `RX-${prescription.id.toString().padStart(5, '0')}`
 
   const patientMeta = [
@@ -207,9 +212,21 @@ export default function PharmacyInvoicePage() {
           </tbody>
           {hasPrice && total > 0 && (
             <tfoot>
+              {gstPercent > 0 && (
+                <>
+                  <tr>
+                    <td colSpan={3} className="inv-total-label" style={{ fontWeight: 400, fontSize: '12px' }}>Sub-total</td>
+                    <td className="inv-amount" style={{ fontSize: '12px' }}>₹{fmtPrice(total)}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={3} className="inv-total-label" style={{ fontWeight: 400, fontSize: '12px' }}>GST ({gstPercent}%)</td>
+                    <td className="inv-amount" style={{ fontSize: '12px' }}>₹{fmtPrice(gstAmount)}</td>
+                  </tr>
+                </>
+              )}
               <tr className="inv-total-row">
                 <td colSpan={3} className="inv-total-label">Total Amount</td>
-                <td className="inv-amount inv-total-amount">₹{fmtPrice(total)}</td>
+                <td className="inv-amount inv-total-amount">₹{fmtPrice(gstPercent > 0 ? grandTotal : total)}</td>
               </tr>
             </tfoot>
           )}

@@ -75,3 +75,9 @@ pub async fn restart_app(app_handle: AppHandle) -> AppResult<()> {
     app_handle.exit(0);
     Ok(())
 }
+
+#[tauri::command]
+pub async fn exit_app(app_handle: AppHandle) -> AppResult<()> {
+    app_handle.exit(0);
+    Ok(())
+}

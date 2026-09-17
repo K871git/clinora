@@ -109,3 +109,39 @@
   background: rgba(99,102,241,.12); color: var(--clr-primary);
   font-size: 11px; font-weight: 600;
 }
+
+/* ── Print: OPD Summary ───────────────────────────────────────────────── */
+@media print {
+  /* Hide everything except the OPD page */
+  body > * { display: none !important; }
+  #root > * { display: none !important; }
+  .opd-page { display: block !important; padding: 16px !important; max-width: 100% !important; }
+
+  /* Hide non-essential UI */
+  .opd-header { margin-bottom: 8px !important; }
+  .opd-new-btn, .opd-print-btn, .opd-date-nav, .btn-primary, .btn-secondary { display: none !important; }
+  .opd-title { font-size: 18px !important; }
+
+  .opd-stats { margin-bottom: 12px !important; }
+  .opd-stat { border: 1px solid #ccc !important; background: #fff !important; padding: 6px 12px !important; }
+
+  .opd-table-wrap { border: 1px solid #ccc !important; border-radius: 0 !important; }
+  .opd-table { font-size: 11px !important; }
+  .opd-table thead th { background: #f5f5f5 !important; }
+  .opd-tr { cursor: default !important; }
+  .opd-tr:hover { background: none !important; }
+  .opd-avatar { display: none !important; }
+  .opd-td-name { gap: 0 !important; }
+  .opd-status-pill--open      { background: #fff3cd !important; color: #856404 !important; }
+  .opd-status-pill--completed { background: #d1e7dd !important; color: #0a3622 !important; }
+
+  /* Print footer */
+  .opd-page::after {
+    content: 'Printed from Clinora · Confidential';
+    display: block;
+    text-align: center;
+    font-size: 9px;
+    color: #999;
+    margin-top: 16px;
+  }
+}

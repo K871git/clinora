@@ -55,6 +55,68 @@ fn downloads_dir() -> Option<std::path::PathBuf> {
     None
 }
 
+fn load_backup_path() -> Option<std::path::PathBuf> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let cfg = dir.join("data").join("clinora.cfg");
+            if let Ok(contents) = std::fs::read_to_string(&cfg) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&contents) {
+                    if let Some(p) = val.get("backup_path").and_then(|v| v.as_str()) {
+                        if !p.trim().is_empty() {
+                            let path = std::path::PathBuf::from(p.trim());
+                            if path.exists() { return Some(path) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn write_cfg_key(key: &str, value: &str) -> AppResult<()> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe.parent().ok_or("Cannot determine exe directory")?;
+    let cfg_path = dir.join("data").join("clinora.cfg");
+    let contents = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| "{}".to_string());
+    let mut val: serde_json::Value = serde_json::from_str(&contents).unwrap_or(serde_json::json!({}));
+    val[key] = serde_json::Value::String(value.to_string());
+    std::fs::write(&cfg_path, serde_json::to_string_pretty(&val).unwrap())
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_backup_path(path: String, state: State<'_, AppState>) -> AppResult<Value> {
+    get_session(&state)?;
+    let trimmed = path.trim().to_string();
+    if trimmed.is_empty() {
+        // Clear the saved path
+        write_cfg_key("backup_path", "")?;
+        return Ok(serde_json::json!({ "backup_path": null }));
+    }
+    let p = std::path::Path::new(&trimmed);
+    if !p.exists() {
+        return Err(crate::error::AppError(format!("Path does not exist: {}", trimmed)));
+    }
+    if !p.is_dir() {
+        return Err(crate::error::AppError("Backup path must be a folder, not a file.".into()));
+    }
+    write_cfg_key("backup_path", &trimmed)?;
+    Ok(serde_json::json!({ "backup_path": trimmed }))
+}
+
+#[tauri::command]
+pub async fn get_backup_path(state: State<'_, AppState>) -> AppResult<Value> {
+    get_session(&state)?;
+    let saved = load_backup_path().map(|p| p.to_string_lossy().to_string());
+    let default = downloads_dir().map(|p| p.to_string_lossy().to_string());
+    Ok(serde_json::json!({
+        "backup_path": saved,
+        "default_path": default,
+    }))
+}
+
 #[tauri::command]
 pub async fn backup_database(state: State<'_, AppState>) -> AppResult<Value> {
     // Require auth
@@ -66,8 +128,9 @@ pub async fn backup_database(state: State<'_, AppState>) -> AppResult<Value> {
     let (user, pass, host, port, dbname) = parse_db_url(&db_url)
         .ok_or_else(|| crate::error::AppError("Cannot parse database URL.".into()))?;
 
-    let dl_dir = downloads_dir()
-        .ok_or_else(|| crate::error::AppError("Cannot find Downloads folder.".into()))?;
+    let dl_dir = load_backup_path()
+        .or_else(downloads_dir)
+        .ok_or_else(|| crate::error::AppError("Cannot find backup folder — please set a backup path in Settings.".into()))?;
 
     // Timestamp filename
     let now = chrono::Local::now();

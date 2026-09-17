@@ -13,6 +13,8 @@ pub struct PatientPayload {
     pub age: Option<u32>,
     pub gender: Option<String>,
     pub address: Option<String>,
+    pub consent_obtained: Option<bool>,
+    pub consent_date: Option<String>,
 }
 
 #[tauri::command]
@@ -111,7 +113,9 @@ pub async fn get_patient(id: u64, state: State<'_, AppState>) -> AppResult<Value
     let row = sqlx::query(
         "SELECT id, clinic_id, name, mobile, age, gender, address,
                 DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s') as created_at,
-                DATE_FORMAT(date_of_birth, '%Y-%m-%d') as date_of_birth
+                DATE_FORMAT(date_of_birth, '%Y-%m-%d') as date_of_birth,
+                consent_obtained,
+                DATE_FORMAT(consent_date, '%Y-%m-%d') as consent_date
          FROM patients WHERE id = ? AND clinic_id = ? AND deleted_at IS NULL"
     )
     .bind(id).bind(session.clinic_id)
@@ -126,7 +130,9 @@ pub async fn get_patient(id: u64, state: State<'_, AppState>) -> AppResult<Value
         "gender": row.get::<Option<String>, _>("gender"),
         "address": row.get::<Option<String>, _>("address"),
         "date_of_birth": row.get::<Option<String>, _>("date_of_birth"),
-        "created_at": row.get::<Option<String>, _>("created_at").unwrap_or_default()
+        "created_at": row.get::<Option<String>, _>("created_at").unwrap_or_default(),
+        "consent_obtained": row.get::<i8, _>("consent_obtained") == 1,
+        "consent_date": row.get::<Option<String>, _>("consent_date"),
     }))
 }
 
@@ -134,20 +140,22 @@ pub async fn get_patient(id: u64, state: State<'_, AppState>) -> AppResult<Value
 pub async fn create_patient(data: PatientPayload, state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
 
-    // Sanitize: empty string → NULL for ENUM (gender) and DATE (date_of_birth) columns.
     let name = data.name;
     let mobile = data.mobile;
     let date_of_birth = data.date_of_birth.filter(|s| !s.trim().is_empty());
     let age = data.age;
     let gender = data.gender.filter(|s| !s.trim().is_empty());
     let address = data.address.filter(|s| !s.trim().is_empty());
+    let consent_obtained = data.consent_obtained.unwrap_or(false) as i8;
+    let consent_date = data.consent_date.filter(|s| !s.trim().is_empty());
 
     let result = sqlx::query(
-        "INSERT INTO patients (clinic_id, name, mobile, date_of_birth, age, gender, address, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
+        "INSERT INTO patients (clinic_id, name, mobile, date_of_birth, age, gender, address, consent_obtained, consent_date, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
     )
     .bind(session.clinic_id).bind(&name).bind(&mobile)
     .bind(&date_of_birth).bind(age).bind(&gender).bind(&address)
+    .bind(consent_obtained).bind(&consent_date)
     .execute(&state.db).await?;
 
     get_patient(result.last_insert_id(), state).await
@@ -163,13 +171,17 @@ pub async fn update_patient(id: u64, data: PatientPayload, state: State<'_, AppS
     let age = data.age;
     let gender = data.gender.filter(|s| !s.trim().is_empty());
     let address = data.address.filter(|s| !s.trim().is_empty());
+    let consent_obtained = data.consent_obtained.unwrap_or(false) as i8;
+    let consent_date = data.consent_date.filter(|s| !s.trim().is_empty());
 
     sqlx::query(
-        "UPDATE patients SET name=?, mobile=?, date_of_birth=?, age=?, gender=?, address=?, updated_at=NOW()
+        "UPDATE patients SET name=?, mobile=?, date_of_birth=?, age=?, gender=?, address=?,
+         consent_obtained=?, consent_date=?, updated_at=NOW()
          WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
     )
     .bind(&name).bind(&mobile).bind(&date_of_birth)
     .bind(age).bind(&gender).bind(&address)
+    .bind(consent_obtained).bind(&consent_date)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
 

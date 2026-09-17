@@ -3,17 +3,20 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getClinicVisits } from '../../services/visitService'
 import PageLoader from '../../components/ui/PageLoader'
+import EmptyState from '../../components/ui/EmptyState'
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function fmtTime(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
 }
 
 function fmtPrice(v) {
@@ -164,8 +167,12 @@ export default function VisitsPage() {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="card state-panel">
-          {search || activeTab ? 'No visits match your filter.' : 'No visits recorded yet.'}
+        <div className="card" style={{ padding: 0 }}>
+          <EmptyState
+            icon="🩺"
+            title={search || activeTab ? 'No visits match your filter' : 'No visits recorded yet'}
+            description={search || activeTab ? 'Try a different search term or tab.' : 'Start a new visit from any patient record.'}
+          />
         </div>
       ) : (
         <div className="card vsp-table-card">

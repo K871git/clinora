@@ -671,3 +671,5 @@ Tests live in `tests/Feature/` — 168 feature tests covering:
 - Dashboard stats and revenue
 - Settings and template management
 - Policy enforcement (cross-clinic access attempts)
+
+

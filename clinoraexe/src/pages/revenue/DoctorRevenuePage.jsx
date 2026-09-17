@@ -53,7 +53,8 @@ function fmtMoney(n) {
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', {
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleDateString('en-IN', {
     year: 'numeric', month: 'short', day: 'numeric',
   })
 }

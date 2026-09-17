@@ -1,20 +1,11 @@
 import '../../styles/pharmacy-pages.css'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPharmacyHistory } from '../../services/pharmacyService'
+import { getPharmacyHistory, getPharmacyLiveCounts } from '../../services/pharmacyService'
 import Spinner from '../../components/ui/Spinner'
+import { fmtTime, fmtDateShort as fmtDate } from '../../lib/dateUtils'
 
 const POLL_MS = 120_000
-
-function fmtTime(iso) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-}
-
-function fmtDate(iso) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
-}
 
 function doctorLabel(name) {
   if (!name) return ''
@@ -23,13 +14,15 @@ function doctorLabel(name) {
 
 function isToday(iso) {
   if (!iso) return false
-  const d = new Date(iso), n = new Date()
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  const d = new Date(utc), n = new Date()
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
 }
 
 function isYesterday(iso) {
   if (!iso) return false
-  const d = new Date(iso)
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  const d = new Date(utc)
   const y = new Date(); y.setDate(y.getDate() - 1)
   return d.getFullYear() === y.getFullYear() && d.getMonth() === y.getMonth() && d.getDate() === y.getDate()
 }
@@ -161,6 +154,7 @@ export default function PharmacyHistoryPage() {
   const navigate = useNavigate()
   const [history, setHistory] = useState([])
   const [status, setStatus]   = useState('loading')
+  const [counts,  setCounts]  = useState({ dispensing: 0, pending: 0, today_done: 0 })
 
   /* Search — debounced 400ms before hitting API */
   const [inputVal, setInputVal] = useState('')
@@ -180,6 +174,9 @@ export default function PharmacyHistoryPage() {
         setStatus('done')
       })
       .catch(() => setStatus(prev => prev === 'loading' ? 'error' : prev))
+    getPharmacyLiveCounts()
+      .then(({ data }) => setCounts(data))
+      .catch(() => {})
   }, [q])
 
   useEffect(() => { load() }, [load])
@@ -216,6 +213,22 @@ export default function PharmacyHistoryPage() {
           )}
           Sync
         </button>
+      </div>
+
+      {/* ── Live counters ───────────────────────────────────────────────── */}
+      <div className="phist-counters">
+        <div className="phist-counter phist-counter--done">
+          <span className="phist-counter-val">{counts.today_done}</span>
+          <span className="phist-counter-lbl">Done Today</span>
+        </div>
+        <div className="phist-counter phist-counter--dispensing">
+          <span className="phist-counter-val">{counts.dispensing}</span>
+          <span className="phist-counter-lbl">Dispensing</span>
+        </div>
+        <div className="phist-counter phist-counter--pending">
+          <span className="phist-counter-val">{counts.pending}</span>
+          <span className="phist-counter-lbl">Pending</span>
+        </div>
       </div>
 
       {/* ── Search ─────────────────────────────────────────────────────── */}

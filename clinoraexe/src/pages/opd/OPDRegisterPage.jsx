@@ -8,7 +8,8 @@ function todayStr() { return new Date().toISOString().split('T')[0] }
 
 function fmtTime(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
 }
 
 function fmtDateFull(dateStr) {
@@ -66,9 +67,24 @@ export default function OPDRegisterPage() {
           <h1 className="opd-title">OPD Register</h1>
           <div className="opd-date-label">{fmtDateFull(date)}</div>
         </div>
-        <button className="btn-primary opd-new-btn" onClick={() => navigate('/patients')}>
-          + New Visit
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {visits.length > 0 && (
+            <button
+              className="btn-secondary opd-print-btn"
+              onClick={() => window.print()}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+              </svg>
+              Print Summary
+            </button>
+          )}
+          <button className="btn-primary opd-new-btn" onClick={() => navigate('/patients')}>
+            + New Visit
+          </button>
+        </div>
       </div>
 
       {/* Date navigator */}

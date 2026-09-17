@@ -21,6 +21,7 @@ pub struct PrescriptionSettingsPayload {
     pub show_doctor_contact: Option<bool>,
     pub show_clinic_contact: Option<bool>,
     pub prescription_template: Option<String>,
+    pub gst_percent: Option<f64>,
 }
 
 #[derive(Deserialize)]
@@ -66,7 +67,8 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
         "show_doctor_contact": true,
         "show_clinic_contact": true,
         "prescription_template": Value::Null,
-        "prescription_template_path": Value::Null
+        "prescription_template_path": Value::Null,
+        "gst_percent": 0.0
     });
 
     if let Some(s) = settings {
@@ -74,6 +76,7 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
         result["prescription_footer"] = json!(s.get::<Option<String>, _>("prescription_footer"));
         result["show_doctor_contact"] = json!(s.get::<i8, _>("show_doctor_contact") == 1);
         result["show_clinic_contact"] = json!(s.get::<i8, _>("show_clinic_contact") == 1);
+        result["gst_percent"] = json!(s.get::<Option<f64>, _>("gst_percent").unwrap_or(0.0));
         let template_name = s.get::<Option<String>, _>("prescription_template");
         result["prescription_template"] = json!(&template_name);
         if let Some(ref name) = template_name {
@@ -107,26 +110,29 @@ pub async fn update_prescription_settings(data: PrescriptionSettingsPayload, sta
     let count: i64 = sqlx::query("SELECT COUNT(*) FROM clinic_settings WHERE clinic_id=?")
         .bind(session.clinic_id).fetch_one(&state.db).await?.get(0);
 
+    let gst = data.gst_percent.unwrap_or(0.0).clamp(0.0, 100.0);
+
     if count == 0 {
         sqlx::query(
-            "INSERT INTO clinic_settings (clinic_id, prescription_header, prescription_footer, show_doctor_contact, show_clinic_contact, prescription_template, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())"
+            "INSERT INTO clinic_settings (clinic_id, prescription_header, prescription_footer, show_doctor_contact, show_clinic_contact, prescription_template, gst_percent, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
         )
         .bind(session.clinic_id).bind(&data.prescription_header).bind(&data.prescription_footer)
         .bind(data.show_doctor_contact.unwrap_or(true) as i8)
         .bind(data.show_clinic_contact.unwrap_or(true) as i8)
-        .bind(&data.prescription_template)
+        .bind(&data.prescription_template).bind(gst)
         .execute(&state.db).await?;
     } else {
         sqlx::query(
             "UPDATE clinic_settings SET prescription_header=?, prescription_footer=?,
-             show_doctor_contact=?, show_clinic_contact=?, prescription_template=?, updated_at=NOW()
+             show_doctor_contact=?, show_clinic_contact=?, prescription_template=?,
+             gst_percent=?, updated_at=NOW()
              WHERE clinic_id=?"
         )
         .bind(&data.prescription_header).bind(&data.prescription_footer)
         .bind(data.show_doctor_contact.unwrap_or(true) as i8)
         .bind(data.show_clinic_contact.unwrap_or(true) as i8)
-        .bind(&data.prescription_template)
+        .bind(&data.prescription_template).bind(gst)
         .bind(session.clinic_id)
         .execute(&state.db).await?;
     }
@@ -431,4 +437,15 @@ pub async fn set_active_template(name: String, state: State<'_, AppState>) -> Ap
     }
 
     Ok(json!({ "prescription_template": name }))
+}
+
+#[tauri::command]
+pub async fn get_public_clinic_name(state: State<'_, AppState>) -> Result<String, String> {
+    Ok(match sqlx::query("SELECT name FROM clinics LIMIT 1")
+        .fetch_optional(&state.db)
+        .await
+    {
+        Ok(Some(row)) => row.get::<String, _>("name"),
+        _ => "Clinora".to_string(),
+    })
 }

@@ -247,16 +247,30 @@ pub async fn complete_pharmacy_prescription(
         ).bind(session.id).bind(id).execute(&state.db).await?;
     }
 
-    // Decrement medicine stock quantity for each dispensed item (match PHP)
+    // Decrement medicine stock quantity for each dispensed item and log to audit
     let dispensed = sqlx::query(
         "SELECT medicine_name FROM prescription_items WHERE prescription_id=? AND deleted_at IS NULL"
     ).bind(id).fetch_all(&state.db).await?;
     for row in &dispensed {
         let name: String = row.get("medicine_name");
-        sqlx::query(
-            "UPDATE medicines SET quantity=GREATEST(0, quantity-1), updated_at=NOW()
-             WHERE clinic_id=? AND LOWER(name)=LOWER(?) AND quantity>0"
-        ).bind(session.clinic_id).bind(&name).execute(&state.db).await?;
+        if let Ok(Some(med_row)) = sqlx::query(
+            "SELECT id, quantity FROM medicines WHERE clinic_id=? AND LOWER(name)=LOWER(?) AND quantity>0 LIMIT 1"
+        ).bind(session.clinic_id).bind(&name).fetch_optional(&state.db).await {
+            let med_id: u64 = med_row.get("id");
+            let old_qty: i32 = med_row.get::<u32, _>("quantity") as i32;
+            let new_qty: i32 = (old_qty - 1).max(0);
+            sqlx::query(
+                "UPDATE medicines SET quantity=GREATEST(0, quantity-1), updated_at=NOW() WHERE id=?"
+            ).bind(med_id).execute(&state.db).await?;
+            let _ = sqlx::query(
+                "INSERT INTO stock_audit_log
+                   (clinic_id, item_type, item_id, item_name, old_qty, new_qty, change_delta, reason, prescription_id, created_at)
+                 VALUES (?, 'medicine', ?, ?, ?, ?, ?, 'dispensed', ?, NOW())"
+            )
+            .bind(session.clinic_id).bind(med_id).bind(&name)
+            .bind(old_qty).bind(new_qty).bind(new_qty - old_qty).bind(id)
+            .execute(&state.db).await;
+        }
     }
 
     get_pharmacy_prescription_detail(id, session.clinic_id, &state.db).await
@@ -448,24 +462,24 @@ pub async fn get_pharmacy_stock_summary(state: State<'_, AppState>) -> AppResult
     let row = sqlx::query(
         "SELECT
            COUNT(*) as total_skus,
-           COALESCE(SUM(quantity), 0) as total_qty,
+           CAST(COALESCE(SUM(quantity), 0) AS UNSIGNED) as total_qty,
            COALESCE(SUM(CASE WHEN price IS NOT NULL THEN quantity * price ELSE 0 END), 0) * 1e0 as stock_value,
-           SUM(quantity = 0) as out_of_stock,
-           SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date < CURDATE()) as expired,
-           SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date >= CURDATE()
-               AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)) as expiring_soon,
-           SUM(quantity <= reorder_level) as low_stock
+           CAST(COALESCE(SUM(quantity = 0), 0) AS UNSIGNED) as out_of_stock,
+           CAST(COALESCE(SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date < CURDATE()), 0) AS UNSIGNED) as expired,
+           CAST(COALESCE(SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date >= CURDATE()
+               AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)), 0) AS UNSIGNED) as expiring_soon,
+           CAST(COALESCE(SUM(quantity <= reorder_level), 0) AS UNSIGNED) as low_stock
          FROM medicines WHERE clinic_id=?"
     ).bind(session.clinic_id).fetch_one(&state.db).await?;
 
     Ok(json!({
-        "total_skus":    row.get::<i64, _>("total_skus"),
-        "total_qty":     row.get::<i64, _>("total_qty"),
-        "stock_value":   row.get::<f64, _>("stock_value"),
-        "out_of_stock":  row.get::<i64, _>("out_of_stock"),
-        "expired":       row.get::<i64, _>("expired"),
-        "expiring_soon": row.get::<i64, _>("expiring_soon"),
-        "low_stock":     row.get::<i64, _>("low_stock"),
+        "total_skus":    row.get::<i64,  _>("total_skus"),
+        "total_qty":     row.get::<u64,  _>("total_qty"),
+        "stock_value":   row.get::<f64,  _>("stock_value"),
+        "out_of_stock":  row.get::<u64,  _>("out_of_stock"),
+        "expired":       row.get::<u64,  _>("expired"),
+        "expiring_soon": row.get::<u64,  _>("expiring_soon"),
+        "low_stock":     row.get::<u64,  _>("low_stock"),
     }))
 }
 
@@ -517,4 +531,25 @@ pub async fn get_patient_dispense_history(
     }
 
     Ok(json!({ "data": history }))
+}
+
+#[tauri::command]
+pub async fn get_pharmacy_live_counts(state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let row = sqlx::query(
+        "SELECT
+           CAST(COALESCE(SUM(status='dispensing'), 0) AS UNSIGNED) as dispensing,
+           CAST(COALESCE(SUM(status IN ('queue','pending')), 0) AS UNSIGNED) as pending,
+           CAST(COALESCE(SUM(status='completed' AND DATE(completed_at)=CURDATE()), 0) AS UNSIGNED) as today_done
+         FROM prescriptions WHERE clinic_id=? AND deleted_at IS NULL"
+    )
+    .bind(session.clinic_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(json!({
+        "dispensing":  row.get::<u64, _>("dispensing"),
+        "pending":     row.get::<u64, _>("pending"),
+        "today_done":  row.get::<u64, _>("today_done"),
+    }))
 }

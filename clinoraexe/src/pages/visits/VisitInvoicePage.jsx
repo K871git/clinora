@@ -16,7 +16,8 @@ const PAPERS = [
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', {
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleDateString('en-IN', {
     year: 'numeric', month: 'long', day: 'numeric',
   })
 }
@@ -87,7 +88,9 @@ export default function VisitInvoicePage() {
 
   const consultFee  = parseFloat(visit.consultation_fee ?? 0)
   const medTotal    = parseFloat(visit.medicine_total ?? 0)
-  const grandTotal  = consultFee + medTotal
+  const gstPercent  = parseFloat(settings?.gst_percent ?? 0)
+  const gstAmount   = gstPercent > 0 ? (consultFee * gstPercent / 100) : 0
+  const grandTotal  = consultFee + medTotal + gstAmount
 
   /* Completed prescriptions with priced items */
   const completedPrescriptions = (visit.prescriptions ?? [])
@@ -216,9 +219,25 @@ export default function VisitInvoicePage() {
             </tr>
           </tbody>
           <tfoot>
+            {gstPercent > 0 && (
+              <>
+                <tr>
+                  <td colSpan={2} className="inv-total-label" style={{ fontWeight: 400, fontSize: '12px' }}>
+                    Sub-total
+                  </td>
+                  <td className="inv-amount" style={{ fontSize: '12px' }}>₹{fmtPrice(consultFee)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={2} className="inv-total-label" style={{ fontWeight: 400, fontSize: '12px' }}>
+                    GST ({gstPercent}%)
+                  </td>
+                  <td className="inv-amount" style={{ fontSize: '12px' }}>₹{fmtPrice(gstAmount)}</td>
+                </tr>
+              </>
+            )}
             <tr className="inv-total-row">
               <td colSpan={2} className="inv-total-label">Total</td>
-              <td className="inv-amount inv-total-amount">₹{fmtPrice(consultFee)}</td>
+              <td className="inv-amount inv-total-amount">₹{fmtPrice(gstPercent > 0 ? grandTotal : consultFee)}</td>
             </tr>
           </tfoot>
         </table>

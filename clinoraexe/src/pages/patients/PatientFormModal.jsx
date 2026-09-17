@@ -14,14 +14,21 @@ const GENDER_OPTIONS = [
   { value: 'other',  label: 'Other' },
 ]
 
+function todayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 function initialForm(patient) {
   return {
-    name:          patient?.name          ?? '',
-    mobile:        patient?.mobile        ?? '',
-    date_of_birth: patient?.date_of_birth ?? '',
-    age:           patient?.age != null ? String(patient.age) : '',
-    gender:        patient?.gender        ?? '',
-    address:       patient?.address       ?? '',
+    name:              patient?.name              ?? '',
+    mobile:            patient?.mobile            ?? '',
+    date_of_birth:     patient?.date_of_birth     ?? '',
+    age:               patient?.age != null ? String(patient.age) : '',
+    gender:            patient?.gender            ?? '',
+    address:           patient?.address           ?? '',
+    consent_obtained:  patient?.consent_obtained  ?? false,
+    consent_date:      patient?.consent_date      ?? '',
   }
 }
 
@@ -169,6 +176,9 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
     if (form.age !== '')     payload.age            = Number(form.age)
     if (form.gender)         payload.gender         = form.gender
     if (form.address.trim()) payload.address        = form.address.trim()
+    payload.consent_obtained = form.consent_obtained
+    if (form.consent_obtained && form.consent_date) payload.consent_date = form.consent_date
+    else if (form.consent_obtained) payload.consent_date = todayStr()
 
     setSubmitting(true)
     setApiError(null)
@@ -340,6 +350,47 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
               onChange={(e) => setField('address', e.target.value)}
             />
           </Field>
+
+          {/* DPDP Consent */}
+          <div className="field-group">
+            <label className="field-label pfm-field-label">Patient Consent (DPDP)</label>
+            <label
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10,
+                padding: '10px 12px',
+                background: form.consent_obtained ? '#f0fdf4' : '#f8fafc',
+                border: `1px solid ${form.consent_obtained ? '#bbf7d0' : '#e2e8f0'}`,
+                borderRadius: 8, cursor: 'pointer', userSelect: 'none',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.consent_obtained}
+                onChange={e => {
+                  const v = e.target.checked
+                  setField('consent_obtained', v)
+                  if (v && !form.consent_date) setField('consent_date', todayStr())
+                }}
+                style={{ marginTop: 2, accentColor: '#16a34a', width: 15, height: 15, flexShrink: 0, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: form.consent_obtained ? '#166534' : '#64748b', lineHeight: 1.5 }}>
+                Patient has given informed consent for data processing under the DPDP Act 2023.
+              </span>
+            </label>
+            {form.consent_obtained && (
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#64748b' }}>Consent date:</span>
+                <input
+                  type="date"
+                  className="field"
+                  style={{ width: 'auto', fontSize: 12 }}
+                  value={form.consent_date}
+                  max={todayStr()}
+                  onChange={e => setField('consent_date', e.target.value)}
+                />
+              </div>
+            )}
+          </div>
 
         </div>
       </form>

@@ -35,6 +35,8 @@ import SnakeGame from '../pages/games/SnakeGame'
 import TetrisGame from '../pages/games/TetrisGame'
 import FlappyGame from '../pages/games/FlappyGame'
 import NotesPage from '../pages/notes/NotesPage'
+import PrivacyPolicyPage from '../pages/legal/PrivacyPolicyPage'
+import TermsPage from '../pages/legal/TermsPage'
 
 /* Forces PatientDetailPage to fully remount when :id changes, resetting all state */
 function KeyedPatientDetail() {
@@ -65,7 +67,9 @@ export default function AppRoutes() {
         <Route element={<AppLayout />}>
 
           {/* Shared — any authenticated user */}
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile"         element={<ProfilePage />} />
+          <Route path="/privacy-policy"  element={<PrivacyPolicyPage />} />
+          <Route path="/terms"           element={<TermsPage />} />
 
           {/* Doctor */}
           <Route element={<ProtectedRoute role="doctor" />}>

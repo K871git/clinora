@@ -21,6 +21,7 @@ const CLINIC_DEFAULTS = {
 const PRESC_DEFAULTS = {
   prescription_header: '', prescription_footer: '',
   show_doctor_contact: true, show_clinic_contact: true,
+  gst_percent: '',
 }
 
 /* ── Toggle switch ───────────────────────────────────────────────────────── */
@@ -82,8 +83,12 @@ export default function SettingsPage() {
   const [clinicApiErr, setClinicApiErr] = useState(null)
 
   /* backup */
-  const [backing,     setBacking]     = useState(false)
-  const [backupMsg,   setBackupMsg]   = useState(null)
+  const [backing,      setBacking]     = useState(false)
+  const [backupMsg,    setBackupMsg]   = useState(null)
+  const [backupPath,   setBackupPath]  = useState('')
+  const [savedBackupPath, setSavedBackupPath] = useState(null)
+  const [pathSaving,   setPathSaving]  = useState(false)
+  const [pathMsg,      setPathMsg]     = useState(null)
 
   /* prescription settings form */
   const [presc,       setPresc]       = useState(PRESC_DEFAULTS)
@@ -111,11 +116,19 @@ export default function SettingsPage() {
           prescription_footer:  ps.prescription_footer  ?? '',
           show_doctor_contact:  ps.show_doctor_contact  ?? true,
           show_clinic_contact:  ps.show_clinic_contact  ?? true,
+          gst_percent:          ps.gst_percent > 0 ? String(ps.gst_percent) : '',
         })
         setPageStatus('done')
       })
       .catch(() => { if (!cancelled) setPageStatus('error') })
     return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    invoke('get_backup_path').then(res => {
+      setSavedBackupPath(res.backup_path ?? null)
+      setBackupPath(res.backup_path ?? '')
+    }).catch(() => {})
   }, [])
 
   function setClinicField(field, value) {
@@ -163,6 +176,7 @@ export default function SettingsPage() {
         prescription_footer: presc.prescription_footer.trim() || null,
         show_doctor_contact: presc.show_doctor_contact,
         show_clinic_contact: presc.show_clinic_contact,
+        gst_percent: presc.gst_percent !== '' ? parseFloat(presc.gst_percent) : 0,
       })
       setPrescSaved(true)
     } catch (err) {
@@ -344,6 +358,26 @@ export default function SettingsPage() {
               {prescErrors.prescription_footer && <span className="stg-error">{prescErrors.prescription_footer}</span>}
             </div>
 
+            {/* GST */}
+            <div className="stg-field">
+              <label className="stg-label">
+                GST on Invoices (%)
+                <span className="stg-label-opt">optional</span>
+              </label>
+              <input
+                className="stg-input"
+                style={{ maxWidth: 140 }}
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={presc.gst_percent}
+                onChange={e => setPrescField('gst_percent', e.target.value)}
+                placeholder="e.g. 18"
+              />
+              <span className="stg-hint">Applied to visit and pharmacy invoices. Set to 0 to disable GST.</span>
+            </div>
+
             {/* Toggles */}
             <div className="stg-section-sep" />
             <div className="stg-section-label">Display on Prescription</div>
@@ -390,22 +424,70 @@ export default function SettingsPage() {
       {/* ── Database Backup ────────────────────────────────────────────── */}
       <div className="stg-card" style={{ marginTop: 'var(--space-md)' }}>
         <div className="stg-card-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-          </svg>
-          Database Backup
+          <div className="stg-card-head-row">
+            <span className="stg-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+            </span>
+            <div>
+              <div className="stg-card-title">Database Backup</div>
+              <p className="stg-card-desc">Export a full backup of your clinic database as a <code>.sql</code> file.</p>
+            </div>
+          </div>
         </div>
         <div className="stg-card-body">
+
+          {/* Backup path */}
+          <div className="stg-field">
+            <label className="stg-label">Backup Destination Folder</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                className="stg-input"
+                value={backupPath}
+                onChange={e => { setBackupPath(e.target.value); setPathMsg(null) }}
+                placeholder="e.g. D:\Backup or E:\USB_Drive\ClinoraBackup"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="stg-save-btn"
+                disabled={pathSaving}
+                style={{ flexShrink: 0 }}
+                onClick={async () => {
+                  setPathSaving(true)
+                  setPathMsg(null)
+                  try {
+                    await invoke('update_backup_path', { path: backupPath.trim() })
+                    setSavedBackupPath(backupPath.trim() || null)
+                    setPathMsg({ ok: true, text: backupPath.trim() ? 'Backup folder saved.' : 'Backup folder cleared — will use Downloads.' })
+                  } catch (err) {
+                    setPathMsg({ ok: false, text: typeof err === 'string' ? err : 'Could not save path.' })
+                  } finally { setPathSaving(false) }
+                }}
+              >
+                {pathSaving ? 'Saving…' : 'Set Folder'}
+              </button>
+            </div>
+            <span className="stg-hint">
+              {savedBackupPath
+                ? `Currently saving to: ${savedBackupPath}`
+                : 'Leave empty to use the default Downloads folder.'}
+            </span>
+            {pathMsg && (
+              <div className={`form-alert ${pathMsg.ok ? 'success' : 'danger'}`} style={{ marginTop: 8 }}>
+                <p className="form-alert-body">{pathMsg.text}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="stg-section-sep" />
           <p style={{ fontSize: 13, color: 'var(--clr-text-muted)', marginBottom: 12 }}>
-            Export a full backup of your clinic database as a <code>.sql</code> file saved to your Downloads folder.
-            Run this regularly to protect your patient data.
+            Run backups regularly — especially before Windows updates or moving the PC. Keep copies on an external drive or USB.
           </p>
           {backupMsg && (
-            <div
-              className={`form-alert ${backupMsg.ok ? 'success' : 'danger'}`}
-              style={{ marginBottom: 12 }}
-            >
+            <div className={`form-alert ${backupMsg.ok ? 'success' : 'danger'}`} style={{ marginBottom: 12 }}>
               <p className="form-alert-body">{backupMsg.text}</p>
             </div>
           )}
@@ -417,15 +499,13 @@ export default function SettingsPage() {
               setBackupMsg(null)
               try {
                 const result = await invoke('backup_database')
-                setBackupMsg({ ok: true, text: `Backup saved: ${result.filename} (${result.size_kb} KB)` })
+                setBackupMsg({ ok: true, text: `Backup saved: ${result.filename} (${result.size_kb} KB) → ${result.path}` })
               } catch (err) {
                 setBackupMsg({ ok: false, text: typeof err === 'string' ? err : 'Backup failed — make sure mysqldump is installed.' })
-              } finally {
-                setBacking(false)
-              }
+              } finally { setBacking(false) }
             }}
           >
-            {backing ? 'Creating backup…' : 'Download Backup Now'}
+            {backing ? 'Creating backup…' : 'Backup Now'}
           </button>
         </div>
       </div>

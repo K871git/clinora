@@ -59,6 +59,11 @@ export async function getPharmacyStockSummary() {
   return { data: result }
 }
 
+export async function getPharmacyLiveCounts() {
+  const result = await invoke('get_pharmacy_live_counts')
+  return { data: result }
+}
+
 export async function getPatientDispenseHistory(patientId, excludeId) {
   const result = await invoke('get_patient_dispense_history', {
     patientId: Number(patientId),

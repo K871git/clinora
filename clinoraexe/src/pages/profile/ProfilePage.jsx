@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import profileService from '../../services/profileService'
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { sanitizeMobile, validateMobile, validateDob, validateEmail } from '../../lib/inputValidators'
 
 function getAvatarUrl(path) {
   if (!path) return null
@@ -50,6 +51,11 @@ export default function ProfilePage() {
 
   async function handleInfoSave(e) {
     e.preventDefault()
+    const errs = {}
+    if (!info.name.trim()) errs.name = ['Full name is required.']
+    const emailErr = validateEmail(info.email)
+    if (emailErr) errs.email = [emailErr]
+    if (Object.keys(errs).length) { setInfoErrors(errs); return }
     setInfoErrors({})
     setInfoSaving(true)
     try {
@@ -66,10 +72,15 @@ export default function ProfilePage() {
 
   async function handlePersonalSave(e) {
     e.preventDefault()
+    const errs = {}
+    const phoneErr = validateMobile(personal.phone)
+    if (phoneErr) errs.phone = [phoneErr]
+    const dobErr = validateDob(personal.dob)
+    if (dobErr) errs.dob = [dobErr]
+    if (Object.keys(errs).length) { setPersErrors(errs); return }
     setPersErrors({})
     setPersSaving(true)
     try {
-      /* Send all fields together — backend validates optional ones */
       const { data } = await profileService.updateProfile({ ...info, ...personal })
       updateUser(data.user)
       setPersSaved(true)
@@ -83,6 +94,13 @@ export default function ProfilePage() {
 
   async function handlePwdSave(e) {
     e.preventDefault()
+    const errs = {}
+    if (!pwd.current_password) errs.current_password = ['Current password is required.']
+    if (!pwd.password) errs.password = ['New password is required.']
+    else if (pwd.password.length < 8) errs.password = ['Password must be at least 8 characters.']
+    if (pwd.password && pwd.password !== pwd.password_confirmation)
+      errs.password_confirmation = ['Passwords do not match.']
+    if (Object.keys(errs).length) { setPwdErrors(errs); return }
     setPwdErrors({})
     setPwdSaving(true)
     try {
@@ -234,8 +252,10 @@ export default function ProfilePage() {
                 type="tel"
                 className={`stg-input${persErrors.phone ? ' prf-input--error' : ''}`}
                 value={personal.phone}
-                onChange={e => setPersonal(p => ({ ...p, phone: e.target.value }))}
-                placeholder="+92 300 0000000"
+                onChange={e => setPersonal(p => ({ ...p, phone: sanitizeMobile(e.target.value) }))}
+                placeholder="10-digit mobile number"
+                inputMode="numeric"
+                maxLength={10}
               />
               {persErrors.phone && <span className="prf-error">{persErrors.phone[0]}</span>}
             </div>

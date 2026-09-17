@@ -3,23 +3,31 @@ import { toast } from 'sonner'
 import { listAppointments, createAppointment, updateAppointment, deleteAppointment } from '../../services/appointmentService'
 import { searchPatients, createPatient } from '../../services/patientService'
 import { sanitizeMobile, validateMobile, sanitizeAge, validateAge } from '../../lib/inputValidators'
+import EmptyState from '../../components/ui/EmptyState'
 import '../../styles/emr.css'
 
 const TYPES    = ['consultation','follow_up','checkup','procedure','other']
 const STATUSES = ['scheduled','confirmed','completed','cancelled','no_show']
 const EMPTY_FORM = { patient_id: '', patient_name: '', title: '', scheduled_at: '', duration_minutes: 15, type: 'consultation', status: 'scheduled', notes: '' }
 
+function parseUtc(iso) {
+  if (!iso) return null
+  return new Date(iso.endsWith('Z') ? iso : iso + 'Z')
+}
 function fmtTime(iso) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  const d = parseUtc(iso)
+  if (!d) return '—'
+  return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
 }
 function fmtDateShort(iso) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  const d = parseUtc(iso)
+  if (!d) return ''
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 function fmtDateFull(iso) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const d = parseUtc(iso)
+  if (!d) return ''
+  return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 function todayStr() { return new Date().toISOString().split('T')[0] }
 
@@ -181,7 +189,11 @@ export default function AppointmentsPage() {
 
       {loading && <div className="emr-empty">Loading…</div>}
       {!loading && appointments.length === 0 && (
-        <div className="emr-empty">No appointments for this day.</div>
+        <EmptyState
+          icon="📅"
+          title="No appointments for this day"
+          description="Book a new appointment using the button above."
+        />
       )}
       {!loading && appointments.length > 0 && (
         <div className="appt-list">

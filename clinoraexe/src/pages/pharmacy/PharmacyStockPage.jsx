@@ -1,10 +1,12 @@
 import '../../styles/pharmacy-stock.css'
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   getMedicines, patchMedicine, createMedicine, deleteMedicine, importMedicines, updateMedicine,
 } from '../../services/medicineService'
 import { getStockItems, createStockItem, updateStockItem, deleteStockItem } from '../../services/stockItemService'
+import { getStockAuditLog } from '../../services/stockAuditService'
 import Spinner from '../../components/ui/Spinner'
 import MedicineImportModal from '../../components/medicines/MedicineImportModal'
 
@@ -325,8 +327,111 @@ function ImportModal({ onClose, onDone }) {
   )
 }
 
+/* ── Audit Log Modal ─────────────────────────────────────────────────── */
+const REASON_LABEL = { manual_edit: 'Manual Edit', dispensed: 'Dispensed', import: 'Import' }
+const REASON_COLOR = { manual_edit: '#6366f1', dispensed: '#0ea5e9', import: '#10b981' }
+
+function AuditLogModal({ item, onClose }) {
+  const [logs,   setLogs]   = useState([])
+  const [status, setStatus] = useState('loading')
+
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  useEffect(() => {
+    setStatus('loading')
+    getStockAuditLog(item.type, item.id)
+      .then(({ data }) => { setLogs(data.data ?? []); setStatus('done') })
+      .catch(() => setStatus('error'))
+  }, [item.type, item.id])
+
+  function fmtTs(iso) {
+    if (!iso) return '—'
+    const d = new Date(iso.endsWith('Z') ? iso : iso + 'Z')
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) +
+      ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  }
+
+  function deltaLabel(delta) {
+    if (delta > 0) return <span style={{ color: '#16a34a', fontWeight: 600 }}>+{delta}</span>
+    if (delta < 0) return <span style={{ color: '#dc2626', fontWeight: 600 }}>{delta}</span>
+    return <span style={{ color: 'var(--clr-text-muted)' }}>0</span>
+  }
+
+  return (
+    <div className="phs-modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="phs-modal phs-modal--wide">
+        <div className="phs-modal-head">
+          <span className="phs-modal-title">
+            Stock History — <span style={{ color: 'var(--clr-primary)', fontWeight: 700 }}>{item.name}</span>
+          </span>
+          <button className="phs-modal-close" onClick={onClose} type="button">✕</button>
+        </div>
+        <div className="phs-modal-body phs-audit-body">
+          {status === 'loading' && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+              <Spinner size={22} />
+            </div>
+          )}
+          {status === 'error' && (
+            <p style={{ textAlign: 'center', color: 'var(--clr-text-muted)', padding: '32px 0' }}>
+              Could not load history.
+            </p>
+          )}
+          {status === 'done' && logs.length === 0 && (
+            <div className="phs-audit-empty">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .35 }}>
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <p>No stock changes recorded yet.</p>
+              <p style={{ fontSize: 11, marginTop: 4 }}>Changes will appear here after you edit qty or dispense.</p>
+            </div>
+          )}
+          {status === 'done' && logs.length > 0 && (
+            <table className="phs-audit-table">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th style={{ textAlign: 'right' }}>Old Qty</th>
+                  <th style={{ textAlign: 'center' }}>Change</th>
+                  <th style={{ textAlign: 'right' }}>New Qty</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map(log => (
+                  <tr key={log.id}>
+                    <td className="phs-audit-ts">{fmtTs(log.created_at)}</td>
+                    <td style={{ textAlign: 'right' }}>{log.old_qty}</td>
+                    <td style={{ textAlign: 'center' }}>{deltaLabel(log.change_delta)}</td>
+                    <td style={{ textAlign: 'right' }}>{log.new_qty}</td>
+                    <td>
+                      <span className="phs-audit-reason"
+                        style={{ background: REASON_COLOR[log.reason] + '18', color: REASON_COLOR[log.reason] }}>
+                        {REASON_LABEL[log.reason] ?? log.reason}
+                        {log.prescription_id ? ` #${log.prescription_id}` : ''}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="phs-modal-foot">
+          <button type="button" className="btn-secondary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Medicine tab ─────────────────────────────────────────────────────── */
-function MedicineTab() {
+function MedicineTab({ preFilter }) {
   const [medicines,    setMedicines]    = useState([])
   const [total,        setTotal]        = useState(0)
   const [status,       setStatus]       = useState('loading')
@@ -346,6 +451,9 @@ function MedicineTab() {
 
   /* full edit modal */
   const [editMed,      setEditMed]      = useState(null)
+
+  /* audit log modal */
+  const [auditItem,    setAuditItem]    = useState(null)
 
   /* delete */
   const [deletingId,   setDeletingId]   = useState(null)
@@ -374,7 +482,25 @@ function MedicineTab() {
   }, [medicines])
 
   const filtered = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
     let list = medicines
+    if (preFilter === 'out_of_stock') {
+      list = list.filter(m => (m.quantity ?? 0) === 0)
+    } else if (preFilter === 'low_stock') {
+      list = list.filter(m => (m.quantity ?? 0) > 0 && (m.quantity ?? 0) <= (m.reorder_level ?? 10))
+    } else if (preFilter === 'expiring_soon') {
+      list = list.filter(m => {
+        if (!m.expiry_date) return false
+        const exp = new Date(m.expiry_date)
+        const days = Math.round((exp - today) / 86400000)
+        return days >= 0 && days <= 30
+      })
+    } else if (preFilter === 'expired') {
+      list = list.filter(m => {
+        if (!m.expiry_date) return false
+        return new Date(m.expiry_date) < today
+      })
+    }
     if (activeCat !== 'All') list = list.filter(m => m.category === activeCat)
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -385,7 +511,7 @@ function MedicineTab() {
       )
     }
     return list
-  }, [medicines, search, activeCat])
+  }, [medicines, search, activeCat, preFilter])
 
   const stats = useMemo(() => ({
     total:    medicines.length,
@@ -475,10 +601,36 @@ function MedicineTab() {
     } finally { setDeletingId(null); setConfirmDelId(null) }
   }
 
+  const PRE_FILTER_LABELS = {
+    out_of_stock:   { label: 'Out of Stock', color: '#ef4444', bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.25)' },
+    low_stock:      { label: 'Low Stock',    color: '#f59e0b', bg: 'rgba(245,158,11,.08)', border: 'rgba(245,158,11,.25)' },
+    expiring_soon:  { label: 'Expiring in 30 days', color: '#d97706', bg: 'rgba(217,119,6,.08)', border: 'rgba(217,119,6,.25)' },
+    expired:        { label: 'Expired',      color: '#dc2626', bg: 'rgba(220,38,38,.08)', border: 'rgba(220,38,38,.25)' },
+  }
+
   if (status === 'error') return <div className="card state-panel">Could not load medicine stock.</div>
 
   return (
     <>
+      {/* ── Pre-filter banner ─────────────────────────────────────────── */}
+      {preFilter && PRE_FILTER_LABELS[preFilter] && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '7px 14px', marginBottom: 10, borderRadius: 8,
+          background: PRE_FILTER_LABELS[preFilter].bg,
+          border: `1px solid ${PRE_FILTER_LABELS[preFilter].border}`,
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={PRE_FILTER_LABELS[preFilter].color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          <span style={{ fontSize: 12, fontWeight: 600, color: PRE_FILTER_LABELS[preFilter].color }}>
+            Filtered: {PRE_FILTER_LABELS[preFilter].label}
+          </span>
+          <span style={{ fontSize: 11, color: PRE_FILTER_LABELS[preFilter].color, opacity: .7 }}>
+            — {filtered.length} item{filtered.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
       {/* ── Stats bar ─────────────────────────────────────────────────── */}
       <div className="phs-stats">
         <div className="phs-stat">
@@ -627,7 +779,7 @@ function MedicineTab() {
                   <th style={{ width: '100px' }}>Expiry</th>
                   <th style={{ textAlign: 'right', width: '80px' }}>Qty</th>
                   <th style={{ textAlign: 'right', width: '110px' }}>Price</th>
-                  <th style={{ width: '90px' }}></th>
+                  <th style={{ width: '112px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -710,6 +862,12 @@ function MedicineTab() {
                           </span>
                         ) : (
                           <span style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                            <button className="phs-hist-btn" title="Stock history"
+                              onClick={() => setAuditItem({ type: 'medicine', id: med.id, name: med.name })}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                              </svg>
+                            </button>
                             <button className="phs-edit-btn" onClick={() => setEditMed(med)} title="Edit medicine">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -759,6 +917,11 @@ function MedicineTab() {
           onDone={() => { load(); setShowImport(false) }}
         />
       )}
+
+      {/* Audit log modal */}
+      {auditItem && (
+        <AuditLogModal item={auditItem} onClose={() => setAuditItem(null)} />
+      )}
     </>
   )
 }
@@ -777,6 +940,7 @@ function StockItemsTab() {
   const [saving,     setSaving]     = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
+  const [auditItem,  setAuditItem]  = useState(null)
 
   useEffect(() => {
     getStockItems()
@@ -941,7 +1105,7 @@ function StockItemsTab() {
                   <th>Unit</th>
                   <th style={{ textAlign: 'right' }}>Price</th>
                   <th style={{ textAlign: 'right' }}>Qty</th>
-                  <th style={{ width: '90px' }}></th>
+                  <th style={{ width: '112px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -987,6 +1151,12 @@ function StockItemsTab() {
                               </span>
                             ) : (
                               <span style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                                <button className="phs-hist-btn" title="Stock history"
+                                  onClick={() => setAuditItem({ type: 'stock_item', id: item.id, name: item.name })}>
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                  </svg>
+                                </button>
                                 <button className="phs-edit-btn" onClick={() => startEdit(item)}>Edit</button>
                                 <button className="phs-del-btn" onClick={() => setConfirmDel(item.id)}>✕</button>
                               </span>
@@ -1003,13 +1173,20 @@ function StockItemsTab() {
         </div>
       )}
       <p className="phs-hint">Manage non-medicine stock — water, stationery, and other dispensary supplies.</p>
+
+      {auditItem && (
+        <AuditLogModal item={auditItem} onClose={() => setAuditItem(null)} />
+      )}
     </>
   )
 }
 
 /* ── Main page ────────────────────────────────────────────────────────── */
 export default function PharmacyStockPage() {
-  const [activeTab, setActiveTab] = useState('medicines')
+  const [searchParams] = useSearchParams()
+  const preFilter  = searchParams.get('filter') || null
+  const initialTab = searchParams.get('tab') === 'stock' ? 'stock' : 'medicines'
+  const [activeTab, setActiveTab] = useState(initialTab)
 
   return (
     <div>
@@ -1024,7 +1201,7 @@ export default function PharmacyStockPage() {
         </button>
       </div>
 
-      {activeTab === 'medicines' ? <MedicineTab /> : <StockItemsTab />}
+      {activeTab === 'medicines' ? <MedicineTab preFilter={preFilter} /> : <StockItemsTab />}
     </div>
   )
 }

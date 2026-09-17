@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getPharmacyPrescription } from '../../services/pharmacyService'
-
-function fmtDate(iso) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
+import { fmtDate } from '../../lib/dateUtils'
 
 export default function PharmacyLabelPage() {
   const { prescriptionId } = useParams()
+  const navigate = useNavigate()
   const [prescription, setPrescription] = useState(null)
   const [status, setStatus] = useState('loading')
 
@@ -45,13 +42,13 @@ export default function PharmacyLabelPage() {
           🖨 Print Labels
         </button>
         <button
-          onClick={() => window.close()}
+          onClick={() => navigate(-1)}
           style={{
             padding: '8px 16px', background: '#f3f4f6', border: '1px solid #d1d5db',
             borderRadius: 6, cursor: 'pointer', fontSize: 14,
           }}
         >
-          Close
+          ← Back
         </button>
       </div>
 

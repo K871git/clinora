@@ -28,6 +28,7 @@ fn note_row(row: &sqlx::mysql::MySqlRow) -> Value {
     json!({
         "id":          row.get::<u64, _>("id"),
         "user_id":     row.get::<u64, _>("user_id"),
+        "patient_id":  row.get::<Option<u64>, _>("patient_id"),
         "role":        row.get::<String, _>("role"),
         "title":       row.get::<String, _>("title"),
         "body":        row.get::<Option<String>, _>("body"),
@@ -49,12 +50,12 @@ pub async fn list_notes(
     let filter_role = role.unwrap_or(session.role);
 
     let rows = sqlx::query(
-        "SELECT id, user_id, role, title, tags, attachments,
+        "SELECT id, user_id, patient_id, role, title, tags, attachments,
                 DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%S') as created_at,
                 DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m-%dT%H:%i:%S') as updated_at,
                 SUBSTRING(body, 1, 160) as body
          FROM notes
-         WHERE clinic_id = ? AND user_id = ? AND role = ?
+         WHERE clinic_id = ? AND user_id = ? AND role = ? AND patient_id IS NULL
          ORDER BY COALESCE(updated_at, created_at) DESC
          LIMIT 200"
     )
@@ -77,7 +78,7 @@ pub async fn get_note(
     let session = get_session(&state)?;
 
     let row = sqlx::query(
-        "SELECT id, user_id, role, title, body, tags, attachments,
+        "SELECT id, user_id, patient_id, role, title, body, tags, attachments,
                 DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%S') as created_at,
                 DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m-%dT%H:%i:%S') as updated_at
          FROM notes WHERE id = ? AND clinic_id = ? AND user_id = ?
@@ -97,22 +98,24 @@ pub async fn get_note(
 
 #[tauri::command]
 pub async fn create_note(
-    state: State<'_, AppState>,
-    title: Option<String>,
-    body:  Option<String>,
-    tags:  Option<String>,
-    role:  Option<String>,
+    state:      State<'_, AppState>,
+    title:      Option<String>,
+    body:       Option<String>,
+    tags:       Option<String>,
+    role:       Option<String>,
+    patient_id: Option<u64>,
 ) -> AppResult<Value> {
     let session     = get_session(&state)?;
     let final_role  = role.unwrap_or(session.role);
     let final_title = title.unwrap_or_default();
 
     let res = sqlx::query(
-        "INSERT INTO notes (clinic_id, user_id, role, title, body, tags, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())"
+        "INSERT INTO notes (clinic_id, user_id, patient_id, role, title, body, tags, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
     )
     .bind(session.clinic_id)
     .bind(session.id)
+    .bind(patient_id)
     .bind(&final_role)
     .bind(&final_title)
     .bind(&body)
@@ -121,7 +124,7 @@ pub async fn create_note(
     .await?;
 
     let row = sqlx::query(
-        "SELECT id, user_id, role, title, body, tags, attachments,
+        "SELECT id, user_id, patient_id, role, title, body, tags, attachments,
                 DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%S') as created_at,
                 DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m-%dT%H:%i:%S') as updated_at
          FROM notes WHERE id = ? LIMIT 1"
@@ -159,7 +162,7 @@ pub async fn update_note(
     .await?;
 
     let row = sqlx::query(
-        "SELECT id, user_id, role, title, body, tags, attachments,
+        "SELECT id, user_id, patient_id, role, title, body, tags, attachments,
                 DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%S') as created_at,
                 DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m-%dT%H:%i:%S') as updated_at
          FROM notes WHERE id = ? LIMIT 1"
@@ -299,4 +302,42 @@ pub async fn read_note_attachment(
 ) -> AppResult<Vec<u8>> {
     let dir = note_attach_dir(note_id)?;
     std::fs::read(dir.join(&filename)).map_err(io_err)
+}
+
+/* ── list notes for a patient (all clinic users) ───────────────────── */
+
+#[tauri::command]
+pub async fn list_patient_notes(
+    state:      State<'_, AppState>,
+    patient_id: u64,
+) -> AppResult<Value> {
+    let session = get_session(&state)?;
+
+    let rows = sqlx::query(
+        "SELECT n.id, n.user_id, n.patient_id, n.role, n.title, n.tags, n.attachments,
+                DATE_FORMAT(n.created_at, '%Y-%m-%dT%H:%i:%S') as created_at,
+                DATE_FORMAT(COALESCE(n.updated_at, n.created_at), '%Y-%m-%dT%H:%i:%S') as updated_at,
+                SUBSTRING(n.body, 1, 200) as body,
+                u.name as author_name
+         FROM notes n
+         JOIN users u ON u.id = n.user_id
+         WHERE n.clinic_id = ? AND n.patient_id = ?
+         ORDER BY COALESCE(n.updated_at, n.created_at) DESC
+         LIMIT 100"
+    )
+    .bind(session.clinic_id)
+    .bind(patient_id)
+    .fetch_all(&state.db)
+    .await?;
+
+    let data: Vec<Value> = rows.iter().map(|row| {
+        let mut v = note_row(row);
+        if let Some(obj) = v.as_object_mut() {
+            obj.insert("author_name".to_string(),
+                serde_json::Value::String(row.get::<String, _>("author_name")));
+        }
+        v
+    }).collect();
+
+    Ok(json!({ "data": data }))
 }
