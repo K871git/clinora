@@ -58,6 +58,7 @@ export default function NewVisitPage() {
   const [patientStatus, setPatientStatus] = useState('loading')
   const [visitedAt,     setVisitedAt]     = useState(() => nowLocal())
   const [notes,         setNotes]         = useState('')
+  const [diagnosis,     setDiagnosis]     = useState('')
   const [fee,           setFee]           = useState('')
   const [fieldErrors,   setFieldErrors]   = useState({})
   const [apiError,      setApiError]      = useState(null)
@@ -98,6 +99,7 @@ export default function NewVisitPage() {
       const { data } = await createVisit(id, {
         visited_at:         new Date(visitedAt).toISOString(),
         consultation_notes: notes.trim() || null,
+        diagnosis:          diagnosis.trim() || null,
       })
       const visitId = data.id
       const feeVal  = fee ? parseFloat(fee) : null
@@ -203,6 +205,25 @@ export default function NewVisitPage() {
             {fieldErrors.consultation_notes && (
               <span className="field-error-msg">{fieldErrors.consultation_notes}</span>
             )}
+          </div>
+
+          {/* Diagnosis */}
+          <div className="nvp-field-group">
+            <label className="nvp-label">
+              <span className="nvp-label-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                </svg>
+              </span>
+              Diagnosis
+              <span className="nvp-label-opt">optional</span>
+            </label>
+            <input
+              className="field nvp-field"
+              placeholder="e.g. Viral URTI, Type 2 DM follow-up…"
+              value={diagnosis}
+              onChange={e => setDiagnosis(e.target.value)}
+            />
           </div>
 
           {/* Consultation Fee */}

@@ -171,6 +171,16 @@ export default function DashboardPage() {
           status={statsStatus}
           onClick={() => navigate('/prescriptions')}
         />
+        <StatCard
+          icon={<IconCoin />}
+          value={statsStatus === 'done'
+            ? `₹${Math.round(stats?.today_revenue ?? 0).toLocaleString('en-IN')}`
+            : null}
+          label="Today's Collection"
+          accent="success"
+          status={statsStatus}
+          onClick={() => setRevenueOpen(true)}
+        />
       </div>
 
       {/* Refresh indicator */}

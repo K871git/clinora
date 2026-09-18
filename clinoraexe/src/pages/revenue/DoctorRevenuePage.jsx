@@ -14,7 +14,7 @@ async function exportCsv(txs, period, filter) {
   const rows = txs.map(tx => {
     const due = Math.max(0, tx.consultation_fee - tx.amount_paid)
     return [
-      tx.patient_name ?? '',
+      tx.patient?.name ?? '',
       tx.visited_at ? new Date(tx.visited_at).toLocaleDateString('en-IN') : '',
       tx.payment_status,
       tx.consultation_fee.toFixed(2),
@@ -211,7 +211,7 @@ export default function DoctorRevenuePage() {
         payment_status: 'paid',
         amount_paid:    tx.consultation_fee,
       })
-      toast.success(`Marked paid — ${tx.patient_name}`)
+      toast.success(`Marked paid — ${tx.patient?.name}`)
       loadStats()
       loadTxs(period, filter)
     } catch {
@@ -343,7 +343,7 @@ export default function DoctorRevenuePage() {
                     <tr key={tx.id} className="rv-debt-row">
                       <td>
                         <Link className="rv-debt-patient" to={`/patients/${tx.patient_id}`}>
-                          {tx.patient_name ?? '—'}
+                          {tx.patient?.name ?? '—'}
                         </Link>
                       </td>
                       <td className="rv-debt-muted">{fmtDate(tx.visited_at)}</td>

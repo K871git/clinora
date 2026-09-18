@@ -346,6 +346,7 @@ export default function NewPrescriptionPage() {
             items={items}
             onChange={setItems}
             itemErrors={fieldErrors.itemErrors}
+            allergies={allergies}
           />
         </div>
 

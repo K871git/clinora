@@ -22,3 +22,5 @@ pub mod backup;
 pub mod consent;
 pub mod rx_templates;
 pub mod stock_audit;
+pub mod fee_templates;
+pub mod certificates;

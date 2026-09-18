@@ -215,6 +215,13 @@
   font-family: system-ui, sans-serif;
 }
 
+.print-reg-number {
+  font-size: 8.5pt;
+  color: #475569;
+  margin: 0 0 1pt;
+  font-family: system-ui, sans-serif;
+}
+
 .print-address,
 .print-clinic-contact {
   font-size: 9pt;

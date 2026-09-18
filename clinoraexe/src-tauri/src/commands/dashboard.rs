@@ -31,6 +31,11 @@ pub async fn get_dashboard_stats(state: State<'_, AppState>) -> AppResult<Value>
     let completed_today: i64 = sqlx::query("SELECT COUNT(*) as cnt FROM visits WHERE clinic_id = ? AND status = 'completed' AND DATE(invoiced_at) = CURDATE() AND deleted_at IS NULL")
         .bind(cid).fetch_one(db).await?.get(0);
 
+    let today_revenue: f64 = sqlx::query(
+        "SELECT COALESCE(SUM(consultation_fee), 0) * 1e0 as rev FROM visits WHERE clinic_id = ? AND payment_status = 'paid' AND DATE(invoiced_at) = CURDATE() AND deleted_at IS NULL"
+    )
+    .bind(cid).fetch_one(db).await?.get(0);
+
     let week_rows = sqlx::query(
         "SELECT DATE_FORMAT(DATE(visited_at), '%Y-%m-%d') as day, COUNT(*) as cnt FROM visits
          WHERE clinic_id = ? AND visited_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND deleted_at IS NULL
@@ -51,7 +56,8 @@ pub async fn get_dashboard_stats(state: State<'_, AppState>) -> AppResult<Value>
         "pending_rx": pending_rx,
         "draft_rx": draft_rx,
         "completed_today": completed_today,
-        "week_activity": week_activity
+        "today_revenue":   today_revenue,
+        "week_activity":   week_activity
     }}))
 }
 

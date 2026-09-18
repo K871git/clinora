@@ -37,6 +37,11 @@ export async function completeVisit(visitId, consultationFee = null) {
   return { data: result }
 }
 
+export async function saveDiagnosis(visitId, diagnosis) {
+  const result = await invoke('save_diagnosis', { id: Number(visitId), diagnosis: diagnosis || null })
+  return { data: result }
+}
+
 export async function recordVisitPayment(visitId, data) {
   const result = await invoke('record_visit_payment', { id: Number(visitId), data })
   return { data: result }
@@ -53,3 +58,18 @@ export const updateFollowup  = (id, followupDate, followupNotes) =>
 export const listFollowups   = () => invoke('list_followups')
 
 export const listOpdRegister = (date) => invoke('list_opd_register', { date })
+
+export async function listVisitCharges(visitId) {
+  const result = await invoke('list_visit_charges', { visitId: Number(visitId) })
+  return { data: result }
+}
+
+export async function addVisitCharge(visitId, data) {
+  const result = await invoke('add_visit_charge', { visitId: Number(visitId), data })
+  return { data: result }
+}
+
+export async function deleteVisitCharge(id, visitId) {
+  const result = await invoke('delete_visit_charge', { id: Number(id), visitId: Number(visitId) })
+  return { data: result }
+}

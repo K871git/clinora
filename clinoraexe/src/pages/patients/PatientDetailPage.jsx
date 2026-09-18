@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPatient, getPatientVisits, getPatientPrescriptions } from '../../services/patientService'
 import { getPatientTimeline } from '../../services/timelineService'
+import { listPatientCertificates } from '../../services/certificateService'
+import '../../styles/certificate-print.css'
 import PatientFormModal from './PatientFormModal'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
@@ -9,6 +11,7 @@ import VitalSignsTab from '../../components/emr/VitalSignsTab'
 import MedicalHistoryTab from '../../components/emr/MedicalHistoryTab'
 import LabReportsTab from '../../components/emr/LabReportsTab'
 import PatientNotesTab from '../../components/emr/PatientNotesTab'
+import MedicationsTab from '../../components/emr/MedicationsTab'
 import ErrorBoundary from '../../components/ui/ErrorBoundary'
 import '../../styles/patients.css'
 import '../../styles/emr.css'
@@ -70,8 +73,10 @@ export default function PatientDetailPage() {
   const [rxLoadingMore, setRxLoadingMore] = useState(false)
   const [showEdit, setShowEdit]           = useState(false)
   const [activeTab, setActiveTab]         = useState('overview')
-  const [timeline, setTimeline]           = useState([])
-  const [timelineStatus, setTimelineStatus] = useState('idle')
+  const [timeline, setTimeline]               = useState([])
+  const [timelineStatus, setTimelineStatus]   = useState('idle')
+  const [certificates, setCertificates]       = useState([])
+  const [certsStatus,  setCertsStatus]        = useState('idle')
 
   useEffect(() => {
     let cancelled = false
@@ -112,6 +117,17 @@ export default function PatientDetailPage() {
       .catch(() => { if (!cancelled) setTimelineStatus('error') })
     return () => { cancelled = true }
   }, [activeTab, timelineStatus, pageStatus, id])
+
+  /* ── Load certificates lazily ─────────────────────────────────────── */
+  useEffect(() => {
+    if (activeTab !== 'certificates' || certsStatus !== 'idle' || pageStatus !== 'done') return
+    let cancelled = false
+    setCertsStatus('loading')
+    listPatientCertificates(id)
+      .then(res => { if (!cancelled) { setCertificates(res.data.data ?? []); setCertsStatus('done') } })
+      .catch(() => { if (!cancelled) setCertsStatus('error') })
+    return () => { cancelled = true }
+  }, [activeTab, certsStatus, pageStatus, id])
 
   /* ── Load more prescriptions ────────────────────────────────────────── */
 
@@ -246,6 +262,12 @@ export default function PatientDetailPage() {
             {patient.address && (
               <MetaItem label="Address" value={patient.address} />
             )}
+            {(patient.emergency_contact_name || patient.emergency_contact_phone) && (
+              <MetaItem
+                label="Emergency Contact"
+                value={[patient.emergency_contact_name, patient.emergency_contact_phone].filter(Boolean).join(' · ')}
+              />
+            )}
           </div>
         </div>
       )}
@@ -253,12 +275,14 @@ export default function PatientDetailPage() {
       {/* ── EMR Tabs ─────────────────────────────────────────────────── */}
       <div className="pd-tabs" style={{ marginTop: 'var(--space-lg)' }}>
         {[
-          { key: 'overview',  label: 'Overview' },
-          { key: 'vitals',    label: 'Vitals' },
-          { key: 'history',   label: 'Medical History' },
-          { key: 'lab',       label: 'Lab Reports' },
-          { key: 'notes',     label: 'Notes' },
-          { key: 'timeline',  label: 'Timeline' },
+          { key: 'overview',     label: 'Overview' },
+          { key: 'medications',  label: 'Medications' },
+          { key: 'vitals',       label: 'Vitals' },
+          { key: 'history',      label: 'Medical History' },
+          { key: 'lab',          label: 'Lab Reports' },
+          { key: 'notes',         label: 'Notes' },
+          { key: 'certificates', label: 'Certificates' },
+          { key: 'timeline',     label: 'Timeline' },
         ].map(t => (
           <button key={t.key} className={`pd-tab${activeTab === t.key ? ' pd-tab--active' : ''}`}
             onClick={() => setActiveTab(t.key)}>
@@ -339,10 +363,55 @@ export default function PatientDetailPage() {
         </div>
       )}
 
+      {activeTab === 'medications' && (
+        <div className="card pd-history-panel" style={{ padding: 'var(--space-lg)' }}>
+          <MedicationsTab prescriptions={prescriptions} status={historyStatus} />
+        </div>
+      )}
+
       {activeTab === 'vitals'  && <ErrorBoundary key="vitals"  label="Vitals section failed to load"><VitalSignsTab  patientId={id} /></ErrorBoundary>}
       {activeTab === 'history' && <ErrorBoundary key="history" label="Medical history failed to load"><MedicalHistoryTab patientId={id} /></ErrorBoundary>}
       {activeTab === 'lab'     && <ErrorBoundary key="lab"     label="Lab reports failed to load"><LabReportsTab patientId={id} /></ErrorBoundary>}
       {activeTab === 'notes'   && <ErrorBoundary key="notes"   label="Notes failed to load"><PatientNotesTab patientId={id} userRole="doctor" /></ErrorBoundary>}
+
+      {activeTab === 'certificates' && (
+        <div className="card pd-history-panel" style={{ padding: 'var(--space-lg)' }}>
+          <h3 className="pd-history-title" style={{ marginBottom: 'var(--space-md)' }}>Medical Certificates</h3>
+          {certsStatus === 'loading' && <div className="pd-history-empty">Loading…</div>}
+          {certsStatus === 'error'   && <div className="pd-history-empty">Could not load certificates.</div>}
+          {certsStatus === 'done' && certificates.length === 0 && (
+            <div className="pd-history-empty">No certificates issued for this patient yet.</div>
+          )}
+          {certsStatus === 'done' && certificates.length > 0 && (
+            <div className="cert-history-list">
+              {certificates.map(c => {
+                const LABELS = { fitness: 'Fitness', sick_leave: 'Sick Leave', medico_legal: 'Medico-Legal', custom: 'Custom' }
+                const label  = LABELS[c.cert_type] ?? c.cert_type
+                return (
+                  <div
+                    key={c.id}
+                    className="cert-history-item"
+                    onClick={() => navigate(`/certificates/${c.id}/print`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === 'Enter' && navigate(`/certificates/${c.id}/print`)}
+                  >
+                    <span className={`cert-history-badge cert-history-badge--${c.cert_type}`}>{label}</span>
+                    <div className="cert-history-info">
+                      <div className="cert-history-purpose">
+                        {c.purpose || (c.cert_type === 'custom' ? (c.notes?.slice(0, 60) || 'Custom certificate') : `${label} certificate`)}
+                      </div>
+                      <div className="cert-history-date">{fmtDate(c.created_at)}</div>
+                    </div>
+                    <span className="cert-history-arrow">→</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'timeline' && (
         <PatientTimeline events={timeline} status={timelineStatus} navigate={navigate} />
       )}

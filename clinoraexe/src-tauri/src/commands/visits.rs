@@ -12,14 +12,16 @@ use chrono::Local;
 pub struct VisitPayload {
     pub visited_at: Option<String>,
     pub consultation_notes: Option<String>,
+    pub diagnosis: Option<String>,
     pub consultation_fee: Option<f64>,
 }
 
 #[derive(Deserialize)]
 pub struct PaymentPayload {
-    pub payment_status: String,
-    pub amount_paid: Option<f64>,
-    pub payment_notes: Option<String>,
+    pub payment_status:  String,
+    pub amount_paid:     Option<f64>,
+    pub payment_notes:   Option<String>,
+    pub payment_method:  Option<String>,
 }
 
 fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
@@ -28,12 +30,14 @@ fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
         "patient_id": r.get::<u64, _>("patient_id"),
         "visited_at": r.get::<Option<String>, _>("visited_at").unwrap_or_default(),
         "consultation_notes": r.get::<Option<String>, _>("consultation_notes"),
+        "diagnosis": r.get::<Option<String>, _>("diagnosis"),
         "consultation_fee": r.get::<Option<f64>, _>("consultation_fee").unwrap_or(0.0),
         "status": r.get::<String, _>("status"),
         "invoiced_at": r.get::<Option<String>, _>("invoiced_at"),
-        "payment_status": r.get::<String, _>("payment_status"),
-        "amount_paid": r.get::<f64, _>("amount_paid"),
-        "payment_notes": r.get::<Option<String>, _>("payment_notes"),
+        "payment_status":  r.get::<String, _>("payment_status"),
+        "amount_paid":     r.get::<f64, _>("amount_paid"),
+        "payment_notes":   r.get::<Option<String>, _>("payment_notes"),
+        "payment_method":  r.get::<Option<String>, _>("payment_method"),
         "followup_date": r.get::<Option<String>, _>("followup_date"),
         "followup_notes": r.get::<Option<String>, _>("followup_notes"),
         "patient": {
@@ -48,8 +52,8 @@ fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
 }
 
 static VISIT_COLS: &str =
-    "v.id, v.patient_id, v.consultation_notes, v.status,
-     v.payment_status, v.payment_notes,
+    "v.id, v.patient_id, v.consultation_notes, v.diagnosis, v.status,
+     v.payment_status, v.payment_notes, v.payment_method,
      v.consultation_fee * 1e0 as consultation_fee,
      v.amount_paid * 1e0 as amount_paid,
      DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
@@ -126,11 +130,12 @@ pub async fn create_visit(patient_id: u64, data: VisitPayload, state: State<'_, 
         .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string());
 
     let result = sqlx::query(
-        "INSERT INTO visits (clinic_id, patient_id, doctor_id, visited_at, consultation_notes, consultation_fee, status, payment_status, amount_paid, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'open', 'unpaid', 0, NOW(), NOW())"
+        "INSERT INTO visits (clinic_id, patient_id, doctor_id, visited_at, consultation_notes, diagnosis, consultation_fee, status, payment_status, amount_paid, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'open', 'unpaid', 0, NOW(), NOW())"
     )
     .bind(session.clinic_id).bind(patient_id).bind(session.id)
-    .bind(&visited_at).bind(&data.consultation_notes).bind(data.consultation_fee.unwrap_or(0.0))
+    .bind(&visited_at).bind(&data.consultation_notes).bind(&data.diagnosis)
+    .bind(data.consultation_fee.unwrap_or(0.0))
     .execute(&state.db).await?;
 
     get_visit(result.last_insert_id(), state).await
@@ -170,10 +175,10 @@ pub async fn update_visit(id: u64, data: VisitPayload, state: State<'_, AppState
     let visited_at = data.visited_at.as_deref().map(parse_datetime);
 
     sqlx::query(
-        "UPDATE visits SET visited_at=COALESCE(?,visited_at), consultation_notes=?, updated_at=NOW()
+        "UPDATE visits SET visited_at=COALESCE(?,visited_at), consultation_notes=?, diagnosis=?, updated_at=NOW()
          WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
     )
-    .bind(visited_at).bind(&data.consultation_notes)
+    .bind(visited_at).bind(&data.consultation_notes).bind(&data.diagnosis)
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
 
@@ -208,29 +213,43 @@ pub async fn record_visit_payment(id: u64, data: PaymentPayload, state: State<'_
     if !["paid", "partial", "unpaid"].contains(&data.payment_status.as_str()) {
         return Err("Invalid payment status.".into());
     }
-    // When payment is fully received, mark visit completed and stamp invoiced_at so
-    // it appears in revenue reports. COALESCE preserves an existing invoiced_at date.
+    // Stamp invoiced_at when payment is received so revenue reports can date it.
+    // COALESCE preserves any existing date (e.g. if re-saving after correction).
+    // visit.status is NOT touched here — completion remains a separate explicit step.
     if data.payment_status == "paid" {
         sqlx::query(
-            "UPDATE visits
-             SET payment_status=?, amount_paid=?, payment_notes=?,
-                 status='completed',
-                 invoiced_at=COALESCE(invoiced_at, NOW()),
-                 updated_at=NOW()
+            "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, payment_method=?,
+                 invoiced_at=COALESCE(invoiced_at, NOW()), updated_at=NOW()
              WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
         )
         .bind(&data.payment_status).bind(data.amount_paid.unwrap_or(0.0))
-        .bind(&data.payment_notes).bind(id).bind(session.clinic_id)
+        .bind(&data.payment_notes).bind(&data.payment_method)
+        .bind(id).bind(session.clinic_id)
         .execute(&state.db).await?;
     } else {
         sqlx::query(
-            "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW()
+            "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, payment_method=?, updated_at=NOW()
              WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
         )
         .bind(&data.payment_status).bind(data.amount_paid.unwrap_or(0.0))
-        .bind(&data.payment_notes).bind(id).bind(session.clinic_id)
+        .bind(&data.payment_notes).bind(&data.payment_method)
+        .bind(id).bind(session.clinic_id)
         .execute(&state.db).await?;
     }
+    get_visit(id, state).await
+}
+
+// ── Diagnosis ────────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn save_diagnosis(id: u64, diagnosis: Option<String>, state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let diag = diagnosis.filter(|s| !s.trim().is_empty());
+    sqlx::query(
+        "UPDATE visits SET diagnosis=?, updated_at=NOW() WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
+    )
+    .bind(&diag).bind(id).bind(session.clinic_id)
+    .execute(&state.db).await?;
     get_visit(id, state).await
 }
 

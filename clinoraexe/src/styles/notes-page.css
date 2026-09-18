@@ -28,11 +28,31 @@
   border-bottom: 1px solid var(--clr-border);
 }
 
+.notes-sidebar-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .notes-sidebar-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--clr-text);
   letter-spacing: .3px;
+}
+
+.notes-author-chip {
+  font-size: 10.5px;
+  color: var(--clr-text-muted);
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 100px;
+  padding: 1px 8px;
+  display: inline-block;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notes-new-btn {

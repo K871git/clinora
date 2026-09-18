@@ -6,6 +6,7 @@ import {
   saveNoteAttachment, deleteNoteAttachment,
   readNoteAttachment, attachmentToDataUrl, isImageFile,
 } from '../../services/notesService'
+import { useAuth } from '../../hooks/useAuth'
 import '../../styles/notes-page.css'
 
 /* ── Icons ─────────────────────────────────────────────────────────── */
@@ -102,6 +103,11 @@ function bodyPreview(body) {
 
 export default function NotesPage({ userRole }) {
   const role = userRole || 'doctor'
+  const { user } = useAuth()
+  const authorName   = user?.name   || ''
+  const clinicName   = user?.clinic?.name || 'Clinora'
+  const roleLabel    = role === 'pharmacist' ? 'Pharmacist' : 'Doctor'
+  const notesTitle   = role === 'pharmacist' ? "Pharmacist's Notes" : "Doctor's Notes"
 
   const [notes,        setNotes]        = useState([])
   const [activeId,     setActiveId]     = useState(null)
@@ -282,15 +288,70 @@ export default function NotesPage({ userRole }) {
     const imageBlocks = (note?.attachments || [])
       .filter(isImageFile)
       .filter(f => attachUrls[f])
-      .map(f => `<div style="margin-top:16px"><img src="${attachUrls[f]}" style="max-width:100%;border-radius:4px" alt="${esc(f)}"/><div style="font-size:10px;color:#888;margin-top:4px">${esc(f)}</div></div>`)
+      .map(f => `<div style="margin-top:18px"><img src="${attachUrls[f]}" style="max-width:100%;border-radius:4px;border:1px solid #e5e7eb" alt="${esc(f)}"/><div style="font-size:10px;color:#9ca3af;margin-top:4px">${esc(f)}</div></div>`)
       .join('')
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${esc(title || 'Note')}</title>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;max-width:720px;margin:0 auto;color:#111;font-size:14px}h2{font-size:22px;font-weight:700;margin:0 0 5px}.meta{font-size:12px;color:#777;margin-bottom:3px}hr{border:none;border-top:1px solid #e5e7eb;margin:16px 0}pre{white-space:pre-wrap;line-height:1.75;font-family:inherit;margin:0}img{max-width:100%}@media print{body{padding:24px}}</style>
+    const printDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    const printTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+    const tagsHtml = tags
+      ? tags.split(',').map(t => `<span style="display:inline-block;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:100px;padding:1px 9px;font-size:10px;color:#6b7280;margin-right:4px">${esc(t.trim())}</span>`).join('')
+      : ''
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>${esc(clinicName)} — ${esc(title || 'Note')}</title>
+<style>
+  @page { margin: 0; size: A4; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    margin: 0; padding: 18mm 22mm 16mm;
+    color: #111; font-size: 13.5px; line-height: 1.6;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .print-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 18px;
+  }
+  .print-clinic { font-size: 17px; font-weight: 700; color: #111; }
+  .print-role-badge {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #fff;
+    background: #1d4ed8; border-radius: 4px; padding: 2px 8px; margin-top: 4px; display: inline-block;
+  }
+  .print-meta-right { text-align: right; font-size: 11px; color: #6b7280; }
+  .note-title { font-size: 20px; font-weight: 700; margin: 0 0 6px; color: #111; }
+  .note-date { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+  .note-author { font-size: 12px; color: #374151; margin-bottom: 12px; }
+  .note-author strong { color: #111; }
+  .tags { margin-bottom: 14px; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 14px 0; }
+  pre { white-space: pre-wrap; line-height: 1.8; font-family: inherit; margin: 0; color: #111; }
+  .print-footer {
+    margin-top: 32px; padding-top: 10px; border-top: 1px solid #e5e7eb;
+    font-size: 10px; color: #9ca3af; display: flex; justify-content: space-between;
+  }
+</style>
 </head><body>
-<h2>${esc(title || 'Untitled')}</h2>
-${tags ? `<div class="meta">Tags: ${esc(tags)}</div>` : ''}
-<div class="meta">${fmtDate(note?.created_at)}</div>
-<hr/><pre>${esc(body)}</pre>${imageBlocks}
+<div class="print-header">
+  <div>
+    <div class="print-clinic">${esc(clinicName)}</div>
+    <span class="print-role-badge">${esc(roleLabel)}</span>
+  </div>
+  <div class="print-meta-right">
+    Printed: ${esc(printDate)}, ${esc(printTime)}<br/>
+    Confidential — Internal Use Only
+  </div>
+</div>
+
+<div class="note-title">${esc(title || 'Untitled Note')}</div>
+<div class="note-date">Date: ${fmtDate(note?.created_at)}</div>
+<div class="note-author">Written by: <strong>${esc(authorName)}</strong> &mdash; ${esc(roleLabel)}</div>
+${tagsHtml ? `<div class="tags">${tagsHtml}</div>` : ''}
+<hr/>
+<pre>${esc(body)}</pre>
+${imageBlocks}
+<div class="print-footer">
+  <span>${esc(clinicName)} &mdash; ${esc(roleLabel)}'s Notes</span>
+  <span>${esc(authorName)}</span>
+</div>
 </body></html>`
   }
 
@@ -354,7 +415,12 @@ ${tags ? `<div class="meta">Tags: ${esc(tags)}</div>` : ''}
       {/* ── Sidebar list ─────────────────────────────────────────────── */}
       <aside className="notes-sidebar">
         <div className="notes-sidebar-header">
-          <span className="notes-sidebar-title">My Notes</span>
+          <div className="notes-sidebar-title-wrap">
+            <span className="notes-sidebar-title">{notesTitle}</span>
+            {authorName && (
+              <span className="notes-author-chip">{authorName}</span>
+            )}
+          </div>
           <button className="notes-new-btn" onClick={handleNew} title="New note">
             <IconPlus /> New
           </button>

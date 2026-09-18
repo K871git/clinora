@@ -55,9 +55,13 @@
 .opd-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--clr-border); }
 .opd-table { width: 100%; border-collapse: collapse; background: var(--clr-surface); font-size: 13px; }
 .opd-table thead th {
-  padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px;
-  text-transform: uppercase; letter-spacing: .4px; color: var(--clr-text-muted);
-  background: var(--clr-bg); border-bottom: 1px solid var(--clr-border);
+  padding: 10px 12px; text-align: left; font-weight: 700; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--clr-text-muted);
+  background: color-mix(in srgb, var(--clr-primary) 5%, #f8fafc);
+  border-bottom: 1.5px solid var(--clr-border);
+}
+[data-theme="dark"] .opd-table thead th {
+  background: color-mix(in srgb, var(--clr-primary) 10%, rgba(255,255,255,0.02));
 }
 .opd-tr {
   cursor: pointer; transition: background .1s;

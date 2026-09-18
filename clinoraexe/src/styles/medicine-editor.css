@@ -123,3 +123,48 @@ html[data-theme="dark"] .med-add-btn:hover {
   color: var(--clr-danger);
   border-color: var(--clr-danger);
 }
+
+/* Allergy warning on medicine row */
+.med-allergy-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 6px;
+  padding: 8px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  animation: med-card-enter 0.18s ease;
+}
+
+.med-allergy-warn--direct {
+  background: rgba(220, 38, 38, .09);
+  border: 1px solid rgba(220, 38, 38, .35);
+  color: #b91c1c;
+}
+
+.med-allergy-warn--cross {
+  background: rgba(234, 88, 12, .09);
+  border: 1px solid rgba(234, 88, 12, .35);
+  color: #c2410c;
+}
+
+.med-allergy-warn-icon {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+[data-theme="dark"] .med-allergy-warn--direct {
+  background: rgba(220, 38, 38, .15);
+  border-color: rgba(220, 38, 38, .4);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .med-allergy-warn--cross {
+  background: rgba(234, 88, 12, .15);
+  border-color: rgba(234, 88, 12, .4);
+  color: #fdba74;
+}

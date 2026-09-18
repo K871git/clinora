@@ -46,7 +46,7 @@ export default function GamesHubPage() {
           </h1>
           <p className="ghr-sub">Take a breather between patients — your mind deserves a break too.</p>
         </div>
-        <span className="ghr-lounge-badge">Doctor's Lounge</span>
+        {user?.role === 'doctor' && <span className="ghr-lounge-badge">Doctor's Lounge</span>}
       </div>
 
       {/* Game cards */}

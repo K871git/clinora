@@ -48,7 +48,7 @@ function MedicineList({ items }) {
 
 /* ── Signature block ─────────────────────────────────────────────────── */
 
-function Signature({ name, qualification }) {
+function Signature({ name, qualification, registrationNumber }) {
   return (
     <div className="print-signature-section">
       <div className="print-signature-block">
@@ -56,6 +56,9 @@ function Signature({ name, qualification }) {
         <div className="print-signature-name">{name}</div>
         {qualification && (
           <div className="print-signature-qual">{qualification}</div>
+        )}
+        {registrationNumber && (
+          <div className="print-signature-qual">Reg. No: {registrationNumber}</div>
         )}
       </div>
     </div>
@@ -234,6 +237,9 @@ export default function PrintPrescriptionPage() {
               {ps.show_doctor_contact && clinic.qualification && (
                 <div className="print-qualification">{clinic.qualification}</div>
               )}
+              {ps.show_doctor_contact && clinic.registration_number && (
+                <div className="print-reg-number">Reg. No: {clinic.registration_number}</div>
+              )}
               {ps.show_clinic_contact && clinic.address && (
                 <div className="print-address">{clinic.address}</div>
               )}
@@ -257,6 +263,12 @@ export default function PrintPrescriptionPage() {
                   <span className="print-patient-value">{prescription.patient.mobile}</span>
                 </div>
               )}
+              {prescription.visit?.diagnosis && (
+                <div className="print-patient-row">
+                  <span className="print-patient-label">Diagnosis</span>
+                  <span className="print-patient-value">{prescription.visit.diagnosis}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -274,7 +286,7 @@ export default function PrintPrescriptionPage() {
           )}
 
           {/* Signature */}
-          <Signature name={sigName} qualification={clinic.qualification} />
+          <Signature name={sigName} qualification={clinic.qualification} registrationNumber={clinic.registration_number} />
 
           {/* Custom footer banner */}
           {ps.prescription_footer && (
@@ -373,6 +385,12 @@ export default function PrintPrescriptionPage() {
                 <span className="print-tpl-val">{prescription.patient.name}</span>
                 <span className="print-tpl-val">{fmtDate(prescription.prescribed_at)}</span>
               </div>
+              {prescription.visit?.diagnosis && (
+                <div className="print-tpl-diagnosis">
+                  <span className="print-notes-label">Diagnosis: </span>
+                  <span className="print-tpl-val">{prescription.visit.diagnosis}</span>
+                </div>
+              )}
               <MedicineList items={prescription.items} />
               {prescription.doctor_notes && (
                 <div className="print-tpl-notes">
