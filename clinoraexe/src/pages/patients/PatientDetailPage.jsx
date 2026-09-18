@@ -386,55 +386,37 @@ function PatientTimeline({ events, status, navigate }) {
   )
 
   return (
-    <div style={{ marginTop: 'var(--space-md)', paddingBottom: 'var(--space-lg)' }}>
+    <div className="tl-list">
       {events.map((ev, idx) => {
         const color = TL_TYPE_COLOR[ev.type] ?? '#6366f1'
         const label = TL_TYPE_LABEL[ev.type] ?? ev.type
         const date  = ev.date ? new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
         const isClickable = ev.type === 'visit' && ev.id
         return (
-          <div key={`${ev.type}-${ev.id ?? idx}`}
-            style={{ display: 'flex', gap: 14, marginBottom: 0, position: 'relative' }}>
-            {/* Timeline spine */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 28, flexShrink: 0 }}>
-              <div style={{
-                width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0,
-                marginTop: 16, border: `2px solid ${color}`, boxSizing: 'border-box',
-              }} />
-              {idx < events.length - 1 && (
-                <div style={{ width: 2, flex: 1, background: 'var(--clr-border)', minHeight: 24, marginTop: 4 }} />
-              )}
+          <div key={`${ev.type}-${ev.id ?? idx}`} className="tl-row">
+            {/* Spine */}
+            <div className="tl-spine">
+              <div className="tl-dot" style={{ background: color, border: `2px solid ${color}` }} />
+              {idx < events.length - 1 && <div className="tl-connector" />}
             </div>
             {/* Card */}
             <div
-              style={{
-                flex: 1, background: 'var(--clr-surface)', border: '1px solid var(--clr-border)',
-                borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 8,
-                cursor: isClickable ? 'pointer' : 'default',
-                transition: isClickable ? 'border-color .15s' : undefined,
-              }}
+              className={`tl-card${isClickable ? ' tl-card--clickable' : ''}`}
               onClick={isClickable ? () => navigate(`/visits/${ev.id}`) : undefined}
-              onMouseEnter={isClickable ? e => e.currentTarget.style.borderColor = color : undefined}
-              onMouseLeave={isClickable ? e => e.currentTarget.style.borderColor = 'var(--clr-border)' : undefined}
+              onMouseEnter={isClickable ? e => { e.currentTarget.style.borderColor = color } : undefined}
+              onMouseLeave={isClickable ? e => { e.currentTarget.style.borderColor = '' } : undefined}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px',
-                  color, background: `${color}20`, padding: '2px 8px', borderRadius: 99,
-                }}>{label}</span>
-                <span style={{ fontSize: 12, color: 'var(--clr-text-muted)' }}>{date}</span>
+              <div className="tl-card-head">
+                <span className="tl-badge" style={{ color, background: `${color}20` }}>{label}</span>
+                <span className="tl-date">{date}</span>
               </div>
-              {ev.title && (
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-text)', marginBottom: 2 }}>{ev.title}</div>
-              )}
+              {ev.title && <div className="tl-title">{ev.title}</div>}
               {ev.notes && (
-                <div style={{ fontSize: 12, color: 'var(--clr-text-muted)', lineHeight: 1.5 }}>
+                <div className="tl-notes">
                   {ev.notes.length > 120 ? ev.notes.slice(0, 118) + '…' : ev.notes}
                 </div>
               )}
-              {ev.sub && (
-                <div style={{ fontSize: 12, color: 'var(--clr-text-muted)' }}>{ev.sub}</div>
-              )}
+              {ev.sub && <div className="tl-sub">{ev.sub}</div>}
             </div>
           </div>
         )

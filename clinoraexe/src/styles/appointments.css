@@ -1,0 +1,246 @@
+/* ── Appointments page + week calendar (appt-w*) ────────────────────── */
+
+/* View toggle */
+.appt-view-toggle {
+  display: flex;
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 0;
+}
+
+.appt-view-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.appt-view-btn:hover { color: var(--clr-text); }
+
+.appt-view-btn--active {
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ── Week grid wrapper (horizontal scroll on small screens) ─────────── */
+
+.appt-week-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--clr-border);
+}
+
+.appt-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  min-width: 700px;
+  background: var(--clr-border);
+}
+
+/* ── Day column ─────────────────────────────────────────────────────── */
+
+.appt-wday {
+  background: var(--clr-surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+
+.appt-wday:not(:last-child) {
+  border-right: 1px solid var(--clr-border);
+}
+
+.appt-wday--today {
+  background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface));
+}
+
+/* Day header */
+.appt-wday-hdr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px 7px;
+  border-bottom: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.appt-wday--today .appt-wday-hdr {
+  background: color-mix(in srgb, var(--clr-primary) 7%, var(--clr-bg));
+}
+
+.appt-wday-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+}
+
+.appt-wday--today .appt-wday-name { color: var(--clr-primary); }
+
+.appt-wday-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1;
+}
+
+.appt-wday--today .appt-wday-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--clr-primary);
+  color: #fff;
+  font-size: 12px;
+}
+
+.appt-wday-count {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--clr-primary) 12%, transparent);
+  color: var(--clr-primary);
+}
+
+/* Day body */
+.appt-wday-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+}
+
+/* ── Appointment cards inside week grid ─────────────────────────────── */
+
+.appt-wcard {
+  border-radius: 6px;
+  padding: 7px 9px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: opacity 0.12s, transform 0.12s;
+}
+
+.appt-wcard:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.appt-wcard--scheduled { background: #dbeafe; border-left-color: #3b82f6; }
+.appt-wcard--confirmed { background: #d1fae5; border-left-color: #10b981; }
+.appt-wcard--completed { background: #ede9fe; border-left-color: #8b5cf6; opacity: 0.72; }
+.appt-wcard--cancelled { background: #fee2e2; border-left-color: #ef4444; opacity: 0.6; }
+.appt-wcard--no_show   { background: #fef3c7; border-left-color: #f59e0b; opacity: 0.65; }
+
+[data-theme="dark"] .appt-wcard--scheduled { background: rgba(59,130,246,0.16); }
+[data-theme="dark"] .appt-wcard--confirmed { background: rgba(16,185,129,0.16); }
+[data-theme="dark"] .appt-wcard--completed { background: rgba(139,92,246,0.13); }
+[data-theme="dark"] .appt-wcard--cancelled { background: rgba(239,68,68,0.13);  }
+[data-theme="dark"] .appt-wcard--no_show   { background: rgba(245,158,11,0.13); }
+
+.appt-wcard-time {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  margin-bottom: 2px;
+}
+
+.appt-wcard-patient {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.appt-wcard-type {
+  font-size: 10.5px;
+  color: var(--clr-text-muted);
+  text-transform: capitalize;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.appt-wcard-btns {
+  display: flex;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.appt-wcard-btns button {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.55);
+  cursor: pointer;
+  color: var(--clr-text);
+  font-family: inherit;
+  transition: background 0.1s;
+  line-height: 1.4;
+}
+
+[data-theme="dark"] .appt-wcard-btns button {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.12);
+  color: var(--clr-text);
+}
+
+.appt-wcard-btns button:hover { background: rgba(255,255,255,0.9); }
+[data-theme="dark"] .appt-wcard-btns button:hover { background: rgba(255,255,255,0.15); }
+
+.appt-wcard-del {
+  color: #ef4444 !important;
+  border-color: rgba(239,68,68,0.25) !important;
+  background: rgba(239,68,68,0.06) !important;
+  margin-left: auto;
+}
+
+.appt-wcard-del:hover {
+  background: rgba(239,68,68,0.14) !important;
+}
+
+/* "+ Book" ghost button */
+.appt-wday-add {
+  display: block;
+  width: 100%;
+  padding: 5px;
+  border: 1px dashed var(--clr-border);
+  border-radius: 6px;
+  background: none;
+  color: var(--clr-text-muted);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s;
+  margin-top: auto;
+}
+
+.appt-wday-add:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+}

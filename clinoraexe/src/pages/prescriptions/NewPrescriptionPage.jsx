@@ -304,15 +304,11 @@ export default function NewPrescriptionPage() {
 
         {/* Medicine list */}
         <div className="card nrx-section">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div className="nrx-medicines-head">
             <h2 className="rx-section-title" style={{ margin: 0 }}>Medicines</h2>
             <button
               type="button"
-              style={{
-                fontSize: 12, padding: '5px 12px', borderRadius: 6,
-                border: '1px solid var(--clr-primary)', color: 'var(--clr-primary)',
-                background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-              }}
+              className="nrx-tmpl-load-btn"
               onClick={() => { loadTemplates(); setTmplOpen(true) }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -324,38 +320,20 @@ export default function NewPrescriptionPage() {
 
           {/* Template picker */}
           {tmplOpen && (
-            <div style={{
-              background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8,
-              padding: '12px 14px', marginBottom: 12,
-            }}>
+            <div className="nrx-tmpl-picker">
               {templates.length === 0 ? (
-                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>
-                  No templates saved yet. Save one from the bottom of this page.
-                </p>
+                <p className="nrx-tmpl-empty">No templates saved yet. Save one from the bottom of this page.</p>
               ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div className="nrx-tmpl-chips">
                   {templates.map(t => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      style={{
-                        fontSize: 12, padding: '5px 12px', borderRadius: 20,
-                        border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer',
-                        color: '#334155',
-                      }}
-                      onClick={() => applyTemplate(t)}
-                    >
+                    <button key={t.id} type="button" className="nrx-tmpl-chip" onClick={() => applyTemplate(t)}>
                       {t.name}
-                      <span style={{ color: '#94a3b8', marginLeft: 5 }}>({t.medicines?.length ?? 0})</span>
+                      <span className="nrx-tmpl-chip-count">({t.medicines?.length ?? 0})</span>
                     </button>
                   ))}
                 </div>
               )}
-              <button
-                type="button"
-                style={{ fontSize: 11, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', marginTop: 6 }}
-                onClick={() => setTmplOpen(false)}
-              >
+              <button type="button" className="nrx-tmpl-dismiss" onClick={() => setTmplOpen(false)}>
                 Dismiss
               </button>
             </div>
@@ -397,43 +375,30 @@ export default function NewPrescriptionPage() {
           </button>
 
           {/* Save as template */}
-          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }} ref={saveTmplRef}>
+          <div className="nrx-tmpl-save-wrap" ref={saveTmplRef}>
             <button
               type="button"
-              style={{
-                fontSize: 12, padding: '6px 12px', borderRadius: 6,
-                border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', color: '#64748b',
-              }}
+              className="nrx-tmpl-save-btn"
               onClick={() => setSaveTmplOpen(o => !o)}
               disabled={submitting}
             >
               Save as Template
             </button>
             {saveTmplOpen && (
-              <div style={{
-                position: 'absolute', bottom: '110%', left: 0, zIndex: 50,
-                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
-                padding: '12px 14px', boxShadow: '0 4px 16px rgba(0,0,0,.1)',
-                minWidth: 240,
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#0f172a' }}>Template Name</div>
+              <div className="nrx-tmpl-popover">
+                <div className="nrx-tmpl-popover-title">Template Name</div>
                 <input
-                  className="field"
-                  style={{ fontSize: 12, marginBottom: 8 }}
+                  className="field nrx-tmpl-popover-input"
                   placeholder="e.g. Upper Respiratory Infection"
                   value={tmplName}
                   onChange={e => setTmplName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
                   autoFocus
                 />
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div className="nrx-tmpl-popover-actions">
                   <button
                     type="button"
-                    style={{
-                      flex: 1, fontSize: 12, padding: '5px 0',
-                      background: 'var(--clr-primary)', color: '#fff',
-                      border: 'none', borderRadius: 5, cursor: 'pointer',
-                    }}
+                    className="nrx-tmpl-popover-save"
                     disabled={tmplSaving || !tmplName.trim()}
                     onClick={handleSaveTemplate}
                   >
@@ -441,7 +406,7 @@ export default function NewPrescriptionPage() {
                   </button>
                   <button
                     type="button"
-                    style={{ fontSize: 12, padding: '5px 10px', background: '#f1f5f9', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                    className="nrx-tmpl-popover-cancel"
                     onClick={() => { setSaveTmplOpen(false); setTmplName('') }}
                   >
                     Cancel

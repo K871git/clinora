@@ -180,6 +180,17 @@
   color: #f87171;
 }
 
+/* Low-stock row */
+.ml-row--low-stock td:first-child {
+  border-left: 3px solid #f59e0b;
+}
+.ml-row--low-stock .ml-td-name {
+  color: #b45309;
+}
+[data-theme="dark"] .ml-row--low-stock .ml-td-name {
+  color: #fbbf24;
+}
+
 .ml-empty {
   padding: 56px 24px;
   text-align: center;

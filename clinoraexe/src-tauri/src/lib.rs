@@ -98,7 +98,10 @@ pub fn run() {
                 tauri::async_runtime::block_on(async {
                     let db_url = load_db_url();
                     let pool = MySqlPoolOptions::new()
-                        .max_connections(5)
+                        .max_connections(20)
+                        .min_connections(2)
+                        .acquire_timeout(std::time::Duration::from_secs(10))
+                        .idle_timeout(std::time::Duration::from_secs(300))
                         .connect(&db_url)
                         .await
                         .unwrap_or_else(|e| fatal_error(&format!(
@@ -218,6 +221,8 @@ pub fn run() {
             commands::settings::set_active_template,
             commands::settings::read_template_file,
             commands::settings::scan_template_layout,
+            // Network health
+            commands::utils::ping_db,
             // Downloads
             commands::downloads::write_text_to_downloads,
             commands::downloads::write_bytes_to_downloads,

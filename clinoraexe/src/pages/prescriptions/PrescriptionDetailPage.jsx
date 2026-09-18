@@ -301,40 +301,32 @@ export default function PrescriptionDetailPage() {
           </div>
         </div>
 
-        {/* Action bar */}
-        {!editing && (
-          <div className="rx-hcard-actions">
-            <div className="rx-hcard-actions-left">
-              <button className="rx-action-btn" onClick={handleViewPdf} disabled={pdfLoading}>
-                {pdfLoading ? <Spinner size={12} /> : <IconPdf />}
-                {pdfLoading ? 'Generating…' : 'View PDF'}
-              </button>
+        {/* Action bar — always visible; buttons disabled while editing */}
+        <div className={`rx-hcard-actions${editing ? ' rx-hcard-actions--editing' : ''}`}>
+          <div className="rx-hcard-actions-left">
+            <button className="rx-action-btn" onClick={handleViewPdf} disabled={pdfLoading || editing}>
+              {pdfLoading ? <Spinner size={12} /> : <IconPdf />}
+              {pdfLoading ? 'Generating…' : 'View PDF'}
+            </button>
+            {prescription.status === 'completed' && (
               <button
-                className="rx-action-btn"
-                onClick={handleViewPdf}
-                disabled={pdfLoading}
-                title="Re-generate PDF from current template"
+                className="rx-action-btn rx-action-btn--invoice"
+                onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/invoice`)}
+                disabled={editing}
               >
-                <IconRefresh />
-                Regenerate
+                <IconInvoice />
+                View Invoice
               </button>
-              {prescription.status === 'completed' && (
-                <button
-                  className="rx-action-btn rx-action-btn--invoice"
-                  onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/invoice`)}
-                >
-                  <IconInvoice />
-                  View Invoice
-                </button>
-              )}
-              {isDraft && (
-                <button className="rx-action-btn" onClick={startEdit}>
-                  <IconEdit />
-                  Edit
-                </button>
-              )}
-            </div>
+            )}
+            {isDraft && !editing && (
+              <button className="rx-action-btn" onClick={startEdit}>
+                <IconEdit />
+                Edit
+              </button>
+            )}
+          </div>
 
+          {!editing && (
             <div className="rx-hcard-actions-right">
               {isDraft && !confirmSend && (
                 <button
@@ -381,8 +373,8 @@ export default function PrescriptionDetailPage() {
                 </button>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Inline alerts */}
         {pdfError && (

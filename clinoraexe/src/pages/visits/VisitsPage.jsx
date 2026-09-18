@@ -31,6 +31,18 @@ const PAY_LABEL = { paid: 'Paid', partial: 'Partial', unpaid: 'Unpaid' }
 
 const PAGE_SIZE = 25
 
+function VspSort({ col, sortCol, sortDir }) {
+  const active = sortCol === col
+  const up   = !active || sortDir === 'asc'
+  const down = !active || sortDir === 'desc'
+  return (
+    <span className={`vsp-sort${active ? ' vsp-sort--active' : ''}`} aria-hidden="true">
+      {up   && <svg width="7" height="5" viewBox="0 0 7 5"><path d="M1 4L3.5 1L6 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={active && sortDir === 'desc' ? 0.3 : 1}/></svg>}
+      {down && <svg width="7" height="5" viewBox="0 0 7 5"><path d="M1 1L3.5 4L6 1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={active && sortDir === 'asc' ? 0.3 : 1}/></svg>}
+    </span>
+  )
+}
+
 const STATUS_TABS = [
   { key: '',          label: 'All' },
   { key: 'open',      label: 'Open' },
@@ -48,6 +60,14 @@ export default function VisitsPage() {
   const [activeTab,  setActiveTab]  = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [page,       setPage]       = useState(1)
+  const [sortCol,    setSortCol]    = useState('visited_at')
+  const [sortDir,    setSortDir]    = useState('desc')
+
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+    setPage(1)
+  }
 
   function load(quiet = false) {
     if (!quiet) setStatus('loading')
@@ -79,8 +99,16 @@ export default function VisitsPage() {
         v.doctor?.name?.toLowerCase().includes(q)
       )
     }
-    return list
-  }, [visits, activeTab, search])
+    return [...list].sort((a, b) => {
+      let cmp = 0
+      if (sortCol === 'patient')    cmp = (a.patient?.name ?? '').localeCompare(b.patient?.name ?? '')
+      else if (sortCol === 'date')  cmp = new Date(a.visited_at ?? 0) - new Date(b.visited_at ?? 0)
+      else if (sortCol === 'fee')   cmp = parseFloat(a.consultation_fee || 0) - parseFloat(b.consultation_fee || 0)
+      else if (sortCol === 'status') cmp = (a.status ?? 'open').localeCompare(b.status ?? 'open')
+      else /* visited_at default */ cmp = new Date(a.visited_at ?? 0) - new Date(b.visited_at ?? 0)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [visits, activeTab, search, sortCol, sortDir])
 
   useEffect(() => { setPage(1) }, [activeTab, search])
 
@@ -180,12 +208,20 @@ export default function VisitsPage() {
             <thead>
               <tr>
                 <th style={{ width: '36px' }}></th>
-                <th>Patient</th>
-                <th>Date & Time</th>
+                <th className="vsp-th--sortable" onClick={() => toggleSort('patient')}>
+                  Patient <VspSort col="patient" sortCol={sortCol} sortDir={sortDir} />
+                </th>
+                <th className="vsp-th--sortable" onClick={() => toggleSort('date')}>
+                  Date &amp; Time <VspSort col="date" sortCol={sortCol} sortDir={sortDir} />
+                </th>
                 <th>Doctor</th>
                 <th>Notes</th>
-                <th style={{ textAlign: 'center' }}>Status</th>
-                <th style={{ textAlign: 'right' }}>Fee</th>
+                <th className="vsp-th--sortable" style={{ textAlign: 'center' }} onClick={() => toggleSort('status')}>
+                  Status <VspSort col="status" sortCol={sortCol} sortDir={sortDir} />
+                </th>
+                <th className="vsp-th--sortable" style={{ textAlign: 'right' }} onClick={() => toggleSort('fee')}>
+                  Fee <VspSort col="fee" sortCol={sortCol} sortDir={sortDir} />
+                </th>
                 <th style={{ textAlign: 'center', width: '80px' }}>Payment</th>
                 <th style={{ width: '36px' }}></th>
               </tr>

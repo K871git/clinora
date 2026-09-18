@@ -680,13 +680,19 @@ export default function MedicinesPage() {
   )
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return medicines
-    const q = search.toLowerCase()
-    return medicines.filter(m =>
-      m.name.toLowerCase().includes(q) ||
-      (m.generic_name ?? '').toLowerCase().includes(q) ||
-      (m.category ?? '').toLowerCase().includes(q)
-    )
+    const q = search.trim().toLowerCase()
+    const list = q
+      ? medicines.filter(m =>
+          m.name.toLowerCase().includes(q) ||
+          (m.generic_name ?? '').toLowerCase().includes(q) ||
+          (m.category ?? '').toLowerCase().includes(q)
+        )
+      : medicines
+    return [...list].sort((a, b) => {
+      const aLow = (a.quantity ?? 0) < 10 ? 0 : 1
+      const bLow = (b.quantity ?? 0) < 10 ? 0 : 1
+      return aLow - bLow
+    })
   }, [medicines, search])
 
   function openAdd() {
@@ -823,7 +829,7 @@ export default function MedicinesPage() {
               </thead>
               <tbody>
                 {filtered.map(med => (
-                  <tr key={med.id}>
+                  <tr key={med.id} className={(med.quantity ?? 0) < 10 ? 'ml-row--low-stock' : ''}>
                     <td className="ml-td-name">{med.name}</td>
                     <td className="ml-td-muted">{med.generic_name || '—'}</td>
                     <td className="ml-td-muted">{med.category || '—'}</td>

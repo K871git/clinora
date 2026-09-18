@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../../styles/games.css'
 
-const COLS = 20, ROWS = 20, CELL = 22
+const COLS = 20, ROWS = 20, CELL = 26
 const W = COLS * CELL, H = ROWS * CELL
 
 const DIRS = {
@@ -24,9 +24,9 @@ function initState() {
 }
 
 export default function SnakeGame() {
-  const canvasRef   = useRef(null)
-  const G           = useRef(initState())
-  const navigate    = useNavigate()
+  const canvasRef = useRef(null)
+  const G         = useRef(initState())
+  const navigate  = useNavigate()
 
   const [diff,    setDiff]    = useState('medium')
   const [status,  setStatus]  = useState('idle')
@@ -40,32 +40,44 @@ export default function SnakeGame() {
     const ctx = canvas.getContext('2d')
     const g = G.current
 
-    ctx.fillStyle = '#0f172a'
+    // Background
+    ctx.fillStyle = '#0a0f1e'
     ctx.fillRect(0, 0, W, H)
 
-    // subtle grid
-    ctx.fillStyle = '#1e293b'
+    // Grid dots
+    ctx.fillStyle = 'rgba(148,163,184,0.08)'
     for (let x = 0; x < COLS; x++)
       for (let y = 0; y < ROWS; y++)
-        ctx.fillRect(x*CELL+CELL/2-1, y*CELL+CELL/2-1, 2, 2)
+        ctx.fillRect(x*CELL + CELL/2 - 1, y*CELL + CELL/2 - 1, 2, 2)
 
-    // food — pulsing red circle
-    ctx.fillStyle = '#ef4444'
+    // Food — glowing red apple
+    const fx = g.food.x*CELL + CELL/2
+    const fy = g.food.y*CELL + CELL/2
+    const grd = ctx.createRadialGradient(fx, fy, 0, fx, fy, CELL/2 - 1)
+    grd.addColorStop(0, '#f87171')
+    grd.addColorStop(1, '#dc2626')
     ctx.shadowColor = '#ef4444'
-    ctx.shadowBlur  = 8
+    ctx.shadowBlur  = 12
+    ctx.fillStyle = grd
     ctx.beginPath()
-    ctx.arc(g.food.x*CELL+CELL/2, g.food.y*CELL+CELL/2, CELL/2-2, 0, Math.PI*2)
+    ctx.arc(fx, fy, CELL/2 - 3, 0, Math.PI*2)
     ctx.fill()
     ctx.shadowBlur = 0
 
-    // snake
+    // Snake
     g.snake.forEach((seg, i) => {
-      ctx.fillStyle = i === 0 ? '#22c55e' : `rgba(34,197,94,${Math.max(0.35, 0.9 - i*0.03)})`
+      const alpha = i === 0 ? 1 : Math.max(0.3, 0.9 - i * 0.025)
+      ctx.fillStyle = i === 0 ? '#4ade80' : `rgba(34,197,94,${alpha})`
+      if (i === 0) {
+        ctx.shadowColor = '#22c55e'
+        ctx.shadowBlur  = 10
+      }
       const pad = i === 0 ? 1 : 2
       ctx.beginPath()
-      if (ctx.roundRect) ctx.roundRect(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2, 4)
+      if (ctx.roundRect) ctx.roundRect(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2, 5)
       else ctx.rect(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2)
       ctx.fill()
+      ctx.shadowBlur = 0
     })
   }, [])
 
@@ -101,7 +113,6 @@ export default function SnakeGame() {
     return true
   }, [draw])
 
-  // game loop
   useEffect(() => {
     if (status !== 'running') return
     const speed = Math.max(BASE_SPEED[diff] - (G.current.level - 1) * 10, 38)
@@ -109,7 +120,6 @@ export default function SnakeGame() {
     return () => clearInterval(id)
   }, [status, diff, tick, level])
 
-  // keyboard
   useEffect(() => {
     function onKey(e) {
       const d = DIRS[e.key] || DIRS[e.key.toLowerCase()]
@@ -142,62 +152,81 @@ export default function SnakeGame() {
         <h2 className="game-title">Snake</h2>
       </div>
 
-      <div className="game-stats">
-        <div className="game-stat"><span>Score</span><strong>{score}</strong></div>
-        <div className="game-stat"><span>Level</span><strong>{level}</strong></div>
-        <div className="game-stat"><span>Best</span><strong>{hiScore}</strong></div>
-      </div>
+      <div className="sg-layout">
+        {/* Canvas */}
+        <div className="game-canvas-wrap">
+          <canvas ref={canvasRef} width={W} height={H} className="game-canvas" />
 
-      {status === 'idle' && (
-        <div className="game-difficulty-row">
-          {['easy','medium','hard'].map(d => (
-            <button key={d} className={`diff-btn${diff===d?' diff-btn--active':''}`}
-              onClick={() => setDiff(d)}>
-              {d[0].toUpperCase()+d.slice(1)}
-            </button>
-          ))}
+          {status === 'idle' && (
+            <div className="game-overlay">
+              <div className="game-overlay-content">
+                <div className="game-overlay-emoji">🐍</div>
+                <h3>Snake</h3>
+                <p>Eat food, grow longer, don't crash!</p>
+                <button className="game-play-btn" onClick={startGame}>Play</button>
+              </div>
+            </div>
+          )}
+          {status === 'paused' && (
+            <div className="game-overlay">
+              <div className="game-overlay-content">
+                <div className="game-overlay-emoji">⏸</div>
+                <h3>Paused</h3>
+                <button className="game-play-btn" onClick={() => setStatus('running')}>Resume</button>
+                <button className="game-play-btn game-play-btn--ghost" onClick={startGame}>Restart</button>
+              </div>
+            </div>
+          )}
+          {status === 'dead' && (
+            <div className="game-overlay">
+              <div className="game-overlay-content">
+                <div className="game-overlay-emoji">💀</div>
+                <h3>Game Over</h3>
+                <p>Score: <strong style={{color:'#fff'}}>{score}</strong></p>
+                {score > 0 && score >= hiScore && <p className="game-new-best">🏆 New Best!</p>}
+                <button className="game-play-btn" onClick={startGame}>Play Again</button>
+                <button className="game-play-btn game-play-btn--ghost" onClick={() => setStatus('idle')}>Menu</button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
-      <div className="game-canvas-wrap">
-        <canvas ref={canvasRef} width={W} height={H} className="game-canvas" />
+        {/* Side panel */}
+        <div className="gs-panel">
+          <div className="gs-stat">
+            <span className="gs-label">Score</span>
+            <span className="gs-val gs-val--green">{score.toLocaleString()}</span>
+          </div>
+          <div className="gs-stat">
+            <span className="gs-label">Level</span>
+            <span className="gs-val">{level}</span>
+          </div>
+          <div className="gs-stat">
+            <span className="gs-label">Best</span>
+            <span className="gs-val gs-val--yellow">{hiScore.toLocaleString()}</span>
+          </div>
 
-        {status === 'idle' && (
-          <div className="game-overlay">
-            <div className="game-overlay-content">
-              <div className="game-overlay-emoji">🐍</div>
-              <h3>Snake</h3>
-              <p>Eat food, grow longer, don't crash!</p>
-              <button className="game-play-btn" onClick={startGame}>Play</button>
+          {status === 'idle' && (
+            <div className="gs-diff">
+              <span className="gs-label" style={{paddingLeft:2}}>Difficulty</span>
+              {['easy','medium','hard'].map(d => (
+                <button
+                  key={d}
+                  className={`diff-btn gs-diff-btn${diff===d?' diff-btn--active':''}`}
+                  onClick={() => setDiff(d)}
+                >
+                  {d[0].toUpperCase()+d.slice(1)}
+                </button>
+              ))}
             </div>
-          </div>
-        )}
-        {status === 'paused' && (
-          <div className="game-overlay">
-            <div className="game-overlay-content">
-              <h3>Paused</h3>
-              <button className="game-play-btn" onClick={() => setStatus('running')}>Resume</button>
-              <button className="game-play-btn game-play-btn--ghost" onClick={startGame}>Restart</button>
-            </div>
-          </div>
-        )}
-        {status === 'dead' && (
-          <div className="game-overlay">
-            <div className="game-overlay-content">
-              <div className="game-overlay-emoji">💀</div>
-              <h3>Game Over</h3>
-              <p>Score: <strong style={{color:'#fff'}}>{score}</strong></p>
-              {score > 0 && score >= hiScore && <p className="game-new-best">🏆 New Best!</p>}
-              <button className="game-play-btn" onClick={startGame}>Play Again</button>
-              <button className="game-play-btn game-play-btn--ghost" onClick={() => setStatus('idle')}>Menu</button>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      <div className="game-controls-hint">
-        <span>Arrow keys / WASD — move</span>
-        <span>Space / Esc — pause</span>
+          <div className="gs-controls">
+            <span className="gs-controls-title">Controls</span>
+            Arrow / WASD — move<br/>
+            Space / Esc — pause
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import '../../styles/revenue-page.css'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { invoke } from '@tauri-apps/api/core'
@@ -57,6 +57,122 @@ function fmtDate(iso) {
   return new Date(utc).toLocaleDateString('en-IN', {
     year: 'numeric', month: 'short', day: 'numeric',
   })
+}
+
+function RevenueChart({ txs, period }) {
+  const canvasRef = useRef(null)
+
+  const chartData = useMemo(() => {
+    if (!txs.length) return null
+    const byDate = {}
+    txs.forEach(tx => {
+      const date = tx.visited_at ? tx.visited_at.slice(0, 10) : null
+      if (!date) return
+      byDate[date] = (byDate[date] || 0) + tx.consultation_fee
+    })
+    let entries = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b))
+    if (period === 'all_time' && entries.length > 31) {
+      const byMonth = {}
+      entries.forEach(([date, val]) => {
+        const month = date.slice(0, 7)
+        byMonth[month] = (byMonth[month] || 0) + val
+      })
+      entries = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b))
+    }
+    return entries
+  }, [txs, period])
+
+  useEffect(() => {
+    if (!chartData || !canvasRef.current) return
+    const canvas = canvasRef.current
+    const dpr  = window.devicePixelRatio || 1
+    const W    = canvas.offsetWidth
+    const H    = 160
+    canvas.width  = W * dpr
+    canvas.height = H * dpr
+    const ctx  = canvas.getContext('2d')
+    ctx.scale(dpr, dpr)
+
+    const isDark   = document.documentElement.dataset.theme === 'dark'
+    const barClr   = isDark ? '#60a5fa' : '#2563eb'
+    const gridClr  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
+    const labelClr = isDark ? '#64748b' : '#94a3b8'
+
+    const PAD_L = 56, PAD_R = 12, PAD_T = 16, PAD_B = 32
+    const plotW = W - PAD_L - PAD_R
+    const plotH = H - PAD_T - PAD_B
+
+    const vals   = chartData.map(([, v]) => v)
+    const maxVal = Math.max(...vals, 1)
+
+    ctx.clearRect(0, 0, W, H)
+
+    // Grid + Y labels
+    ctx.lineWidth = 1
+    ctx.font = '9px system-ui, sans-serif'
+    for (let i = 0; i <= 4; i++) {
+      const y = PAD_T + (plotH / 4) * i
+      ctx.strokeStyle = gridClr
+      ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(PAD_L + plotW, y); ctx.stroke()
+      const val = maxVal * (1 - i / 4)
+      ctx.fillStyle = labelClr
+      ctx.textAlign = 'right'
+      ctx.fillText(val >= 1000 ? (val / 1000).toFixed(1) + 'k' : Math.round(val), PAD_L - 5, y + 3.5)
+    }
+
+    // Bars + X labels
+    const n    = chartData.length
+    const gap  = plotW / n
+    const barW = Math.max(4, Math.min(28, gap * 0.6))
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const showEvery   = Math.ceil(n / 10)
+
+    chartData.forEach(([label, val], i) => {
+      const cx   = PAD_L + gap * i + gap / 2
+      const barH = (val / maxVal) * plotH
+      const bx   = cx - barW / 2
+      const by   = PAD_T + plotH - barH
+
+      // Rounded top bar
+      ctx.fillStyle = barClr
+      const r = Math.min(3, barW / 2, barH)
+      ctx.beginPath()
+      ctx.moveTo(bx + r, by)
+      ctx.lineTo(bx + barW - r, by)
+      ctx.quadraticCurveTo(bx + barW, by, bx + barW, by + r)
+      ctx.lineTo(bx + barW, by + barH)
+      ctx.lineTo(bx, by + barH)
+      ctx.lineTo(bx, by + r)
+      ctx.quadraticCurveTo(bx, by, bx + r, by)
+      ctx.fill()
+
+      // X label (skip some when crowded)
+      if (i % showEvery === 0) {
+        let lbl = label
+        if (label.length === 10) {
+          const d = new Date(label + 'T12:00:00')
+          lbl = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+        } else if (label.length === 7) {
+          const [, m] = label.split('-')
+          lbl = MONTH_NAMES[parseInt(m, 10) - 1]
+        }
+        ctx.fillStyle = labelClr
+        ctx.textAlign = 'center'
+        ctx.fillText(lbl, cx, H - PAD_B + 13)
+      }
+    })
+  }, [chartData])
+
+  if (!chartData || chartData.length < 2) return null
+
+  const byMonthLabel = period === 'all_time' && chartData.length > 12 ? 'Month' : 'Day'
+
+  return (
+    <div className="card rv-chart-card">
+      <div className="rv-chart-title">Revenue by {byMonthLabel}</div>
+      <canvas ref={canvasRef} className="rv-chart-canvas" />
+    </div>
+  )
 }
 
 export default function DoctorRevenuePage() {
@@ -169,6 +285,9 @@ export default function DoctorRevenuePage() {
           </div>
         )}
       </div>
+
+      {/* Revenue chart */}
+      {!txLoading && <RevenueChart txs={txs} period={period} />}
 
       {/* Transaction list */}
       <div className="card rv-debt-card" style={{ marginTop: 'var(--space-md)' }}>

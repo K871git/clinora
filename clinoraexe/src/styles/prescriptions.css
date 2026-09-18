@@ -984,3 +984,168 @@ html[data-theme="dark"] .rx-badge--done {
 html[data-theme="dark"] .rx-date-menu {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   CUSTOM REACT TABLE (replaces DataTable)
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Search toolbar */
+.rx-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--clr-border);
+  margin-bottom: 2px;
+}
+
+.rx-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rx-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--clr-text-muted);
+  pointer-events: none;
+}
+
+.rx-search {
+  width: 220px;
+  height: 32px;
+  padding: 0 12px 0 30px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rx-search:focus { border-color: var(--clr-primary); }
+.rx-search::placeholder { color: var(--clr-text-muted); }
+
+/* Table */
+.rx-custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.rx-th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 0.67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--clr-text-muted);
+  background: var(--clr-surface);
+  border-bottom: 1px solid var(--clr-border);
+  white-space: nowrap;
+}
+
+.rx-th--sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.rx-th--sortable:hover { color: var(--clr-text); }
+.rx-th--actions { width: 140px; }
+
+.rx-sort {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  margin-left: 4px;
+  color: var(--clr-text-muted);
+}
+
+.rx-sort--active { color: var(--clr-primary); }
+
+.rx-tr {
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.rx-tr:last-child { border-bottom: none; }
+.rx-tr:hover { background: var(--clr-surface-hover); }
+
+.rx-td {
+  padding: 11px 14px;
+  color: var(--clr-text);
+  vertical-align: middle;
+}
+
+.rx-patient-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rx-patient-name {
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.rx-td-muted { color: var(--clr-text-muted); }
+
+.rx-td-empty {
+  padding: 40px 14px;
+  text-align: center;
+  color: var(--clr-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Footer + pagination */
+.rx-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--clr-border);
+  margin-top: 2px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rx-table-info {
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+}
+
+.rx-pagination {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: nowrap;
+}
+
+.rx-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.13s, border-color 0.13s;
+}
+
+.rx-page-btn:hover:not(:disabled):not(.active) { background: var(--clr-surface-hover); }
+.rx-page-btn.active { background: var(--clr-primary); border-color: var(--clr-primary); color: #fff; }
+.rx-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }

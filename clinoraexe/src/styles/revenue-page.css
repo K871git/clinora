@@ -434,3 +434,24 @@ html[data-theme="dark"] .rv2-metric--amber .rv2-metric-value { color: #fbbf24; }
   font-size: 14px;
   color: var(--clr-text-muted);
 }
+
+/* ── Revenue chart ──────────────────────────────────────────────────── */
+.rv-chart-card {
+  margin-top: var(--space-md);
+  padding: 14px 16px 8px;
+}
+
+.rv-chart-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.rv-chart-canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+}

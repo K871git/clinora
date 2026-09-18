@@ -205,3 +205,12 @@
 .vsp-pay-dot--paid    { background: #10b981; }
 .vsp-pay-dot--partial { background: #f59e0b; }
 .vsp-pay-dot--unpaid  { background: #ef4444; }
+
+/* Sortable column headers */
+.vsp-th--sortable { cursor: pointer; user-select: none; }
+.vsp-th--sortable:hover { color: var(--clr-text); }
+.vsp-sort {
+  display: inline-flex; flex-direction: column; gap: 1px;
+  vertical-align: middle; margin-left: 4px; opacity: 0.35;
+}
+.vsp-sort--active { opacity: 1; color: var(--clr-primary); }

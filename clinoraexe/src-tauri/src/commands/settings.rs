@@ -50,8 +50,12 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
     let clinic = sqlx::query("SELECT * FROM clinics WHERE id=?")
         .bind(session.clinic_id).fetch_optional(&state.db).await?.ok_or("Clinic not found.")?;
 
-    let settings = sqlx::query("SELECT * FROM clinic_settings WHERE clinic_id=?")
-        .bind(session.clinic_id).fetch_optional(&state.db).await?;
+    let settings = sqlx::query(
+        "SELECT clinic_id, prescription_header, prescription_footer, \
+         show_doctor_contact, show_clinic_contact, prescription_template, \
+         CAST(gst_percent AS CHAR) AS gst_percent_str, created_at, updated_at \
+         FROM clinic_settings WHERE clinic_id=?"
+    ).bind(session.clinic_id).fetch_optional(&state.db).await?;
 
     let mut result = json!({
         "clinic": {
@@ -76,7 +80,9 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
         result["prescription_footer"] = json!(s.get::<Option<String>, _>("prescription_footer"));
         result["show_doctor_contact"] = json!(s.get::<i8, _>("show_doctor_contact") == 1);
         result["show_clinic_contact"] = json!(s.get::<i8, _>("show_clinic_contact") == 1);
-        result["gst_percent"] = json!(s.get::<Option<f64>, _>("gst_percent").unwrap_or(0.0));
+        result["gst_percent"] = json!(s.get::<Option<String>, _>("gst_percent_str")
+            .and_then(|v| v.parse::<f64>().ok())
+            .unwrap_or(0.0));
         let template_name = s.get::<Option<String>, _>("prescription_template");
         result["prescription_template"] = json!(&template_name);
         if let Some(ref name) = template_name {
