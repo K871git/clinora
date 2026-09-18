@@ -292,6 +292,14 @@ pub fn run() {
             commands::notes::delete_note_attachment,
             commands::notes::read_note_attachment,
             commands::notes::list_patient_notes,
+            // Fee Templates
+            commands::fee_templates::list_fee_templates,
+            commands::fee_templates::save_fee_template,
+            commands::fee_templates::delete_fee_template,
+            // Visit Charges
+            commands::fee_templates::list_visit_charges,
+            commands::fee_templates::add_visit_charge,
+            commands::fee_templates::delete_visit_charge,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -21,14 +21,16 @@ function todayStr() {
 
 function initialForm(patient) {
   return {
-    name:              patient?.name              ?? '',
-    mobile:            patient?.mobile            ?? '',
-    date_of_birth:     patient?.date_of_birth     ?? '',
-    age:               patient?.age != null ? String(patient.age) : '',
-    gender:            patient?.gender            ?? '',
-    address:           patient?.address           ?? '',
-    consent_obtained:  patient?.consent_obtained  ?? false,
-    consent_date:      patient?.consent_date      ?? '',
+    name:                    patient?.name                    ?? '',
+    mobile:                  patient?.mobile                  ?? '',
+    date_of_birth:           patient?.date_of_birth           ?? '',
+    age:                     patient?.age != null ? String(patient.age) : '',
+    gender:                  patient?.gender                  ?? '',
+    address:                 patient?.address                 ?? '',
+    emergency_contact_name:  patient?.emergency_contact_name  ?? '',
+    emergency_contact_phone: patient?.emergency_contact_phone ?? '',
+    consent_obtained:        patient?.consent_obtained        ?? false,
+    consent_date:            patient?.consent_date            ?? '',
   }
 }
 
@@ -175,7 +177,9 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
     if (form.date_of_birth)  payload.date_of_birth = form.date_of_birth
     if (form.age !== '')     payload.age            = Number(form.age)
     if (form.gender)         payload.gender         = form.gender
-    if (form.address.trim()) payload.address        = form.address.trim()
+    if (form.address.trim()) payload.address = form.address.trim()
+    if (form.emergency_contact_name.trim())  payload.emergency_contact_name  = form.emergency_contact_name.trim()
+    if (form.emergency_contact_phone.trim()) payload.emergency_contact_phone = form.emergency_contact_phone.trim()
     payload.consent_obtained = form.consent_obtained
     if (form.consent_obtained && form.consent_date) payload.consent_date = form.consent_date
     else if (form.consent_obtained) payload.consent_date = todayStr()
@@ -350,6 +354,28 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
               onChange={(e) => setField('address', e.target.value)}
             />
           </Field>
+
+          {/* Emergency Contact */}
+          <div className="pfm-row">
+            <Field label="Emergency Contact Name" icon={<IconPerson />}>
+              <input
+                className="field"
+                placeholder="e.g. Anita Gangarde"
+                value={form.emergency_contact_name}
+                onChange={(e) => setField('emergency_contact_name', e.target.value)}
+              />
+            </Field>
+            <Field label="Emergency Phone" icon={<IconPhone />}>
+              <input
+                className="field"
+                placeholder="e.g. 9876543210"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.emergency_contact_phone}
+                onChange={(e) => setField('emergency_contact_phone', sanitizeMobile(e.target.value))}
+              />
+            </Field>
+          </div>
 
           {/* DPDP Consent */}
           <div className="field-group">

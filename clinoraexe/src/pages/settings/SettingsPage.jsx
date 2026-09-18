@@ -2,6 +2,7 @@ import '../../styles/settings-page.css'
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { getSettings, updateClinic, updatePrescriptionSettings } from '../../services/settingsService'
+import { listFeeTemplates, saveFeeTemplate, deleteFeeTemplate } from '../../services/feeTemplateService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import { sanitizeMobile, validateMobile } from '../../lib/inputValidators'
@@ -101,6 +102,16 @@ export default function SettingsPage() {
   const [allSaving, setAllSaving] = useState(false)
   const [allSaved,  setAllSaved]  = useState(false)
 
+  /* fee templates */
+  const [templates,     setTemplates]     = useState([])
+  const [tmplName,      setTmplName]      = useState('')
+  const [tmplAmount,    setTmplAmount]    = useState('')
+  const [savingTmpl,    setSavingTmpl]    = useState(false)
+
+  useEffect(() => {
+    listFeeTemplates().then(r => setTemplates(r.data)).catch(() => {})
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     getSettings()
@@ -193,6 +204,28 @@ export default function SettingsPage() {
 
   function handleClinicSave(e) { e.preventDefault(); doClinicSave() }
   function handlePrescSave(e)  { e.preventDefault(); doPrescSave()  }
+
+  async function handleAddTemplate(e) {
+    e.preventDefault()
+    if (!tmplName.trim() || !tmplAmount) return
+    const amt = parseFloat(tmplAmount)
+    if (isNaN(amt) || amt < 0) return
+    setSavingTmpl(true)
+    try {
+      const r = await saveFeeTemplate(null, { name: tmplName.trim(), amount: amt })
+      setTemplates(prev => [...prev, r.data])
+      setTmplName('')
+      setTmplAmount('')
+    } catch { /* silent */ }
+    finally { setSavingTmpl(false) }
+  }
+
+  async function handleDeleteTemplate(id) {
+    try {
+      await deleteFeeTemplate(id)
+      setTemplates(prev => prev.filter(t => t.id !== id))
+    } catch { /* silent */ }
+  }
 
   async function handleSaveAll() {
     setAllSaving(true)
@@ -457,6 +490,63 @@ export default function SettingsPage() {
           {allSaving ? <Spinner size={13} /> : null}
           {allSaving ? 'Saving…' : 'Save Changes'}
         </button>
+      </div>
+
+      {/* ── Fee Templates ──────────────────────────────────────────────── */}
+      <div className="card stg-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="stg-card-head">
+          <div className="stg-card-head-row">
+            <span className="stg-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </span>
+            <div>
+              <div className="stg-card-title">Fee Templates</div>
+              <p className="stg-card-desc">Pre-configured procedure charges. Quick-add these to any visit from the billing card.</p>
+            </div>
+          </div>
+        </div>
+        <div className="stg-card-body">
+          {templates.length === 0 ? (
+            <div className="stg-tmpl-empty">No templates yet. Add your standard procedures below.</div>
+          ) : (
+            <div className="stg-tmpl-list">
+              {templates.map(t => (
+                <div key={t.id} className="stg-tmpl-row">
+                  <span className="stg-tmpl-name">{t.name}</span>
+                  <span className="stg-tmpl-amount">₹{parseFloat(t.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <button className="stg-tmpl-del" onClick={() => handleDeleteTemplate(t.id)} title="Remove">×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <form onSubmit={handleAddTemplate} className="stg-tmpl-add-form">
+            <input
+              className="stg-input stg-tmpl-name-input"
+              placeholder="Service name (e.g. ECG, X-ray)"
+              value={tmplName}
+              onChange={e => setTmplName(e.target.value)}
+            />
+            <input
+              className="stg-input stg-tmpl-amount-input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="₹ Amount"
+              value={tmplAmount}
+              onChange={e => setTmplAmount(e.target.value)}
+            />
+            <button
+              type="submit"
+              className="btn-primary"
+              style={{ padding: '8px 16px', fontSize: 13 }}
+              disabled={savingTmpl || !tmplName.trim() || !tmplAmount}
+            >
+              {savingTmpl ? 'Adding…' : '+ Add'}
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* ── Database Backup ────────────────────────────────────────────── */}

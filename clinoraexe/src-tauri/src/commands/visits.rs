@@ -17,9 +17,10 @@ pub struct VisitPayload {
 
 #[derive(Deserialize)]
 pub struct PaymentPayload {
-    pub payment_status: String,
-    pub amount_paid: Option<f64>,
-    pub payment_notes: Option<String>,
+    pub payment_status:  String,
+    pub amount_paid:     Option<f64>,
+    pub payment_notes:   Option<String>,
+    pub payment_method:  Option<String>,
 }
 
 fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
@@ -31,9 +32,10 @@ fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
         "consultation_fee": r.get::<Option<f64>, _>("consultation_fee").unwrap_or(0.0),
         "status": r.get::<String, _>("status"),
         "invoiced_at": r.get::<Option<String>, _>("invoiced_at"),
-        "payment_status": r.get::<String, _>("payment_status"),
-        "amount_paid": r.get::<f64, _>("amount_paid"),
-        "payment_notes": r.get::<Option<String>, _>("payment_notes"),
+        "payment_status":  r.get::<String, _>("payment_status"),
+        "amount_paid":     r.get::<f64, _>("amount_paid"),
+        "payment_notes":   r.get::<Option<String>, _>("payment_notes"),
+        "payment_method":  r.get::<Option<String>, _>("payment_method"),
         "followup_date": r.get::<Option<String>, _>("followup_date"),
         "followup_notes": r.get::<Option<String>, _>("followup_notes"),
         "patient": {
@@ -49,7 +51,7 @@ fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
 
 static VISIT_COLS: &str =
     "v.id, v.patient_id, v.consultation_notes, v.status,
-     v.payment_status, v.payment_notes,
+     v.payment_status, v.payment_notes, v.payment_method,
      v.consultation_fee * 1e0 as consultation_fee,
      v.amount_paid * 1e0 as amount_paid,
      DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
@@ -208,27 +210,27 @@ pub async fn record_visit_payment(id: u64, data: PaymentPayload, state: State<'_
     if !["paid", "partial", "unpaid"].contains(&data.payment_status.as_str()) {
         return Err("Invalid payment status.".into());
     }
-    // When payment is fully received, mark visit completed and stamp invoiced_at so
-    // it appears in revenue reports. COALESCE preserves an existing invoiced_at date.
+    // Stamp invoiced_at when payment is received so revenue reports can date it.
+    // COALESCE preserves any existing date (e.g. if re-saving after correction).
+    // visit.status is NOT touched here — completion remains a separate explicit step.
     if data.payment_status == "paid" {
         sqlx::query(
-            "UPDATE visits
-             SET payment_status=?, amount_paid=?, payment_notes=?,
-                 status='completed',
-                 invoiced_at=COALESCE(invoiced_at, NOW()),
-                 updated_at=NOW()
+            "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, payment_method=?,
+                 invoiced_at=COALESCE(invoiced_at, NOW()), updated_at=NOW()
              WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
         )
         .bind(&data.payment_status).bind(data.amount_paid.unwrap_or(0.0))
-        .bind(&data.payment_notes).bind(id).bind(session.clinic_id)
+        .bind(&data.payment_notes).bind(&data.payment_method)
+        .bind(id).bind(session.clinic_id)
         .execute(&state.db).await?;
     } else {
         sqlx::query(
-            "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW()
+            "UPDATE visits SET payment_status=?, amount_paid=?, payment_notes=?, payment_method=?, updated_at=NOW()
              WHERE id=? AND clinic_id=? AND deleted_at IS NULL"
         )
         .bind(&data.payment_status).bind(data.amount_paid.unwrap_or(0.0))
-        .bind(&data.payment_notes).bind(id).bind(session.clinic_id)
+        .bind(&data.payment_notes).bind(&data.payment_method)
+        .bind(id).bind(session.clinic_id)
         .execute(&state.db).await?;
     }
     get_visit(id, state).await

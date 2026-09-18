@@ -247,6 +247,12 @@ export default function PatientDetailPage() {
             {patient.address && (
               <MetaItem label="Address" value={patient.address} />
             )}
+            {(patient.emergency_contact_name || patient.emergency_contact_phone) && (
+              <MetaItem
+                label="Emergency Contact"
+                value={[patient.emergency_contact_name, patient.emergency_contact_phone].filter(Boolean).join(' · ')}
+              />
+            )}
           </div>
         </div>
       )}

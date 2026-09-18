@@ -53,3 +53,18 @@ export const updateFollowup  = (id, followupDate, followupNotes) =>
 export const listFollowups   = () => invoke('list_followups')
 
 export const listOpdRegister = (date) => invoke('list_opd_register', { date })
+
+export async function listVisitCharges(visitId) {
+  const result = await invoke('list_visit_charges', { visitId: Number(visitId) })
+  return { data: result }
+}
+
+export async function addVisitCharge(visitId, data) {
+  const result = await invoke('add_visit_charge', { visitId: Number(visitId), data })
+  return { data: result }
+}
+
+export async function deleteVisitCharge(id, visitId) {
+  const result = await invoke('delete_visit_charge', { id: Number(id), visitId: Number(visitId) })
+  return { data: result }
+}

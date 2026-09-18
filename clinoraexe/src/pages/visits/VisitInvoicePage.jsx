@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getVisit } from '../../services/visitService'
+import { getVisit, listVisitCharges } from '../../services/visitService'
 import { getSettings } from '../../services/settingsService'
 import usePrintSettings from '../../hooks/usePrintSettings'
 import PrintSettingsPanel from '../../components/ui/PrintSettingsPanel'
@@ -59,6 +59,7 @@ export default function VisitInvoicePage() {
   const navigate    = useNavigate()
   const [visit,        setVisit]        = useState(null)
   const [settings,     setSettings]     = useState(null)
+  const [charges,      setCharges]      = useState([])
   const [status,       setStatus]       = useState('loading')
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -66,10 +67,11 @@ export default function VisitInvoicePage() {
   const { docVariant } = printSettings
 
   useEffect(() => {
-    Promise.all([getVisit(visitId), getSettings()])
-      .then(([visitRes, stgRes]) => {
+    Promise.all([getVisit(visitId), getSettings(), listVisitCharges(visitId)])
+      .then(([visitRes, stgRes, chargesRes]) => {
         setVisit(visitRes.data)
         setSettings(stgRes.data)
+        setCharges(chargesRes.data.data ?? [])
         setStatus('done')
       })
       .catch(() => setStatus('error'))
@@ -86,11 +88,13 @@ export default function VisitInvoicePage() {
   const doctorName  = visit.doctor ? doctorLabel(visit.doctor.name) : ''
   const qualification = settings?.clinic?.qualification || ''
 
-  const consultFee  = parseFloat(visit.consultation_fee ?? 0)
-  const medTotal    = parseFloat(visit.medicine_total ?? 0)
-  const gstPercent  = parseFloat(settings?.gst_percent ?? 0)
-  const gstAmount   = gstPercent > 0 ? (consultFee * gstPercent / 100) : 0
-  const grandTotal  = consultFee + medTotal + gstAmount
+  const consultFee   = parseFloat(visit.consultation_fee ?? 0)
+  const medTotal     = parseFloat(visit.medicine_total ?? 0)
+  const chargesTotal = charges.reduce((s, c) => s + parseFloat(c.amount || 0), 0)
+  const gstPercent   = parseFloat(settings?.gst_percent ?? 0)
+  const subTotal     = consultFee + chargesTotal + medTotal
+  const gstAmount    = gstPercent > 0 ? (subTotal * gstPercent / 100) : 0
+  const grandTotal   = subTotal + gstAmount
 
   /* Completed prescriptions with priced items */
   const completedPrescriptions = (visit.prescriptions ?? [])
@@ -217,6 +221,13 @@ export default function VisitInvoicePage() {
               </td>
               <td className="inv-amount">₹{fmtPrice(consultFee)}</td>
             </tr>
+            {charges.map((c, i) => (
+              <tr key={c.id}>
+                <td>{i + 2}</td>
+                <td><div className="inv-med-name">{c.description}</div></td>
+                <td className="inv-amount">₹{fmtPrice(c.amount)}</td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
             {gstPercent > 0 && (
@@ -225,7 +236,7 @@ export default function VisitInvoicePage() {
                   <td colSpan={2} className="inv-total-label" style={{ fontWeight: 400, fontSize: '12px' }}>
                     Sub-total
                   </td>
-                  <td className="inv-amount" style={{ fontSize: '12px' }}>₹{fmtPrice(consultFee)}</td>
+                  <td className="inv-amount" style={{ fontSize: '12px' }}>₹{fmtPrice(subTotal)}</td>
                 </tr>
                 <tr>
                   <td colSpan={2} className="inv-total-label" style={{ fontWeight: 400, fontSize: '12px' }}>
@@ -237,7 +248,7 @@ export default function VisitInvoicePage() {
             )}
             <tr className="inv-total-row">
               <td colSpan={2} className="inv-total-label">Total</td>
-              <td className="inv-amount inv-total-amount">₹{fmtPrice(gstPercent > 0 ? grandTotal : consultFee)}</td>
+              <td className="inv-amount inv-total-amount">₹{fmtPrice(grandTotal)}</td>
             </tr>
           </tfoot>
         </table>

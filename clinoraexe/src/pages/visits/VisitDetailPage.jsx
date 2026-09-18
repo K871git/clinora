@@ -3,7 +3,8 @@ import '../../styles/emr.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment } from '../../services/visitService'
+import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment, listVisitCharges, addVisitCharge, deleteVisitCharge } from '../../services/visitService'
+import { listFeeTemplates } from '../../services/feeTemplateService'
 import { validateFee } from '../../lib/inputValidators'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
@@ -111,7 +112,15 @@ export default function VisitDetailPage() {
   const [paymentStatus,  setPaymentStatus]  = useState('unpaid')
   const [amountPaid,     setAmountPaid]     = useState('')
   const [paymentNotes,   setPaymentNotes]   = useState('')
+  const [paymentMethod,  setPaymentMethod]  = useState('cash')
   const [savingPayment,  setSavingPayment]  = useState(false)
+
+  /* procedure charges */
+  const [charges,       setCharges]       = useState([])
+  const [chargeDesc,    setChargeDesc]    = useState('')
+  const [chargeAmt,     setChargeAmt]     = useState('')
+  const [addingCharge,  setAddingCharge]  = useState(false)
+  const [templates,     setTemplates]     = useState([])
 
   /* follow-up */
   const [followupDate,   setFollowupDate]   = useState('')
@@ -131,6 +140,7 @@ export default function VisitDetailPage() {
           setPaymentStatus(v.payment_status ?? 'unpaid')
           setAmountPaid(v.amount_paid > 0 ? String(v.amount_paid) : '')
           setPaymentNotes(v.payment_notes ?? '')
+          setPaymentMethod(v.payment_method ?? 'cash')
           setFollowupDate(v.followup_date ?? '')
           setFollowupNotes(v.followup_notes ?? '')
           setPageStatus('done')
@@ -139,6 +149,8 @@ export default function VisitDetailPage() {
       .catch((err) => {
         if (!cancelled) setPageStatus(err.response?.status === 404 ? 'not-found' : 'error')
       })
+    listVisitCharges(visitId).then(r => { if (!cancelled) setCharges(r.data.data ?? []) }).catch(() => {})
+    listFeeTemplates().then(r => { if (!cancelled) setTemplates(r.data ?? []) }).catch(() => {})
     return () => { cancelled = true }
   }, [visitId])
 
@@ -221,13 +233,14 @@ export default function VisitDetailPage() {
     setSavingPayment(true)
     try {
       const { data } = await recordVisitPayment(visitId, {
-        payment_status: paymentStatus,
-        amount_paid:    paymentStatus === 'paid'
+        payment_status:  paymentStatus,
+        amount_paid:     paymentStatus === 'paid'
           ? parseFloat(feeInput || '0') || 0
           : paymentStatus === 'partial'
             ? parseFloat(amountPaid || '0') || 0
             : 0,
-        payment_notes: paymentNotes.trim() || null,
+        payment_notes:  paymentNotes.trim() || null,
+        payment_method: paymentMethod || null,
       })
       setVisit(data)
       setPaymentStatus(data.payment_status)
@@ -237,6 +250,27 @@ export default function VisitDetailPage() {
     } finally {
       setSavingPayment(false)
     }
+  }
+
+  async function handleAddCharge() {
+    const amt = parseFloat(chargeAmt)
+    if (!chargeDesc.trim()) { toast.error('Description is required.'); return }
+    if (isNaN(amt) || amt <= 0) { toast.error('Amount must be greater than 0.'); return }
+    setAddingCharge(true)
+    try {
+      const res = await addVisitCharge(visitId, { description: chargeDesc.trim(), amount: amt })
+      setCharges(prev => [...prev, res.data.data])
+      setChargeDesc('')
+      setChargeAmt('')
+    } catch { toast.error('Could not add charge.') }
+    finally { setAddingCharge(false) }
+  }
+
+  async function handleDeleteCharge(chargeId) {
+    try {
+      await deleteVisitCharge(chargeId, visitId)
+      setCharges(prev => prev.filter(c => c.id !== chargeId))
+    } catch { toast.error('Could not remove charge.') }
   }
 
   async function handleSaveFollowup() {
@@ -287,10 +321,11 @@ export default function VisitDetailPage() {
   const isOpen      = (visit.status ?? 'open') === 'open'
   const isCompleted = visit.status === 'completed'
 
-  const consultFee  = parseFloat(feeInput || '0') || 0
-  const medTotal    = visit.medicine_total ?? 0
-  const grandTotal  = consultFee + medTotal
-  const hasPharmacy = medTotal > 0
+  const consultFee    = parseFloat(feeInput || '0') || 0
+  const medTotal      = visit.medicine_total ?? 0
+  const chargesTotal  = charges.reduce((s, c) => s + parseFloat(c.amount || 0), 0)
+  const grandTotal    = consultFee + medTotal + chargesTotal
+  const hasPharmacy   = medTotal > 0
 
   return (
     <div>
@@ -503,6 +538,71 @@ export default function VisitDetailPage() {
             )}
           </div>
 
+          {/* Procedure Charges */}
+          {(charges.length > 0 || isOpen) && (
+            <div className="vst-charges-section">
+              <div className="vst-charges-head">Procedure Charges</div>
+              {charges.length > 0 && (
+                <div className="vst-charge-list">
+                  {charges.map(c => (
+                    <div key={c.id} className="vst-charge-item">
+                      <span className="vst-charge-desc">{c.description}</span>
+                      <span className="vst-charge-amount">₹{fmtPrice(c.amount)}</span>
+                      {isOpen && (
+                        <button
+                          className="vst-charge-del"
+                          onClick={() => handleDeleteCharge(c.id)}
+                          title="Remove charge"
+                        >×</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isOpen && (
+                <>
+                  <div className="vst-charge-add-form">
+                    <input
+                      className="field vst-charge-desc-input"
+                      placeholder="Description (e.g. ECG, X-ray)"
+                      value={chargeDesc}
+                      onChange={e => setChargeDesc(e.target.value)}
+                    />
+                    <input
+                      className="field vst-charge-amt-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="₹ Amount"
+                      value={chargeAmt}
+                      onChange={e => setChargeAmt(e.target.value)}
+                    />
+                    <button
+                      className="rx-action-btn"
+                      onClick={handleAddCharge}
+                      disabled={addingCharge}
+                    >
+                      {addingCharge ? 'Adding…' : '+ Add'}
+                    </button>
+                  </div>
+                  {templates.length > 0 && (
+                    <div className="vst-charge-tmpl-row">
+                      {templates.map(t => (
+                        <button
+                          key={t.id}
+                          className="vst-charge-tmpl-btn"
+                          onClick={() => { setChargeDesc(t.name); setChargeAmt(String(t.amount)) }}
+                        >
+                          {t.name} ₹{t.amount}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           {/* Medicine total */}
           <div className="vst-billing-row">
             <span className="vst-billing-row-label">
@@ -517,7 +617,7 @@ export default function VisitDetailPage() {
           <div className="vst-billing-total-row">
             <span className="vst-billing-total-label">Grand Total</span>
             <span className="vst-billing-total-amount">
-              ₹{fmtPrice(isCompleted ? (parseFloat(visit.consultation_fee ?? 0) + medTotal) : grandTotal)}
+              ₹{fmtPrice(isCompleted ? (parseFloat(visit.consultation_fee ?? 0) + medTotal + chargesTotal) : grandTotal)}
             </span>
           </div>
         </div>
@@ -556,6 +656,21 @@ export default function VisitDetailPage() {
               </div>
             </div>
           )}
+
+          <div className="vst-method-row">
+            <span className="vst-method-label">Via</span>
+            <div className="vst-method-pills">
+              {[['cash','Cash'],['upi','UPI'],['card','Card'],['insurance','Insurance']].map(([val, label]) => (
+                <button
+                  key={val}
+                  className={`vst-method-pill${paymentMethod === val ? ' vst-method-pill--on' : ''}`}
+                  onClick={() => setPaymentMethod(val)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <textarea
             className="field vst-payment-notes-input"

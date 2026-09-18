@@ -308,14 +308,14 @@ export default function PrescriptionDetailPage() {
               {pdfLoading ? <Spinner size={12} /> : <IconPdf />}
               {pdfLoading ? 'Generating…' : 'View PDF'}
             </button>
-            {prescription.status === 'completed' && (
+            {prescription.visit_id && (
               <button
                 className="rx-action-btn rx-action-btn--invoice"
-                onClick={() => navigate(`/pharmacy/prescriptions/${prescriptionId}/invoice`)}
+                onClick={() => navigate(`/visits/${prescription.visit_id}/invoice`)}
                 disabled={editing}
               >
                 <IconInvoice />
-                View Invoice
+                Doctor Invoice
               </button>
             )}
             {isDraft && !editing && (

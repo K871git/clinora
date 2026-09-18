@@ -933,7 +933,7 @@ function StockItemsTab() {
   const [items,      setItems]      = useState([])
   const [status,     setStatus]     = useState('loading')
   const [showAdd,    setShowAdd]    = useState(false)
-  const [addForm,    setAddForm]    = useState(EMPTY_ITEM)
+  const [addRows,    setAddRows]    = useState([{ ...EMPTY_ITEM }])
   const [adding,     setAdding]     = useState(false)
   const [editingId,  setEditingId]  = useState(null)
   const [editForm,   setEditForm]   = useState(EMPTY_ITEM)
@@ -959,23 +959,37 @@ function StockItemsTab() {
     }, 0),
   }), [items])
 
+  function setRowField(idx, field, value) {
+    setAddRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r))
+  }
+
+  function addRow() {
+    setAddRows(prev => [...prev, { ...EMPTY_ITEM }])
+  }
+
+  function removeRow(idx) {
+    setAddRows(prev => prev.filter((_, i) => i !== idx))
+  }
+
   async function handleAdd(e) {
     e.preventDefault()
-    if (!addForm.name.trim()) { toast.error('Name is required.'); return }
+    const validRows = addRows.filter(r => r.name.trim())
+    if (!validRows.length) { toast.error('At least one item name is required.'); return }
     setAdding(true)
     try {
-      const { data } = await createStockItem({
-        name:           addForm.name.trim(),
-        category:       addForm.category.trim()       || null,
-        unit:           addForm.unit.trim()            || null,
-        selling_price:  addForm.selling_price !== '' ? parseFloat(addForm.selling_price) : null,
-        stock_quantity: addForm.stock_quantity !== '' ? parseInt(addForm.stock_quantity, 10) : 0,
-      })
-      setItems(prev => [data, ...prev])
-      setAddForm(EMPTY_ITEM)
+      const results = await Promise.all(validRows.map(row => createStockItem({
+        name:           row.name.trim(),
+        category:       row.category.trim()       || null,
+        unit:           row.unit.trim()            || null,
+        selling_price:  row.selling_price !== '' ? parseFloat(row.selling_price) : null,
+        stock_quantity: row.stock_quantity !== '' ? parseInt(row.stock_quantity, 10) : 0,
+      })))
+      const added = results.map(r => r.data)
+      setItems(prev => [...added.reverse(), ...prev])
+      setAddRows([{ ...EMPTY_ITEM }])
       setShowAdd(false)
-      toast.success(`${data.name} added`)
-    } catch { toast.error('Could not add item.') }
+      toast.success(added.length > 1 ? `${added.length} items added` : `${added[0].name} added`)
+    } catch { toast.error('Could not add item(s) — try again.') }
     finally { setAdding(false) }
   }
 
@@ -1045,44 +1059,51 @@ function StockItemsTab() {
           {status === 'loading' ? '…' : `${items.length} items`}
         </span>
         <button className="btn-primary phs-add-btn" style={{ marginLeft: 'auto' }}
-          onClick={() => { setShowAdd(s => !s); setAddForm(EMPTY_ITEM); setEditingId(null) }}>
+          onClick={() => { setShowAdd(s => !s); setAddRows([{ ...EMPTY_ITEM }]); setEditingId(null) }}>
           {showAdd ? 'Cancel' : '+ Add Item'}
         </button>
       </div>
 
       {showAdd && (
         <form className="card phs-add-form" onSubmit={handleAdd}>
-          <div className="phs-add-grid">
-            <div className="field-group">
-              <label className="field-label">Item Name *</label>
-              <input className="field" placeholder="e.g. Water bottle" value={addForm.name}
-                onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} autoFocus />
-            </div>
-            <div className="field-group">
-              <label className="field-label">Category</label>
-              <CategoryPicker value={addForm.category}
-                onChange={v => setAddForm(f => ({ ...f, category: v }))}
-                categories={itemCategories} />
-            </div>
-            <div className="field-group">
-              <label className="field-label">Unit</label>
-              <input className="field" placeholder="e.g. piece, pack" value={addForm.unit}
-                onChange={e => setAddForm(f => ({ ...f, unit: e.target.value }))} />
-            </div>
-            <div className="field-group">
-              <label className="field-label">Selling Price (₹)</label>
-              <input className="field" type="number" min="0" step="0.01" placeholder="0.00"
-                value={addForm.selling_price} onChange={e => setAddForm(f => ({ ...f, selling_price: e.target.value }))} />
-            </div>
-            <div className="field-group">
-              <label className="field-label">Stock Qty</label>
-              <input className="field" type="number" min="0" step="1" placeholder="0"
-                value={addForm.stock_quantity} onChange={e => setAddForm(f => ({ ...f, stock_quantity: e.target.value }))} />
-            </div>
+          <div className="phs-multi-header">
+            <span>Item Name *</span>
+            <span>Category</span>
+            <span>Unit</span>
+            <span>Price (₹)</span>
+            <span>Qty</span>
+            <span></span>
           </div>
-          <div className="phs-add-actions">
+          {addRows.map((row, idx) => (
+            <div key={idx} className="phs-multi-row">
+              <input className="field" placeholder="e.g. Water bottle"
+                value={row.name} autoFocus={idx === 0}
+                onChange={e => setRowField(idx, 'name', e.target.value)} />
+              <CategoryPicker value={row.category}
+                onChange={v => setRowField(idx, 'category', v)}
+                categories={itemCategories} />
+              <input className="field" placeholder="piece, pack"
+                value={row.unit}
+                onChange={e => setRowField(idx, 'unit', e.target.value)} />
+              <input className="field" type="number" min="0" step="0.01" placeholder="0.00"
+                value={row.selling_price}
+                onChange={e => setRowField(idx, 'selling_price', e.target.value)} />
+              <input className="field" type="number" min="0" step="1" placeholder="0"
+                value={row.stock_quantity}
+                onChange={e => setRowField(idx, 'stock_quantity', e.target.value)} />
+              <span className="phs-row-ctrl">
+                <button type="button" className="phs-row-add-btn" onClick={addRow} title="Add another row">+</button>
+                {addRows.length > 1 && (
+                  <button type="button" className="phs-row-rm-btn" onClick={() => removeRow(idx)} title="Remove row">×</button>
+                )}
+              </span>
+            </div>
+          ))}
+          <div className="phs-add-actions" style={{ marginTop: 12 }}>
             <button type="button" className="btn-secondary" onClick={() => setShowAdd(false)} disabled={adding}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={adding}>{adding ? 'Adding…' : 'Add Item'}</button>
+            <button type="submit" className="btn-primary" disabled={adding}>
+              {adding ? 'Adding…' : addRows.filter(r => r.name.trim()).length > 1 ? `Add ${addRows.filter(r => r.name.trim()).length} Items` : 'Add Item'}
+            </button>
           </div>
         </form>
       )}
