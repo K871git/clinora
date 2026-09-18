@@ -37,6 +37,11 @@ export async function completeVisit(visitId, consultationFee = null) {
   return { data: result }
 }
 
+export async function saveDiagnosis(visitId, diagnosis) {
+  const result = await invoke('save_diagnosis', { id: Number(visitId), diagnosis: diagnosis || null })
+  return { data: result }
+}
+
 export async function recordVisitPayment(visitId, data) {
   const result = await invoke('record_visit_payment', { id: Number(visitId), data })
   return { data: result }

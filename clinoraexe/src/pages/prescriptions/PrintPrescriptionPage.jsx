@@ -263,6 +263,12 @@ export default function PrintPrescriptionPage() {
                   <span className="print-patient-value">{prescription.patient.mobile}</span>
                 </div>
               )}
+              {prescription.visit?.diagnosis && (
+                <div className="print-patient-row">
+                  <span className="print-patient-label">Diagnosis</span>
+                  <span className="print-patient-value">{prescription.visit.diagnosis}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -379,6 +385,12 @@ export default function PrintPrescriptionPage() {
                 <span className="print-tpl-val">{prescription.patient.name}</span>
                 <span className="print-tpl-val">{fmtDate(prescription.prescribed_at)}</span>
               </div>
+              {prescription.visit?.diagnosis && (
+                <div className="print-tpl-diagnosis">
+                  <span className="print-notes-label">Diagnosis: </span>
+                  <span className="print-tpl-val">{prescription.visit.diagnosis}</span>
+                </div>
+              )}
               <MedicineList items={prescription.items} />
               {prescription.doctor_notes && (
                 <div className="print-tpl-notes">

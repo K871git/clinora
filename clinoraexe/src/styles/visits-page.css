@@ -106,11 +106,14 @@
 }
 .vsp-table thead th {
   padding: 11px 14px;
-  font-size: 11.5px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.05em; color: var(--clr-text-muted);
-  white-space: nowrap; background: var(--clr-bg-subtle, #f8fafc);
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--clr-text-muted);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--clr-primary) 5%, #f8fafc);
 }
-[data-theme="dark"] .vsp-table thead th { background: rgba(255,255,255,0.03); }
+[data-theme="dark"] .vsp-table thead th {
+  background: color-mix(in srgb, var(--clr-primary) 10%, rgba(255,255,255,0.02));
+}
 .vsp-table thead th:first-child { padding-left: 18px; border-radius: 0; }
 .vsp-table thead th:last-child  { padding-right: 18px; }
 

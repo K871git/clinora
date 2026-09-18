@@ -177,6 +177,12 @@ export default function VisitInvoicePage() {
                 </span>
               </div>
             )}
+            {visit.diagnosis && (
+              <div className="inv-info-row">
+                <span className="inv-info-label">Diagnosis</span>
+                <span className="inv-info-value">{visit.diagnosis}</span>
+              </div>
+            )}
           </div>
 
           <div className="inv-info-block inv-info-block--right">

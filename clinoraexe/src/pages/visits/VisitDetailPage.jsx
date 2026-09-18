@@ -3,7 +3,9 @@ import '../../styles/emr.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment, listVisitCharges, addVisitCharge, deleteVisitCharge } from '../../services/visitService'
+import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment, listVisitCharges, addVisitCharge, deleteVisitCharge, saveDiagnosis } from '../../services/visitService'
+import { createCertificate } from '../../services/certificateService'
+import '../../styles/certificate-print.css'
 import { listFeeTemplates } from '../../services/feeTemplateService'
 import { validateFee } from '../../lib/inputValidators'
 import Spinner from '../../components/ui/Spinner'
@@ -94,12 +96,16 @@ export default function VisitDetailPage() {
   const [pageStatus, setPageStatus] = useState('loading')
 
   /* edit form */
-  const [editing,       setEditing]       = useState(false)
-  const [editVisitedAt, setEditVisitedAt] = useState('')
-  const [editNotes,     setEditNotes]     = useState('')
-  const [fieldErrors,   setFieldErrors]   = useState({})
-  const [apiError,      setApiError]      = useState(null)
-  const [saving,        setSaving]        = useState(false)
+  const [editing,          setEditing]          = useState(false)
+  const [editVisitedAt,    setEditVisitedAt]    = useState('')
+  const [editNotes,        setEditNotes]        = useState('')
+  const [fieldErrors,      setFieldErrors]      = useState({})
+  const [apiError,         setApiError]         = useState(null)
+  const [saving,           setSaving]           = useState(false)
+
+  /* diagnosis */
+  const [diagnosisInput,   setDiagnosisInput]   = useState('')
+  const [savingDiagnosis,  setSavingDiagnosis]  = useState(false)
 
   /* billing */
   const [feeInput,        setFeeInput]        = useState('')
@@ -128,6 +134,15 @@ export default function VisitDetailPage() {
   const [savingFollowup, setSavingFollowup] = useState(false)
   const [followupSaved,  setFollowupSaved]  = useState(false)
 
+  /* medical certificate modal */
+  const [certModal,     setCertModal]     = useState(false)
+  const [certType,      setCertType]      = useState('fitness')
+  const [certPurpose,   setCertPurpose]   = useState('')
+  const [certValidFrom, setCertValidFrom] = useState('')
+  const [certValidUntil,setCertValidUntil]= useState('')
+  const [certNotes,     setCertNotes]     = useState('')
+  const [certSaving,    setCertSaving]    = useState(false)
+
   useEffect(() => {
     let cancelled = false
     getVisit(visitId)
@@ -143,6 +158,7 @@ export default function VisitDetailPage() {
           setPaymentMethod(v.payment_method ?? 'cash')
           setFollowupDate(v.followup_date ?? '')
           setFollowupNotes(v.followup_notes ?? '')
+          setDiagnosisInput(v.diagnosis ?? '')
           setPageStatus('done')
         }
       })
@@ -162,9 +178,24 @@ export default function VisitDetailPage() {
     setEditing(true)
   }
 
+  async function handleSaveDiagnosis() {
+    const trimmed = diagnosisInput.trim()
+    if (trimmed === (visit.diagnosis ?? '')) return
+    setSavingDiagnosis(true)
+    try {
+      const { data } = await saveDiagnosis(visitId, trimmed || null)
+      setVisit(data)
+    } catch {
+      toast.error('Could not save diagnosis — try again.')
+    } finally {
+      setSavingDiagnosis(false)
+    }
+  }
+
   async function cancelEdit() {
     const changed = editNotes !== (visit.consultation_notes ?? '') ||
-      editVisitedAt !== isoToLocal(visit.visited_at)
+      editVisitedAt !== isoToLocal(visit.visited_at) ||
+      diagnosisInput.trim() !== (visit.diagnosis ?? '')
     if (changed) {
       const ok = await confirmDiscard()
       if (!ok) return
@@ -187,6 +218,7 @@ export default function VisitDetailPage() {
       const { data } = await updateVisit(visitId, {
         visited_at:         new Date(editVisitedAt).toISOString(),
         consultation_notes: editNotes.trim() || null,
+        diagnosis:          diagnosisInput.trim() || null,
       })
       setVisit(data)
       setEditing(false)
@@ -310,6 +342,36 @@ export default function VisitDetailPage() {
     }
   }
 
+  function openCertModal() {
+    setCertType('fitness')
+    setCertPurpose('')
+    setCertValidFrom('')
+    setCertValidUntil('')
+    setCertNotes('')
+    setCertModal(true)
+  }
+
+  async function handleGenerateCert() {
+    setCertSaving(true)
+    try {
+      const { data } = await createCertificate({
+        patient_id:  visit.patient.id,
+        visit_id:    Number(visitId),
+        cert_type:   certType,
+        purpose:     certPurpose.trim() || null,
+        valid_from:  certValidFrom || null,
+        valid_until: certValidUntil || null,
+        notes:       certNotes.trim() || null,
+      })
+      setCertModal(false)
+      navigate(`/certificates/${data.id}/print`)
+    } catch {
+      toast.error('Could not generate certificate — try again.')
+    } finally {
+      setCertSaving(false)
+    }
+  }
+
   /* ── Loading / error screens ─────────────────────────────────────────── */
 
   if (pageStatus === 'loading') {
@@ -355,6 +417,9 @@ export default function VisitDetailPage() {
           {!editing && isOpen && (
             <>
               <button className="btn-secondary" onClick={startEdit}>Edit</button>
+              <button className="btn-secondary" onClick={openCertModal} title="Generate medical certificate">
+                Certificate
+              </button>
               <button
                 className="btn-primary"
                 onClick={() => navigate(`/visits/${visitId}/prescriptions/new`)}
@@ -362,6 +427,11 @@ export default function VisitDetailPage() {
                 + Prescription
               </button>
             </>
+          )}
+          {!editing && isCompleted && (
+            <button className="btn-secondary" onClick={openCertModal} title="Generate medical certificate">
+              Certificate
+            </button>
           )}
         </div>
       </div>
@@ -412,6 +482,18 @@ export default function VisitDetailPage() {
                   <span className="field-error-msg">{fieldErrors.consultation_notes}</span>
                 )}
               </div>
+              <div className="field-group">
+                <label className="field-label">
+                  Diagnosis
+                  <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: 'var(--clr-text-muted)' }}>optional</span>
+                </label>
+                <input
+                  className="field"
+                  placeholder="e.g. Viral URTI, Type 2 DM follow-up…"
+                  value={diagnosisInput}
+                  onChange={e => setDiagnosisInput(e.target.value)}
+                />
+              </div>
             </div>
             <div className="visit-form-actions">
               <button type="button" className="btn-secondary" onClick={cancelEdit} disabled={saving}>Cancel</button>
@@ -422,12 +504,30 @@ export default function VisitDetailPage() {
           </form>
         ) : (
           <>
-            <span className="visit-notes-section-label">Consultation Notes</span>
-            {visit.consultation_notes ? (
-              <p className="visit-notes-display">{visit.consultation_notes}</p>
-            ) : (
-              <p className="visit-notes-empty">No consultation notes recorded.</p>
-            )}
+            <div className="visit-diag-row">
+              <label className="visit-notes-section-label" style={{ marginBottom: 6, display: 'block' }}>
+                Diagnosis
+              </label>
+              <input
+                className="field"
+                placeholder={isCompleted ? '—' : 'e.g. Viral URTI, Type 2 DM follow-up…'}
+                value={diagnosisInput}
+                onChange={e => setDiagnosisInput(e.target.value)}
+                onBlur={handleSaveDiagnosis}
+                disabled={isCompleted || savingDiagnosis}
+              />
+              {savingDiagnosis && (
+                <span style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginTop: 4, display: 'block' }}>Saving…</span>
+              )}
+            </div>
+            <div style={{ marginTop: 'var(--space-md)' }}>
+              <span className="visit-notes-section-label">Consultation Notes</span>
+              {visit.consultation_notes ? (
+                <p className="visit-notes-display">{visit.consultation_notes}</p>
+              ) : (
+                <p className="visit-notes-empty">No consultation notes recorded.</p>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -493,6 +593,113 @@ export default function VisitDetailPage() {
       <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
         <VitalSignsTab patientId={String(visit.patient.id)} visitId={visitId} />
       </div>
+
+      {/* ── Medical Certificate Modal ──────────────────────────────────── */}
+      {certModal && (
+        <div className="cert-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setCertModal(false) }}>
+          <div className="cert-modal">
+            <div className="cert-modal-header">
+              <span className="cert-modal-title">Generate Medical Certificate</span>
+              <button className="cert-modal-close" onClick={() => setCertModal(false)}>×</button>
+            </div>
+            <div className="cert-modal-body">
+
+              {/* Type selector */}
+              <div className="cert-modal-field">
+                <span className="cert-modal-label">Certificate Type</span>
+                <div className="cert-type-grid">
+                  {[
+                    { key: 'fitness',      icon: '✅', label: 'Fitness',      sub: 'Medically fit for duty/activity' },
+                    { key: 'sick_leave',   icon: '🏥', label: 'Sick Leave',   sub: 'Rest advised for given period' },
+                    { key: 'medico_legal', icon: '⚖️', label: 'Medico-Legal', sub: 'For legal or insurance use' },
+                    { key: 'custom',       icon: '📄', label: 'Custom',       sub: 'Free-text / other purpose' },
+                  ].map(t => (
+                    <button
+                      key={t.key}
+                      className={`cert-type-btn cert-type-btn--${t.key}${certType === t.key ? ' cert-type-btn--on' : ''}`}
+                      onClick={() => setCertType(t.key)}
+                    >
+                      <span className="cert-type-btn-icon">{t.icon}</span>
+                      <span className="cert-type-btn-label">{t.label}</span>
+                      <span className="cert-type-btn-sub">{t.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Purpose */}
+              {certType !== 'custom' && (
+                <div className="cert-modal-field">
+                  <label className="cert-modal-label">
+                    {certType === 'fitness'      ? 'Fit for (purpose)' :
+                     certType === 'sick_leave'   ? 'Diagnosis / reason' :
+                     certType === 'medico_legal' ? 'Findings / reason' : 'Purpose'}
+                    <span style={{ fontWeight: 400, color: 'var(--clr-text-muted)', marginLeft: 4 }}>optional</span>
+                  </label>
+                  <input
+                    className="field"
+                    placeholder={
+                      certType === 'fitness'      ? 'e.g. Employment / Sports / School admission' :
+                      certType === 'sick_leave'   ? 'e.g. Viral URTI, Fever' :
+                      'e.g. Injury examination, MLC case'
+                    }
+                    value={certPurpose}
+                    onChange={e => setCertPurpose(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Validity dates */}
+              {(certType === 'sick_leave' || certType === 'fitness') && (
+                <div className="cert-modal-field">
+                  <label className="cert-modal-label">
+                    {certType === 'sick_leave' ? 'Rest Period' : 'Valid Period'}
+                    <span style={{ fontWeight: 400, color: 'var(--clr-text-muted)', marginLeft: 4 }}>optional</span>
+                  </label>
+                  <div className="cert-date-row">
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginBottom: 3 }}>From</div>
+                      <input type="date" className="field" value={certValidFrom} onChange={e => setCertValidFrom(e.target.value)} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginBottom: 3 }}>Until</div>
+                      <input type="date" className="field" value={certValidUntil} onChange={e => setCertValidUntil(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes / custom content */}
+              <div className="cert-modal-field">
+                <label className="cert-modal-label">
+                  {certType === 'custom' ? 'Certificate Content' : 'Additional Notes'}
+                  {certType !== 'custom' && <span style={{ fontWeight: 400, color: 'var(--clr-text-muted)', marginLeft: 4 }}>optional</span>}
+                </label>
+                <textarea
+                  className="field"
+                  rows={certType === 'custom' ? 5 : 2}
+                  placeholder={
+                    certType === 'custom'
+                      ? 'Write the full certificate text here…'
+                      : 'Any additional clinical notes to include…'
+                  }
+                  value={certNotes}
+                  onChange={e => setCertNotes(e.target.value)}
+                />
+              </div>
+
+            </div>
+            <div className="cert-modal-footer">
+              <button className="btn-secondary" onClick={() => setCertModal(false)} disabled={certSaving}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={handleGenerateCert} disabled={certSaving}>
+                {certSaving ? 'Generating…' : 'Generate & Print'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Billing / Invoice card ─────────────────────────────────────── */}
       <div className="card vst-billing-card" style={{ marginTop: 'var(--space-md)' }}>

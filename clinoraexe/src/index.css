@@ -23,6 +23,8 @@
   --clr-bg: #f8fafc;
   --clr-surface: #ffffff;
   --clr-surface-hover: #f1f5f9;
+  --clr-surface-raised: #f8fafc;
+  --clr-bg-subtle: #f1f5f9;
 
   /* Borders */
   --clr-border: #e2e8f0;
@@ -77,6 +79,8 @@
     --clr-bg: #0f172a;
     --clr-surface: #1e293b;
     --clr-surface-hover: #273548;
+    --clr-surface-raised: #273548;
+    --clr-bg-subtle: rgba(255,255,255,0.04);
 
     --clr-border: #334155;
     --clr-border-subtle: #1e293b;
@@ -104,6 +108,8 @@ html[data-theme="dark"] {
   --clr-bg: #0f172a;
   --clr-surface: #1e293b;
   --clr-surface-hover: #273548;
+  --clr-surface-raised: #273548;
+  --clr-bg-subtle: rgba(255,255,255,0.04);
   --clr-border: #334155;
   --clr-border-subtle: #1e293b;
   --clr-text: #f1f5f9;
@@ -913,4 +919,287 @@ html[data-role="pharmacy"] .field:focus {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   GLOBAL COMPONENT LIBRARY — consistent building blocks across all pages
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Data table system ──────────────────────────────────────────────────
+   Usage: <div class="data-wrap"><table class="data-table">…</table></div>
+   thead tint auto-adapts via --clr-primary (blue for doctor, teal for pharmacy).
+   ────────────────────────────────────────────────────────────────────── */
+.data-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.data-table thead {
+  border-bottom: 1.5px solid var(--clr-border);
+}
+
+.data-table thead th {
+  padding: 11px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+  text-align: left;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--clr-primary) 4%, #f8fafc);
+}
+
+[data-theme="dark"] .data-table thead th {
+  background: color-mix(in srgb, var(--clr-primary) 9%, rgba(255,255,255,0.02));
+}
+
+.data-table td {
+  padding: 12px 16px;
+  color: var(--clr-text);
+  border-bottom: 1px solid var(--clr-border-subtle, #f1f5f9);
+  vertical-align: middle;
+}
+
+[data-theme="dark"] .data-table td {
+  border-bottom-color: rgba(255,255,255,0.05);
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table tbody tr:hover {
+  background: var(--clr-surface-hover);
+  cursor: pointer;
+}
+
+.data-table tbody tr.no-hover { cursor: default; }
+.data-table tbody tr.no-hover:hover { background: transparent; }
+
+.data-table th.col-right,
+.data-table td.col-right  { text-align: right; }
+.data-table th.col-center,
+.data-table td.col-center { text-align: center; }
+.data-table td.td-muted   { color: var(--clr-text-muted); font-size: 12.5px; }
+.data-table td.td-bold    { font-weight: 700; }
+.data-table td.td-num     { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+
+/* ─── KPI / stat card grid ───────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.kpi-card {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--clr-primary);
+  border-radius: 3px 0 0 3px;
+}
+
+.kpi-card--green::before  { background: #10b981; }
+.kpi-card--amber::before  { background: #f59e0b; }
+.kpi-card--red::before    { background: #ef4444; }
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.kpi-card--green .kpi-value  { color: #059669; }
+.kpi-card--amber .kpi-value  { color: #d97706; }
+.kpi-card--red   .kpi-value  { color: #dc2626; }
+
+[data-theme="dark"] .kpi-card--green .kpi-value { color: #34d399; }
+[data-theme="dark"] .kpi-card--amber .kpi-value { color: #fbbf24; }
+[data-theme="dark"] .kpi-card--red   .kpi-value { color: #f87171; }
+
+.kpi-sub {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+/* ─── Card header / body / footer ────────────────────────────────────── */
+.card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.card-hdr-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.2px;
+}
+
+.card-hdr-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-body-pad {
+  padding: 18px;
+}
+
+.card-ftr {
+  padding: 12px 18px;
+  border-top: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Empty state — consistent across pages ──────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--clr-text-muted);
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  opacity: 0.45;
+  line-height: 1;
+}
+
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+/* ─── Page section header — list pages, detail page sections ─────────── */
+.section-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.section-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.2px;
+}
+
+.section-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  color: var(--clr-primary);
+}
+
+/* ─── Status badge extended variants ─────────────────────────────────── */
+/* Extends the existing .status-badge — adds color-key modifier classes   */
+.status-badge--green {
+  background: var(--clr-success-bg);
+  color: var(--clr-success);
+  border-color: rgba(22,163,74,0.2);
+}
+
+.status-badge--amber {
+  background: var(--clr-warning-bg);
+  color: var(--clr-warning);
+  border-color: rgba(217,119,6,0.2);
+}
+
+.status-badge--red {
+  background: var(--clr-danger-bg);
+  color: var(--clr-danger);
+  border-color: rgba(220,38,38,0.2);
+}
+
+.status-badge--blue {
+  background: var(--clr-primary-subtle);
+  color: var(--clr-primary);
+  border-color: color-mix(in srgb, var(--clr-primary) 20%, transparent);
+}
+
+.status-badge--muted {
+  background: var(--clr-surface-hover);
+  color: var(--clr-text-muted);
+  border-color: var(--clr-border);
+}
+
+[data-theme="dark"] .status-badge--green {
+  background: rgba(22,163,74,0.12); color: #4ade80; border-color: rgba(22,163,74,0.25);
+}
+[data-theme="dark"] .status-badge--amber {
+  background: rgba(217,119,6,0.12); color: #fbbf24; border-color: rgba(217,119,6,0.25);
+}
+[data-theme="dark"] .status-badge--red {
+  background: rgba(220,38,38,0.12); color: #f87171; border-color: rgba(220,38,38,0.25);
+}
+[data-theme="dark"] .status-badge--blue {
+  background: rgba(37,99,235,0.12); color: #93c5fd; border-color: rgba(37,99,235,0.25);
 }

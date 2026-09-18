@@ -800,3 +800,84 @@ html[data-role="pharmacy"][data-theme="dark"] .nav-link-active .nav-icon-wrap {
   from { transform: translateY(-100%); opacity: 0; }
   to   { transform: translateY(0);     opacity: 1; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ROLE VISUAL IDENTITY
+   All pure CSS — no JSX changes needed.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Sidebar brand area — colored bottom accent strip ───────────────── */
+.sidebar-brand { position: relative; }
+
+html[data-role="doctor"] .sidebar-brand {
+  background: linear-gradient(to bottom, var(--clr-surface) 0%, rgba(37,99,235,0.04) 100%);
+}
+
+html[data-role="doctor"] .sidebar-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #2563eb 0%, #818cf8 100%);
+  z-index: 1;
+}
+
+html[data-role="pharmacy"] .sidebar-brand {
+  background: linear-gradient(to bottom, var(--clr-surface) 0%, rgba(13,148,136,0.04) 100%);
+}
+
+html[data-role="pharmacy"] .sidebar-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #0d9488 0%, #0891b2 100%);
+  z-index: 1;
+}
+
+/* Dark mode — keep brand neutral, strip stays visible */
+html[data-theme="dark"][data-role="doctor"] .sidebar-brand,
+html[data-theme="dark"][data-role="pharmacy"] .sidebar-brand {
+  background: var(--clr-surface);
+}
+
+/* ─── Nav section role label (CSS-injected, no JSX needed) ───────────── */
+html[data-role="doctor"] .sidebar-nav::before {
+  content: 'Doctor Portal';
+  display: block;
+  padding: 10px 14px 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(37,99,235,0.55);
+}
+
+html[data-role="pharmacy"] .sidebar-nav::before {
+  content: 'Pharmacy';
+  display: block;
+  padding: 10px 14px 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(13,148,136,0.65);
+}
+
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-nav::before {
+    display: none;
+  }
+}
+
+/* ─── Header — role-tinted bottom border ─────────────────────────────── */
+html[data-role="doctor"] .shell-header {
+  border-bottom-color: rgba(37,99,235,0.15);
+}
+
+html[data-role="pharmacy"] .shell-header {
+  border-bottom-color: rgba(13,148,136,0.15);
+}
+
+/* ─── Doctor — active nav link subtle blue fill ──────────────────────── */
+html[data-role="doctor"] .nav-link-active {
+  background-color: rgba(37,99,235,0.07);
+}

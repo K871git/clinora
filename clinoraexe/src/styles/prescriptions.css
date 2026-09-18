@@ -577,9 +577,14 @@
   text-transform: uppercase !important;
   letter-spacing: 0.07em !important;
   color: var(--clr-text-muted) !important;
-  background: var(--clr-surface) !important;
-  border-bottom: 1px solid var(--clr-border) !important;
+  background: color-mix(in srgb, var(--clr-primary) 5%, #f8fafc) !important;
+  border-bottom: 1.5px solid var(--clr-border) !important;
   white-space: nowrap !important;
+}
+
+[data-theme="dark"] .rx-table-wrap table.dataTable thead th,
+[data-theme="dark"] .rx-table-wrap table.dataTable thead td {
+  background: color-mix(in srgb, var(--clr-primary) 10%, rgba(255,255,255,0.02)) !important;
 }
 
 /* Sort arrows */

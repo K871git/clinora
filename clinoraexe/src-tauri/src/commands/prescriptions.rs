@@ -170,7 +170,7 @@ pub async fn get_prescription(id: u64, state: State<'_, AppState>) -> AppResult<
                 p.name as patient_name, p.mobile as patient_mobile,
                 u.name as doctor_name,
                 DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
-                v.consultation_notes
+                v.consultation_notes, v.diagnosis
          FROM prescriptions pr
          JOIN patients p ON p.id=pr.patient_id
          JOIN users u ON u.id=pr.doctor_id
@@ -193,7 +193,7 @@ pub async fn get_prescription(id: u64, state: State<'_, AppState>) -> AppResult<
         "items": items,
         "patient": { "name": row.get::<String, _>("patient_name"), "mobile": row.get::<Option<String>, _>("patient_mobile") },
         "doctor": { "name": row.get::<String, _>("doctor_name") },
-        "visit": { "id": row.get::<u64, _>("visit_id"), "visited_at": row.get::<Option<String>, _>("visited_at"), "consultation_notes": row.get::<Option<String>, _>("consultation_notes") }
+        "visit": { "id": row.get::<u64, _>("visit_id"), "visited_at": row.get::<Option<String>, _>("visited_at"), "consultation_notes": row.get::<Option<String>, _>("consultation_notes"), "diagnosis": row.get::<Option<String>, _>("diagnosis") }
     }))
 }
 

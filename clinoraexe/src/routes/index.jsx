@@ -37,6 +37,7 @@ import FlappyGame from '../pages/games/FlappyGame'
 import NotesPage from '../pages/notes/NotesPage'
 import PrivacyPolicyPage from '../pages/legal/PrivacyPolicyPage'
 import TermsPage from '../pages/legal/TermsPage'
+import CertificatePrintPage from '../pages/visits/CertificatePrintPage'
 
 /* Forces PatientDetailPage to fully remount when :id changes, resetting all state */
 function KeyedPatientDetail() {
@@ -118,6 +119,7 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute role="doctor" />}>
         <Route path="/prescriptions/:prescriptionId/print" element={<PrintPrescriptionPage />} />
         <Route path="/visits/:visitId/invoice" element={<VisitInvoicePage />} />
+        <Route path="/certificates/:certId/print" element={<CertificatePrintPage />} />
       </Route>
 
       {/* Pharmacy standalone pages */}
