@@ -21,8 +21,6 @@ export default function ProfilePage() {
 
   /* ── Account info (name + email) ───────────────────────────────────── */
   const [info, setInfo]             = useState({ name: user?.name ?? '', email: user?.email ?? '' })
-  const [infoSaving, setInfoSaving] = useState(false)
-  const [infoSaved, setInfoSaved]   = useState(false)
   const [infoErrors, setInfoErrors] = useState({})
 
   /* ── Personal details ───────────────────────────────────────────────── */
@@ -33,8 +31,6 @@ export default function ProfilePage() {
     dob:      user?.dob      ?? '',
     address:  user?.address  ?? '',
   })
-  const [persSaving, setPersSaving] = useState(false)
-  const [persSaved, setPersSaved]   = useState(false)
   const [persErrors, setPersErrors] = useState({})
 
   /* ── Password ───────────────────────────────────────────────────────── */
@@ -43,52 +39,55 @@ export default function ProfilePage() {
   const [pwdSaved, setPwdSaved]   = useState(false)
   const [pwdErrors, setPwdErrors] = useState({})
 
+  /* ── Unified save (Account + Personal) ─────────────────────────────── */
+  const [allSaving, setAllSaving] = useState(false)
+  const [allSaved,  setAllSaved]  = useState(false)
+
   /* ── Avatar ─────────────────────────────────────────────────────────── */
   const [avatarUploading, setAvatarUploading] = useState(false)
   const fileRef = useRef(null)
 
   /* ── Handlers ───────────────────────────────────────────────────────── */
 
-  async function handleInfoSave(e) {
-    e.preventDefault()
+  async function doInfoSave() {
     const errs = {}
     if (!info.name.trim()) errs.name = ['Full name is required.']
     const emailErr = validateEmail(info.email)
     if (emailErr) errs.email = [emailErr]
-    if (Object.keys(errs).length) { setInfoErrors(errs); return }
+    if (Object.keys(errs).length) { setInfoErrors(errs); throw new Error('validation') }
     setInfoErrors({})
-    setInfoSaving(true)
-    try {
-      const { data } = await profileService.updateProfile(info)
-      updateUser(data.user)
-      setInfoSaved(true)
-      setTimeout(() => setInfoSaved(false), 3000)
-    } catch (err) {
-      if (err.response?.status === 422) setInfoErrors(err.response.data.errors ?? {})
-    } finally {
-      setInfoSaving(false)
-    }
+    const { data } = await profileService.updateProfile(info)
+    updateUser(data.user)
   }
 
-  async function handlePersonalSave(e) {
-    e.preventDefault()
+  async function doPersonalSave() {
     const errs = {}
     const phoneErr = validateMobile(personal.phone)
     if (phoneErr) errs.phone = [phoneErr]
     const dobErr = validateDob(personal.dob)
     if (dobErr) errs.dob = [dobErr]
-    if (Object.keys(errs).length) { setPersErrors(errs); return }
+    if (Object.keys(errs).length) { setPersErrors(errs); throw new Error('validation') }
     setPersErrors({})
-    setPersSaving(true)
+    const { data } = await profileService.updateProfile({ ...info, ...personal })
+    updateUser(data.user)
+  }
+
+  async function handleSaveAll(e) {
+    e?.preventDefault()
+    setAllSaving(true); setAllSaved(false)
     try {
-      const { data } = await profileService.updateProfile({ ...info, ...personal })
-      updateUser(data.user)
-      setPersSaved(true)
-      setTimeout(() => setPersSaved(false), 3000)
+      await doInfoSave()
+      await doPersonalSave()
+      setAllSaved(true)
+      setTimeout(() => setAllSaved(false), 3000)
     } catch (err) {
-      if (err.response?.status === 422) setPersErrors(err.response.data.errors ?? {})
+      if (err.response?.status === 422) {
+        const errs = err.response.data.errors ?? {}
+        setInfoErrors(p => ({ ...p, ...errs }))
+        setPersErrors(p => ({ ...p, ...errs }))
+      }
     } finally {
-      setPersSaving(false)
+      setAllSaving(false)
     }
   }
 
@@ -191,7 +190,7 @@ export default function ProfilePage() {
       {/* ── Account Information ────────────────────────────────────────── */}
       <div className="card prf-card">
         <div className="prf-card-head"><IconUser /> Account Information</div>
-        <form className="prf-card-body" onSubmit={handleInfoSave}>
+        <form className="prf-card-body" id="prf-form-info" onSubmit={handleSaveAll}>
           <div className="prf-grid-2">
             <div className="prf-field">
               <label className="prf-label">Full Name <span className="prf-required">*</span></label>
@@ -216,19 +215,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="prf-card-foot">
-            {infoSaved && <span className="stg-saved-msg">✓ Saved</span>}
-            <button className="stg-save-btn" disabled={infoSaving}>
-              {infoSaving ? 'Saving…' : 'Save'}
-            </button>
-          </div>
         </form>
       </div>
 
       {/* ── Personal Details ───────────────────────────────────────────── */}
       <div className="card prf-card">
         <div className="prf-card-head"><IconIdCard /> Personal Details</div>
-        <form className="prf-card-body" onSubmit={handlePersonalSave}>
+        <form className="prf-card-body" id="prf-form-personal" onSubmit={handleSaveAll}>
 
           <div className="prf-grid-2">
             <div className="prf-field">
@@ -302,13 +295,27 @@ export default function ProfilePage() {
             {persErrors.address && <span className="prf-error">{persErrors.address[0]}</span>}
           </div>
 
-          <div className="prf-card-foot">
-            {persSaved && <span className="stg-saved-msg">✓ Saved</span>}
-            <button className="stg-save-btn" disabled={persSaving}>
-              {persSaving ? 'Saving…' : 'Save Details'}
-            </button>
-          </div>
         </form>
+      </div>
+
+      {/* ── Unified save bar ───────────────────────────────────────────── */}
+      <div className="stg-save-all-bar">
+        {allSaved
+          ? <span className="stg-saved-msg">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 7l3.5 3.5L12 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Profile saved
+            </span>
+          : <span />}
+        <button
+          type="button"
+          className="stg-save-btn"
+          onClick={handleSaveAll}
+          disabled={allSaving}
+        >
+          {allSaving ? 'Saving…' : 'Save Profile Changes'}
+        </button>
       </div>
 
       {/* ── Change Password ────────────────────────────────────────────── */}

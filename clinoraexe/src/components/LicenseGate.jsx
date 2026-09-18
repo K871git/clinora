@@ -3,7 +3,8 @@ import { invoke } from '@tauri-apps/api/core'
 import '../styles/license-gate.css'
 
 export default function LicenseGate({ children }) {
-  const [status, setStatus] = useState('checking') // 'checking' | 'unlicensed' | 'licensed'
+  const [status, setStatus] = useState('checking')
+  const [licenseInfo, setLicenseInfo] = useState(null)
   const [key, setKey] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -11,7 +12,15 @@ export default function LicenseGate({ children }) {
 
   useEffect(() => {
     invoke('get_license_status')
-      .then(res => setStatus(res.licensed ? 'licensed' : 'unlicensed'))
+      .then(res => {
+        if (res.licensed) {
+          setLicenseInfo(res)
+          setStatus('licensed')
+        } else {
+          setLicenseInfo(res)
+          setStatus('unlicensed')
+        }
+      })
       .catch(() => setStatus('unlicensed'))
   }, [])
 
@@ -21,9 +30,10 @@ export default function LicenseGate({ children }) {
     setError('')
     setLoading(true)
     try {
-      await invoke('activate_license', { key: key.trim() })
+      const res = await invoke('activate_license', { key: key.trim() })
+      setLicenseInfo(res)
       setSuccess(true)
-      setTimeout(() => setStatus('licensed'), 1500)
+      setTimeout(() => setStatus('licensed'), 1600)
     } catch (err) {
       setError(typeof err === 'string' ? err : 'Invalid license key.')
     } finally {
@@ -31,6 +41,7 @@ export default function LicenseGate({ children }) {
     }
   }
 
+  // Checking spinner
   if (status === 'checking') {
     return (
       <div className="lg-overlay">
@@ -39,7 +50,26 @@ export default function LicenseGate({ children }) {
     )
   }
 
-  if (status === 'licensed') return children
+  // Licensed — render app, but show expiry banner if expiring soon
+  if (status === 'licensed') {
+    const expiringSoon = licenseInfo?.expiring_soon
+    const daysLeft = licenseInfo?.days_remaining
+    return (
+      <>
+        {expiringSoon && daysLeft != null && (
+          <div className="lg-expiry-banner">
+            Your Clinora {licenseInfo.tier} license expires in{' '}
+            <strong>{daysLeft} day{daysLeft !== 1 ? 's' : ''}</strong>.
+            Contact your provider to renew.
+          </div>
+        )}
+        {children}
+      </>
+    )
+  }
+
+  // Unlicensed / expired
+  const isExpired = licenseInfo?.reason === 'expired'
 
   return (
     <div className="lg-overlay">
@@ -48,12 +78,19 @@ export default function LicenseGate({ children }) {
           <img src="/logos/logo1.png" alt="Clinora" />
         </div>
         <h1 className="lg-title">Clinora</h1>
-        <p className="lg-subtitle">Enter your license key to activate</p>
+
+        {isExpired ? (
+          <p className="lg-subtitle lg-subtitle--expired">
+            Your license has expired. Enter a new key to continue.
+          </p>
+        ) : (
+          <p className="lg-subtitle">Enter your license key to activate</p>
+        )}
 
         {success ? (
           <div className="lg-success">
             <span className="lg-success-icon">✓</span>
-            Activated successfully! Starting…
+            {licenseInfo?.message || 'Activated successfully!'} Starting…
           </div>
         ) : (
           <form onSubmit={handleActivate} className="lg-form">
@@ -79,7 +116,8 @@ export default function LicenseGate({ children }) {
         )}
 
         <p className="lg-footer">
-          Need a license key? Contact your Clinora provider.
+          Need a license key?{' '}
+          <span className="lg-footer-contact">Contact Clinora support.</span>
         </p>
       </div>
     </div>

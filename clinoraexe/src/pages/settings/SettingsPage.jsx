@@ -97,6 +97,10 @@ export default function SettingsPage() {
   const [prescErrors, setPrescErrors] = useState({})
   const [prescApiErr, setPrescApiErr] = useState(null)
 
+  /* unified save */
+  const [allSaving, setAllSaving] = useState(false)
+  const [allSaved,  setAllSaved]  = useState(false)
+
   useEffect(() => {
     let cancelled = false
     getSettings()
@@ -143,8 +147,7 @@ export default function SettingsPage() {
     if (prescErrors[field]) setPrescErrors(e => ({ ...e, [field]: undefined }))
   }
 
-  async function handleClinicSave(e) {
-    e.preventDefault()
+  async function doClinicSave() {
     setClinicSaving(true)
     setClinicErrors({})
     setClinicApiErr(null)
@@ -161,11 +164,11 @@ export default function SettingsPage() {
     } catch (err) {
       if (err.response?.status === 422) setClinicErrors(flattenErrors(err.response?.data?.errors))
       else setClinicApiErr(err.response?.data?.message ?? 'Could not save — check your connection.')
+      throw err
     } finally { setClinicSaving(false) }
   }
 
-  async function handlePrescSave(e) {
-    e.preventDefault()
+  async function doPrescSave() {
     setPrescSaving(true)
     setPrescErrors({})
     setPrescApiErr(null)
@@ -182,7 +185,22 @@ export default function SettingsPage() {
     } catch (err) {
       if (err.response?.status === 422) setPrescErrors(flattenErrors(err.response?.data?.errors))
       else setPrescApiErr(err.response?.data?.message ?? 'Could not save — check your connection.')
+      throw err
     } finally { setPrescSaving(false) }
+  }
+
+  function handleClinicSave(e) { e.preventDefault(); doClinicSave() }
+  function handlePrescSave(e)  { e.preventDefault(); doPrescSave()  }
+
+  async function handleSaveAll() {
+    setAllSaving(true)
+    setAllSaved(false)
+    try {
+      await Promise.all([doClinicSave(), doPrescSave()])
+      setAllSaved(true)
+      setTimeout(() => setAllSaved(false), 3000)
+    } catch { /* individual errors shown per card */ }
+    finally { setAllSaving(false) }
   }
 
   if (pageStatus === 'loading') return <PageLoader />
@@ -301,14 +319,8 @@ export default function SettingsPage() {
 
           </div>
 
-          <div className="stg-card-foot">
-            {clinicSaved ? (
-              <span className="stg-saved-msg"><IconCheck /> Saved successfully</span>
-            ) : <span />}
-            <button type="submit" className="stg-save-btn" disabled={clinicSaving}>
-              {clinicSaving ? <Spinner size={13} /> : null}
-              {clinicSaving ? 'Saving…' : 'Save Changes'}
-            </button>
+          <div className="stg-card-foot stg-card-foot--minimal">
+            {clinicApiErr && <span className="stg-save-err-hint">Fix errors above</span>}
           </div>
 
         </div>
@@ -408,18 +420,27 @@ export default function SettingsPage() {
 
           </div>
 
-          <div className="stg-card-foot">
-            {prescSaved ? (
-              <span className="stg-saved-msg"><IconCheck /> Saved successfully</span>
-            ) : <span />}
-            <button type="submit" className="stg-save-btn" disabled={prescSaving}>
-              {prescSaving ? <Spinner size={13} /> : null}
-              {prescSaving ? 'Saving…' : 'Save Settings'}
-            </button>
+          <div className="stg-card-foot stg-card-foot--minimal">
+            {prescApiErr && <span className="stg-save-err-hint">Fix errors above</span>}
           </div>
 
         </div>
       </form>
+
+      {/* ── Unified save bar ─────────────────────────────────────────── */}
+      <div className="stg-save-all-bar">
+        {allSaved && <span className="stg-saved-msg"><IconCheck /> All settings saved</span>}
+        {!allSaved && <span />}
+        <button
+          type="button"
+          className="stg-save-btn"
+          onClick={handleSaveAll}
+          disabled={allSaving || clinicSaving || prescSaving}
+        >
+          {allSaving ? <Spinner size={13} /> : null}
+          {allSaving ? 'Saving…' : 'Save Changes'}
+        </button>
+      </div>
 
       {/* ── Database Backup ────────────────────────────────────────────── */}
       <div className="stg-card" style={{ marginTop: 'var(--space-md)' }}>

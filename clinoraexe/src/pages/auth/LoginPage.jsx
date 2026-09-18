@@ -43,15 +43,22 @@ function SunDeco() {
 function CloudsDeco() {
   return (
     <svg className="login-deco login-deco-clouds" viewBox="0 0 1200 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <ellipse cx="160" cy="80"  rx="100" ry="40" fill="white" opacity="0.82" />
-      <ellipse cx="96"  cy="100" rx="64"  ry="32" fill="white" opacity="0.82" />
-      <ellipse cx="224" cy="100" rx="68"  ry="30" fill="white" opacity="0.82" />
-      <ellipse cx="820" cy="62"  rx="82"  ry="34" fill="white" opacity="0.72" />
-      <ellipse cx="756" cy="78"  rx="54"  ry="26" fill="white" opacity="0.72" />
-      <ellipse cx="884" cy="78"  rx="56"  ry="24" fill="white" opacity="0.72" />
-      <ellipse cx="520" cy="40"  rx="56"  ry="22" fill="white" opacity="0.55" />
-      <ellipse cx="472" cy="54"  rx="36"  ry="18" fill="white" opacity="0.55" />
-      <ellipse cx="568" cy="54"  rx="38"  ry="17" fill="white" opacity="0.55" />
+      {/* Each <g> gets its own slow drift animation */}
+      <g className="cloud-grp-1">
+        <ellipse cx="160" cy="80"  rx="100" ry="40" fill="white" opacity="0.82" />
+        <ellipse cx="96"  cy="100" rx="64"  ry="32" fill="white" opacity="0.82" />
+        <ellipse cx="224" cy="100" rx="68"  ry="30" fill="white" opacity="0.82" />
+      </g>
+      <g className="cloud-grp-2">
+        <ellipse cx="820" cy="62"  rx="82"  ry="34" fill="white" opacity="0.72" />
+        <ellipse cx="756" cy="78"  rx="54"  ry="26" fill="white" opacity="0.72" />
+        <ellipse cx="884" cy="78"  rx="56"  ry="24" fill="white" opacity="0.72" />
+      </g>
+      <g className="cloud-grp-3">
+        <ellipse cx="520" cy="40"  rx="56"  ry="22" fill="white" opacity="0.55" />
+        <ellipse cx="472" cy="54"  rx="36"  ry="18" fill="white" opacity="0.55" />
+        <ellipse cx="568" cy="54"  rx="38"  ry="17" fill="white" opacity="0.55" />
+      </g>
     </svg>
   )
 }
@@ -193,37 +200,212 @@ function HorizonDeco() {
   )
 }
 
-/* ── Pharmacy decorations (streamlined — 2 pills, 2 crosses) ─────────── */
+function NorthernLightsDeco() {
+  return (
+    <div className="login-aurora" aria-hidden="true">
+      <div className="aur-r aur-r1" />
+      <div className="aur-r aur-r2" />
+      <div className="aur-r aur-r3" />
+      <div className="aur-r aur-r4" />
+      <div className="aur-r aur-r5" />
+    </div>
+  )
+}
 
-function PillsDeco() {
+/* ── Pharmacy botanical horizon ─────────────────────────────────────── */
+
+const GrassTuft = () => (
+  <>
+    <path d="M0,0 C-1,-14 -2,-30 0,-44 C2,-30 1,-14 0,0 Z" />
+    <path d="M0,0 C-3,-10 -5,-23 -4,-35 C-2,-22 0,-11 0,0 Z" />
+    <path d="M0,0 C3,-10 5,-23 4,-35 C2,-22 0,-11 0,0 Z" />
+    <path d="M0,0 C-2,-7 -4,-16 -5,-24 C-3,-14 -1,-6 0,0 Z" />
+    <path d="M0,0 C2,-7 4,-16 5,-24 C3,-14 1,-6 0,0 Z" />
+  </>
+)
+
+const LavSprig = () => (
+  <>
+    <rect x="-1" y="-50" width="2" height="50" rx="1" />
+    <ellipse cx="-6" cy="-34" rx="5"   ry="2.4" />
+    <ellipse cx="6"  cy="-28" rx="5"   ry="2.4" />
+    <ellipse cx="-5" cy="-20" rx="4.5" ry="2.1" />
+    <ellipse cx="5"  cy="-15" rx="4.5" ry="2.1" />
+    <ellipse cx="-4" cy="-9"  rx="4"   ry="1.9" />
+    <ellipse cx="4"  cy="-5"  rx="4"   ry="1.9" />
+    <ellipse cx="0"  cy="-55" rx="3.5" ry="6.5" />
+  </>
+)
+
+/* Outer <g> = position+scale. Inner <g className> = wind animation rotating from base */
+function PharmacyHorizonDeco() {
+  const G = (dur, del) => ({ className: 'ph-grass', style: { animationDuration: dur, animationDelay: del } })
+  const L = (dur, del) => ({ className: 'ph-lav',   style: { animationDuration: dur, animationDelay: del } })
+
+  const scene = (c1, c2, c3) => (
+    <>
+      {/* Far hill */}
+      <path d="M0,184 C300,162 600,174 900,161 C1150,151 1320,167 1440,157 L1440,220 L0,220 Z" fill={c1} />
+
+      {/* Mid hill */}
+      <path d="M0,194 C200,178 480,187 740,178 C980,170 1220,184 1440,175 L1440,220 L0,220 Z" fill={c2} />
+      <g fill={c2}>
+        <g transform="translate(116,193) scale(0.48)"><g {...G('3.1s','1.1s')}><GrassTuft /></g></g>
+        <g transform="translate(128,192) scale(0.60)"><g {...G('3.4s','0.0s')}><GrassTuft /></g></g>
+        <g transform="translate(140,193) scale(0.52)"><g {...G('3.9s','0.5s')}><GrassTuft /></g></g>
+
+        <g transform="translate(368,189) scale(0.70)"><g {...L('4.8s','0.3s')}><LavSprig /></g></g>
+        <g transform="translate(380,190) scale(0.78)"><g {...L('5.3s','1.0s')}><LavSprig /></g></g>
+        <g transform="translate(392,189) scale(0.66)"><g {...L('4.5s','1.8s')}><LavSprig /></g></g>
+
+        <g transform="translate(836,182) scale(0.56)"><g {...G('3.7s','2.2s')}><GrassTuft /></g></g>
+        <g transform="translate(848,183) scale(0.50)"><g {...G('3.2s','0.8s')}><GrassTuft /></g></g>
+        <g transform="translate(860,183) scale(0.46)"><g {...G('4.0s','1.6s')}><GrassTuft /></g></g>
+
+        <g transform="translate(1072,179) scale(0.66)"><g {...L('5.1s','0.6s')}><LavSprig /></g></g>
+        <g transform="translate(1084,180) scale(0.74)"><g {...L('4.6s','1.4s')}><LavSprig /></g></g>
+        <g transform="translate(1096,179) scale(0.62)"><g {...L('5.5s','2.5s')}><LavSprig /></g></g>
+
+        <g transform="translate(1328,182) scale(0.54)"><g {...G('3.5s','3.2s')}><GrassTuft /></g></g>
+        <g transform="translate(1340,183) scale(0.48)"><g {...G('3.8s','0.4s')}><GrassTuft /></g></g>
+      </g>
+
+      {/* Front hill */}
+      <path d="M0,202 C180,188 420,197 680,188 C920,180 1160,194 1440,185 L1440,220 L0,220 Z" fill={c3} />
+      <g fill={c3}>
+        <g transform="translate(66,201)  scale(0.70)"><g {...G('2.9s','1.7s')}><GrassTuft /></g></g>
+        <g transform="translate(78,200)  scale(0.86)"><g {...G('3.0s','0.2s')}><GrassTuft /></g></g>
+        <g transform="translate(92,201)  scale(0.76)"><g {...G('3.5s','0.9s')}><GrassTuft /></g></g>
+        <g transform="translate(104,201) scale(0.64)"><g {...G('3.8s','2.8s')}><GrassTuft /></g></g>
+
+        <g transform="translate(282,197) scale(0.88)"><g {...L('4.5s','0.1s')}><LavSprig /></g></g>
+        <g transform="translate(295,197) scale(1.00)"><g {...L('5.0s','0.7s')}><LavSprig /></g></g>
+        <g transform="translate(308,196) scale(1.08)"><g {...L('4.8s','1.5s')}><LavSprig /></g></g>
+        <g transform="translate(321,197) scale(0.92)"><g {...L('5.4s','2.4s')}><LavSprig /></g></g>
+
+        <g transform="translate(530,193) scale(0.74)"><g {...G('2.8s','2.2s')}><GrassTuft /></g></g>
+        <g transform="translate(542,192) scale(0.90)"><g {...G('3.3s','1.2s')}><GrassTuft /></g></g>
+        <g transform="translate(556,193) scale(0.80)"><g {...G('3.7s','0.4s')}><GrassTuft /></g></g>
+        <g transform="translate(568,193) scale(0.68)"><g {...G('4.1s','3.5s')}><GrassTuft /></g></g>
+
+        <g transform="translate(762,186) scale(0.94)"><g {...L('4.9s','0.5s')}><LavSprig /></g></g>
+        <g transform="translate(775,186) scale(1.06)"><g {...L('5.2s','1.3s')}><LavSprig /></g></g>
+        <g transform="translate(788,185) scale(1.12)"><g {...L('4.6s','2.1s')}><LavSprig /></g></g>
+        <g transform="translate(801,186) scale(0.98)"><g {...L('5.6s','3.0s')}><LavSprig /></g></g>
+
+        <g transform="translate(1006,191) scale(0.72)"><g {...G('4.2s','2.6s')}><GrassTuft /></g></g>
+        <g transform="translate(1018,190) scale(0.88)"><g {...G('3.6s','0.8s')}><GrassTuft /></g></g>
+        <g transform="translate(1032,191) scale(0.78)"><g {...G('3.1s','1.6s')}><GrassTuft /></g></g>
+
+        <g transform="translate(1228,190) scale(0.90)"><g {...L('4.7s','0.9s')}><LavSprig /></g></g>
+        <g transform="translate(1241,190) scale(1.00)"><g {...L('5.1s','1.8s')}><LavSprig /></g></g>
+        <g transform="translate(1254,189) scale(1.06)"><g {...L('4.4s','3.2s')}><LavSprig /></g></g>
+        <g transform="translate(1267,190) scale(0.86)"><g {...L('5.8s','4.5s')}><LavSprig /></g></g>
+
+        <g transform="translate(1396,190) scale(0.78)"><g {...G('3.4s','5.0s')}><GrassTuft /></g></g>
+        <g transform="translate(1408,191) scale(0.70)"><g {...G('2.9s','2.4s')}><GrassTuft /></g></g>
+      </g>
+    </>
+  )
+
   return (
     <>
-      <svg className="login-deco login-pill login-pill-1" width="56" height="22" viewBox="0 0 56 22" aria-hidden="true">
-        <rect x="0" y="0" width="56" height="22" rx="11" fill="rgba(20,184,166,0.28)" />
-        <path d="M28,0 L45,0 Q56,0 56,11 Q56,22 45,22 L28,22 Z" fill="rgba(20,184,166,0.18)" />
-        <line x1="28" y1="2" x2="28" y2="20" stroke="rgba(255,255,255,0.45)" strokeWidth="0.8" />
+      <svg className="login-ph-horizon--day" viewBox="0 0 1440 220"
+        preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        {scene('rgba(5,150,105,0.16)', 'rgba(4,122,88,0.40)', 'rgba(3,98,70,0.62)')}
       </svg>
-      <svg className="login-deco login-pill login-pill-2" width="44" height="18" viewBox="0 0 44 18" aria-hidden="true">
-        <rect x="0" y="0" width="44" height="18" rx="9" fill="rgba(16,185,129,0.24)" />
-        <path d="M22,0 L35,0 Q44,0 44,9 Q44,18 35,18 L22,18 Z" fill="rgba(16,185,129,0.14)" />
-        <line x1="22" y1="1.5" x2="22" y2="16.5" stroke="rgba(255,255,255,0.38)" strokeWidth="0.7" />
+      <svg className="login-ph-horizon--night" viewBox="0 0 1440 220"
+        preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        {scene('rgba(2,38,26,0.76)', 'rgba(2,30,20,0.88)', 'rgba(1,18,12,0.96)')}
       </svg>
     </>
   )
 }
 
-function CrossesDeco() {
+/* Golden pollen / spores drifting upward — gives the scene life */
+function PharmacyPollenDeco() {
+  const dots = [
+    { l:'8%',  b:'24%', s:3.2, dur:'8.5s',  del:'0.0s'  },
+    { l:'16%', b:'20%', s:2.5, dur:'11.0s', del:'1.8s'  },
+    { l:'27%', b:'27%', s:2.0, dur:'9.2s',  del:'3.5s'  },
+    { l:'37%', b:'22%', s:3.5, dur:'7.8s',  del:'5.2s'  },
+    { l:'50%', b:'29%', s:2.8, dur:'12.5s', del:'2.1s'  },
+    { l:'60%', b:'21%', s:2.2, dur:'10.0s', del:'4.0s'  },
+    { l:'71%', b:'26%', s:3.0, dur:'8.0s',  del:'0.7s'  },
+    { l:'82%', b:'23%', s:2.6, dur:'13.0s', del:'2.9s'  },
+    { l:'91%', b:'27%', s:2.0, dur:'9.8s',  del:'1.4s'  },
+    { l:'43%', b:'32%', s:4.0, dur:'6.5s',  del:'3.8s'  },
+    { l:'22%', b:'31%', s:2.5, dur:'14.0s', del:'6.0s'  },
+    { l:'67%', b:'31%', s:3.0, dur:'11.5s', del:'0.3s'  },
+  ]
+  return (
+    <div className="login-ph-pollen" aria-hidden="true">
+      {dots.map((d, i) => (
+        <span key={i} className="ph-pollen-dot" style={{
+          left: d.l, bottom: d.b,
+          width: d.s + 'px', height: d.s + 'px',
+          animationDuration: d.dur, animationDelay: d.del
+        }} />
+      ))}
+    </div>
+  )
+}
+
+/* Leaves drifting on the wind — 5 leaves, varied sizes/colors/directions */
+function PharmacyLeavesDeco() {
+  const leaf = (color, stemColor) => (
+    <>
+      <path d="M9,19 C3,13 1,5 4,1 C6,-3 12,-3 15,1 C18,5 15,13 9,19 Z" fill={color} />
+      <line x1="9" y1="19" x2="9" y2="1" stroke={stemColor} strokeWidth="0.9" />
+    </>
+  )
   return (
     <>
-      <svg className="login-deco login-cross-deco login-cross-1" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
-        <rect x="12" y="0" width="8" height="32" rx="3" fill="rgba(20,184,166,0.35)" />
-        <rect x="0" y="12" width="32" height="8" rx="3" fill="rgba(20,184,166,0.35)" />
+      <svg className="login-ph-leaf login-ph-leaf-1" width="18" height="22" viewBox="0 0 18 22" aria-hidden="true">
+        {leaf('rgba(5,150,105,0.60)', 'rgba(3,100,72,0.40)')}
       </svg>
-      <svg className="login-deco login-cross-deco login-cross-2" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-        <rect x="8" y="0" width="6" height="22" rx="2.5" fill="rgba(16,185,129,0.3)" />
-        <rect x="0" y="8" width="22" height="6" rx="2.5" fill="rgba(16,185,129,0.3)" />
+      <svg className="login-ph-leaf login-ph-leaf-2" width="13" height="16" viewBox="0 0 18 22" aria-hidden="true">
+        {leaf('rgba(16,185,129,0.52)', 'rgba(4,120,87,0.34)')}
+      </svg>
+      <svg className="login-ph-leaf login-ph-leaf-3" width="11" height="14" viewBox="0 0 18 22" aria-hidden="true">
+        {leaf('rgba(20,184,166,0.50)', 'rgba(10,150,135,0.32)')}
+      </svg>
+      <svg className="login-ph-leaf login-ph-leaf-4" width="16" height="20" viewBox="0 0 18 22" aria-hidden="true">
+        {leaf('rgba(5,150,105,0.55)', 'rgba(3,100,72,0.36)')}
+      </svg>
+      <svg className="login-ph-leaf login-ph-leaf-5" width="15" height="18" viewBox="0 0 18 22" aria-hidden="true">
+        {leaf('rgba(52,211,153,0.48)', 'rgba(16,150,100,0.30)')}
       </svg>
     </>
+  )
+}
+
+/* Healing wisps — Oogway's sacred tree energy rising from the botanical garden */
+function PharmacyWispsDeco() {
+  const wisps = [
+    { l:'6%',  b:'22%', s:28, blur:13, color:'rgba(255,230,140,0.20)', dur:'14s', del:'0.0s' },
+    { l:'20%', b:'18%', s:18, blur:9,  color:'rgba(52,211,153,0.18)',  dur:'10s', del:'2.5s' },
+    { l:'33%', b:'25%', s:36, blur:15, color:'rgba(200,240,255,0.14)', dur:'18s', del:'1.0s' },
+    { l:'50%', b:'20%', s:22, blur:10, color:'rgba(255,220,100,0.16)', dur:'12s', del:'4.0s' },
+    { l:'65%', b:'24%', s:30, blur:12, color:'rgba(16,185,129,0.18)',  dur:'15s', del:'0.5s' },
+    { l:'82%', b:'18%', s:16, blur:8,  color:'rgba(52,211,153,0.20)',  dur:'9s',  del:'3.0s' },
+    { l:'46%', b:'30%', s:44, blur:18, color:'rgba(220,255,230,0.12)', dur:'22s', del:'7.0s' },
+    { l:'14%', b:'30%', s:20, blur:9,  color:'rgba(255,240,180,0.16)', dur:'11s', del:'5.0s' },
+    { l:'74%', b:'28%', s:24, blur:11, color:'rgba(180,255,220,0.14)', dur:'16s', del:'2.0s' },
+  ]
+  return (
+    <div className="login-ph-wisps" aria-hidden="true">
+      {wisps.map((w, i) => (
+        <span key={i} className="ph-wisp" style={{
+          left: w.l, bottom: w.b,
+          width: w.s + 'px', height: w.s + 'px',
+          filter: `blur(${w.blur}px)`,
+          background: w.color,
+          animationDuration: w.dur,
+          animationDelay: w.del
+        }} />
+      ))}
+    </div>
   )
 }
 
@@ -374,6 +556,7 @@ export default function LoginPage() {
   const [mounted, setMounted]         = useState(false)
   const [role, setRole]               = useState('doctor')
   const [greeting]                    = useState(() => getGreeting())
+  const [hour]                        = useState(() => new Date().getHours())
   const [dayStr]                      = useState(() => getDayStr())
   const [quote, setQuote]             = useState(randomQuote)
   const [clinicName, setClinicName]   = useState('Clinora')
@@ -384,7 +567,10 @@ export default function LoginPage() {
   const [error, setError]             = useState('')
   const [welcomeUser, setWelcomeUser] = useState(null)
   const [mountComplete, setMountComplete] = useState(false)
+  const [displayedRole, setDisplayedRole] = useState('')
   const cardRef = useRef(null)
+
+  const ROLE_NAMES = { doctor: 'Doctor', pharmacy: 'Pharmacist' }
 
   const [sessionExpired] = useState(() => {
     const flag = sessionStorage.getItem('session_expired')
@@ -422,6 +608,16 @@ export default function LoginPage() {
   useEffect(() => {
     setQuote(randomQuote())
     setError('')
+    // Typewriter effect on role name
+    const target = ROLE_NAMES[role]
+    let i = 0
+    setDisplayedRole('')
+    const iv = setInterval(() => {
+      i++
+      setDisplayedRole(target.slice(0, i))
+      if (i >= target.length) clearInterval(iv)
+    }, 60)
+    return () => clearInterval(iv)
   }, [role])
 
   if (!loading && user) {
@@ -475,10 +671,13 @@ export default function LoginPage() {
       <BirdsDeco />
       <StarsDeco />
       <MoonDeco />
+      <NorthernLightsDeco />
 
-      {/* Pharmacy scene */}
-      <PillsDeco />
-      <CrossesDeco />
+      {/* Pharmacy botanical horizon + healing wisps + pollen + drifting leaves */}
+      <PharmacyHorizonDeco />
+      <PharmacyWispsDeco />
+      <PharmacyPollenDeco />
+      <PharmacyLeavesDeco />
 
       {/* Horizon treeline */}
       <HorizonDeco />
@@ -514,9 +713,15 @@ export default function LoginPage() {
 
         {/* Right — greeting */}
         <div className="login-welcome">
-          <p className="login-welcome-greeting">{greeting}</p>
-          <h2 key={role} className={`login-welcome-role login-welcome-role--${role}`}>
-            {isPharmacy ? 'Pharmacist' : 'Doctor'}
+          <p className="login-welcome-greeting">
+            <TimeIcon hour={hour} />
+            {greeting}
+          </p>
+          <h2 className={`login-welcome-role login-welcome-role--${role}`}>
+            {displayedRole}
+            {displayedRole.length < ROLE_NAMES[role].length && (
+              <span className="login-cursor" aria-hidden="true">|</span>
+            )}
           </h2>
           <p className="login-day">{dayStr}</p>
         </div>
@@ -564,7 +769,7 @@ export default function LoginPage() {
             </svg>
             <input
               id="password"
-              className="login-float-field login-float-field--eye"
+              className={`login-float-field login-float-field--eye${!showPassword ? ' login-float-field--masked' : ''}`}
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               placeholder=" "
@@ -573,6 +778,13 @@ export default function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               disabled={submitting}
             />
+            {!showPassword && password.length > 0 && (
+              <div className="login-pwd-dots" aria-hidden="true">
+                {Array.from({ length: password.length }, (_, i) => (
+                  <span key={i} className="login-pwd-dot">•</span>
+                ))}
+              </div>
+            )}
             <label htmlFor="password" className="login-float-label">Password</label>
             <button
               type="button"
@@ -591,9 +803,8 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button type="submit" className={`login-submit-btn login-submit-btn--${role}`} disabled={!canSubmit}>
-            {submitting && <Spinner size={16} />}
-            {submitting ? 'Signing in…' : 'Sign in'}
+          <button type="submit" className={`login-submit-btn login-submit-btn--${role}${submitting ? ' login-submit-btn--loading' : ''}`} disabled={!canSubmit}>
+            {submitting ? <Spinner size={20} /> : 'Sign in'}
           </button>
         </form>
 

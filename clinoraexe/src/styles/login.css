@@ -76,21 +76,31 @@
 
 /* ── Pharmacy backgrounds ─────────────────────────────────────────────*/
 .login-scene[data-role="pharmacy"][data-theme="light"] {
-  background: linear-gradient(180deg,
-    #a7f3d0 0%,
-    #6ee7b7 18%,
-    #bbf7d0 42%,
-    #d1fae5 68%,
-    #ecfdf5 100%
-  );
+  /* Sky reads lavender-white at top → sage green at bottom: sky vs land contrast */
+  background:
+    radial-gradient(ellipse at 50% 112%, rgba(5,150,105,0.18) 0%, transparent 54%),
+    radial-gradient(ellipse at 78% 10%,  rgba(220,210,255,0.38) 0%, transparent 42%),
+    linear-gradient(180deg,
+      #f5f0fe 0%,
+      #eaf7f2 16%,
+      #cef4e6 40%,
+      #aeecd4 68%,
+      #90e4be 100%
+    );
 }
 .login-scene[data-role="pharmacy"][data-theme="dark"] {
-  background: linear-gradient(180deg,
-    #011a10 0%,
-    #052e16 35%,
-    #0d3d2d 68%,
-    #134e3a 100%
-  );
+  /* Deep indigo sky + candlelight amber at horizon + dark forest land */
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(251,146,60,0.13) 0%, transparent 38%),
+    radial-gradient(ellipse at 50% 114%, rgba(5,150,105,0.16)  0%, transparent 50%),
+    radial-gradient(ellipse at 76% 10%,  rgba(40,20,80,0.30)   0%, transparent 40%),
+    linear-gradient(180deg,
+      #090614 0%,
+      #0b1028 22%,
+      #082018 50%,
+      #0b2e1e 76%,
+      #0e3a26 100%
+    );
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -181,6 +191,23 @@
 }
 .login-scene[data-theme="dark"] .login-deco-clouds { opacity: 0; }
 
+/* Slow independent cloud drift — each group moves at a different pace and direction */
+@keyframes cloud-drift-1 {
+  0%, 100% { transform: translateX(0)    translateY(0);   }
+  50%      { transform: translateX(42px) translateY(-3px); }
+}
+@keyframes cloud-drift-2 {
+  0%, 100% { transform: translateX(0)     translateY(0);  }
+  50%      { transform: translateX(-32px) translateY(4px); }
+}
+@keyframes cloud-drift-3 {
+  0%, 100% { transform: translateX(0)    translateY(0);   }
+  50%      { transform: translateX(58px) translateY(-5px); }
+}
+.cloud-grp-1 { animation: cloud-drift-1 60s ease-in-out infinite 0s;   }
+.cloud-grp-2 { animation: cloud-drift-2 75s ease-in-out infinite -22s; }
+.cloud-grp-3 { animation: cloud-drift-3 48s ease-in-out infinite -12s; }
+
 /* ── Birds ───────────────────────────────────────────────────────────── */
 
 .login-bird {
@@ -210,11 +237,11 @@
   100% { transform: translate(calc(100vw + 150px), 0px); }
 }
 
-/* Much slower passes — birds drift lazily across the sky */
-.login-bird-1 { animation: fly-across 34s linear infinite   0s; }
-.login-bird-2 { animation: fly-across 50s linear infinite -18s; }
-.login-bird-3 { animation: fly-across 26s linear infinite -10s; }
-.login-bird-4 { animation: fly-across 42s linear infinite  -6s; }
+/* Varied flight speeds — natural depth illusion (38s–58s range) */
+.login-bird-1 { animation: fly-across 38s linear infinite   0s; }
+.login-bird-2 { animation: fly-across 58s linear infinite -22s; }
+.login-bird-3 { animation: fly-across 44s linear infinite -12s; }
+.login-bird-4 { animation: fly-across 50s linear infinite  -7s; }
 
 /* ── Wing flap — <g> wrapper, pivot pinned at join in SVG units ─────── */
 /*
@@ -222,29 +249,30 @@
   Right wing tip is below-right of pivot → CCW rotation (-deg) lifts it UP.
   animation-direction:alternate gives smooth oscillation without extra keyframes.
 */
-@keyframes wing-left-flap  { from { transform: rotate(-10deg); } to { transform: rotate(+16deg); } }
-@keyframes wing-right-flap { from { transform: rotate(+10deg); } to { transform: rotate(-16deg); } }
+/* Bigger angle = more visible at small render size */
+@keyframes wing-left-flap  { from { transform: rotate(-14deg); } to { transform: rotate(+22deg); } }
+@keyframes wing-right-flap { from { transform: rotate(+14deg); } to { transform: rotate(-22deg); } }
 
-.bird-wing-l { animation: wing-left-flap  2.8s ease-in-out infinite alternate; }
-.bird-wing-r { animation: wing-right-flap 2.8s ease-in-out infinite alternate; }
+.bird-wing-l { animation: wing-left-flap  0.78s ease-in-out infinite alternate; }
+.bird-wing-r { animation: wing-right-flap 0.78s ease-in-out infinite alternate; }
 
-/* Slightly different tempos so birds don't look identical */
+/* 0.60s–0.84s per half-flap ≈ 0.6–0.8 full flaps/sec, like real small birds */
 .login-bird-1 .bird-wing-l,
-.login-bird-1 .bird-wing-r { animation-duration: 2.0s; }
+.login-bird-1 .bird-wing-r { animation-duration: 0.68s; }
 .login-bird-2 .bird-wing-l,
-.login-bird-2 .bird-wing-r { animation-duration: 2.4s; }
+.login-bird-2 .bird-wing-r { animation-duration: 0.84s; }
 .login-bird-3 .bird-wing-l,
-.login-bird-3 .bird-wing-r { animation-duration: 1.7s; }
+.login-bird-3 .bird-wing-r { animation-duration: 0.60s; }
 .login-bird-4 .bird-wing-l,
-.login-bird-4 .bird-wing-r { animation-duration: 1.9s; }
+.login-bird-4 .bird-wing-r { animation-duration: 0.76s; }
 
-/* Phase offsets so different birds are mid-flap at different points */
+/* Phase offsets so birds are at different points in their flap cycle */
 .login-bird-2 .bird-wing-l,
-.login-bird-2 .bird-wing-r { animation-delay: -1.4s; }
+.login-bird-2 .bird-wing-r { animation-delay: -0.40s; }
 .login-bird-3 .bird-wing-l,
-.login-bird-3 .bird-wing-r { animation-delay: -0.7s; }
+.login-bird-3 .bird-wing-r { animation-delay: -0.22s; }
 .login-bird-4 .bird-wing-l,
-.login-bird-4 .bird-wing-r { animation-delay: -2.1s; }
+.login-bird-4 .bird-wing-r { animation-delay: -0.58s; }
 
 @keyframes star-twinkle { 0%,100%{opacity:0.7} 50%{opacity:0.06} }
 .star-bright { animation: star-twinkle 3s ease-in-out infinite; }
@@ -260,56 +288,248 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   PHARMACY DECORATIONS
+   PHARMACY BOTANICAL HORIZON
    ══════════════════════════════════════════════════════════════════════ */
 
-.login-pill {
+.login-ph-horizon--day,
+.login-ph-horizon--night {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.55s ease;
+}
+.login-scene[data-role="pharmacy"][data-theme="light"] .login-ph-horizon--day   { opacity: 1; }
+.login-scene[data-role="pharmacy"][data-theme="dark"]  .login-ph-horizon--night { opacity: 1; }
+
+/* ── Plant wind sway ─────────────────────────────────────────────────── */
+
+@keyframes ph-grass-sway {
+  0%, 100% { transform: rotate(-3.5deg); }
+  42%      { transform: rotate(5deg);    }
+  68%      { transform: rotate(-1deg);   }
+}
+@keyframes ph-lav-sway {
+  0%, 100% { transform: rotate(-2deg);   }
+  50%      { transform: rotate(3.5deg);  }
+}
+
+.ph-grass {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: ph-grass-sway 3.5s ease-in-out infinite;
+}
+.ph-lav {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: ph-lav-sway 5s ease-in-out infinite;
+}
+
+/* ── Pollen particles ────────────────────────────────────────────────── */
+
+.login-ph-pollen {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 2;
+  opacity: 0; transition: opacity 0.5s;
+}
+.login-scene[data-role="pharmacy"] .login-ph-pollen { opacity: 1; }
+
+@keyframes ph-pollen-rise {
+  0%   { transform: translateY(0)     translateX(0);   opacity: 0;    }
+  12%  { opacity: 0.65; }
+  80%  { opacity: 0.45; }
+  100% { transform: translateY(-160px) translateX(18px); opacity: 0; }
+}
+
+.ph-pollen-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,222,90,0.82);
+  box-shadow: 0 0 5px rgba(255,210,50,0.60), 0 0 10px rgba(255,200,40,0.28);
+  animation: ph-pollen-rise infinite ease-in-out;
+}
+.login-scene[data-theme="dark"] .ph-pollen-dot {
+  background: rgba(160,255,200,0.60);
+  box-shadow: 0 0 5px rgba(120,255,170,0.50), 0 0 10px rgba(80,220,140,0.24);
+}
+
+/* ── Pharmacy healing wisps (Oogway's tree vibe) ─────────────────────── */
+
+.login-ph-wisps {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 2;
+  opacity: 0; transition: opacity 0.9s;
+}
+.login-scene[data-role="pharmacy"] .login-ph-wisps { opacity: 1; }
+
+@keyframes ph-wisp-float {
+  0%   { transform: translateY(0)     scale(1);    opacity: 0;    }
+  18%  { opacity: 0.90; }
+  62%  { transform: translateY(-60px)  scale(1.18); opacity: 0.75; }
+  100% { transform: translateY(-120px) scale(0.72); opacity: 0;    }
+}
+
+.ph-wisp {
+  position: absolute;
+  border-radius: 50%;
+  animation: ph-wisp-float infinite ease-in-out;
+}
+
+/* ── Drifting leaves ─────────────────────────────────────────────────── */
+
+.login-ph-leaf {
   position: absolute;
   pointer-events: none;
-  user-select: none;
-  z-index: 1;
+  z-index: 2;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.5s ease;
 }
-.login-scene[data-role="pharmacy"] .login-pill { opacity: 1; }
+.login-scene[data-role="pharmacy"][data-theme="light"] .login-ph-leaf { opacity: 1; }
 
-.login-pill-1 { bottom: 16%; left: 5%; }
-.login-pill-2 { top: 22%;   left: 4%; }
-
-@keyframes pill-float-1 {
-  0%, 100% { transform: rotate(-15deg) translateY(0px); }
-  50%      { transform: rotate(-8deg)  translateY(-16px); }
+/* Leaf 1 — large, wide sinusoidal wave */
+.login-ph-leaf-1 { top: 52%; left: -24px; }
+@keyframes ph-leaf-drift-1 {
+  0%   { transform: translate(0,    0)     rotate(0deg);   }
+  18%  { transform: translate(18vw, -12vh) rotate(80deg);  }
+  40%  { transform: translate(40vw,  5vh)  rotate(195deg); }
+  62%  { transform: translate(62vw, -9vh)  rotate(310deg); }
+  82%  { transform: translate(82vw,  4vh)  rotate(420deg); }
+  100% { transform: translate(calc(100vw + 40px), -2vh) rotate(510deg); }
 }
-@keyframes pill-float-2 {
-  0%, 100% { transform: rotate(32deg)  translateY(0px); }
-  50%      { transform: rotate(26deg)  translateY(-20px); }
-}
-.login-pill-1 { animation: pill-float-1  7s ease-in-out infinite; }
-.login-pill-2 { animation: pill-float-2  9s ease-in-out infinite 1.2s; }
+.login-ph-leaf-1 { animation: ph-leaf-drift-1 32s cubic-bezier(0.45,0,0.55,1) infinite 0s; }
 
-.login-cross-deco {
+/* Leaf 2 — high path, graceful, barely any wave */
+.login-ph-leaf-2 { top: 18%; left: -22px; }
+@keyframes ph-leaf-drift-2 {
+  0%   { transform: translate(0,    0)    rotate(-25deg);  }
+  25%  { transform: translate(22vw,  4vh) rotate(55deg);   }
+  50%  { transform: translate(48vw, -3vh) rotate(160deg);  }
+  75%  { transform: translate(74vw,  5vh) rotate(275deg);  }
+  100% { transform: translate(calc(100vw + 36px), 0) rotate(400deg); }
+}
+.login-ph-leaf-2 { animation: ph-leaf-drift-2 52s ease-in-out infinite -28s; }
+
+/* Leaf 3 — low path, erratic tumble */
+.login-ph-leaf-3 { top: 72%; left: -18px; }
+@keyframes ph-leaf-drift-3 {
+  0%   { transform: translate(0,    0)     rotate(40deg);   }
+  15%  { transform: translate(14vw, -14vh) rotate(-30deg);  }
+  35%  { transform: translate(32vw,  8vh)  rotate(130deg);  }
+  58%  { transform: translate(55vw, -11vh) rotate(280deg);  }
+  80%  { transform: translate(78vw,  6vh)  rotate(390deg);  }
+  100% { transform: translate(calc(100vw + 30px), -3vh) rotate(520deg); }
+}
+.login-ph-leaf-3 { animation: ph-leaf-drift-3 26s linear infinite -9s; }
+
+/* Leaf 4 — REVERSED: right → left, different altitude */
+.login-ph-leaf-4 { top: 38%; right: -22px; left: auto; }
+@keyframes ph-leaf-drift-4 {
+  0%   { transform: translate(0, 0)     rotate(180deg); }
+  30%  { transform: translate(-28vw,  9vh) rotate(60deg);  }
+  65%  { transform: translate(-62vw, -5vh) rotate(-80deg); }
+  100% { transform: translate(calc(-100vw - 36px), 3vh) rotate(-260deg); }
+}
+.login-ph-leaf-4 { animation: ph-leaf-drift-4 38s ease-in-out infinite -5s; }
+
+/* Leaf 5 — mid height, very slow, floats dreamily */
+.login-ph-leaf-5 { top: 42%; left: -20px; }
+@keyframes ph-leaf-drift-5 {
+  0%   { transform: translate(0,    0)    rotate(-10deg); }
+  20%  { transform: translate(18vw, -7vh) rotate(60deg);  }
+  42%  { transform: translate(38vw,  9vh) rotate(155deg); }
+  65%  { transform: translate(62vw, -6vh) rotate(265deg); }
+  85%  { transform: translate(82vw,  4vh) rotate(360deg); }
+  100% { transform: translate(calc(100vw + 32px), 1vh) rotate(430deg); }
+}
+.login-ph-leaf-5 { animation: ph-leaf-drift-5 46s ease-in-out infinite -20s; }
+
+/* Dark mode — brighter leaves with warm amber tint */
+.login-scene[data-theme="dark"] .login-ph-leaf path {
+  filter: brightness(1.5) saturate(0.75);
+}
+
+/* ── Northern Lights — pharmacy dark only ────────────────────────────── */
+/*    Horizontal curtain ribbons floating in the upper sky (not beams)    */
+
+.login-aurora {
   position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 60%;   /* only upper sky */
+  overflow: hidden;
   pointer-events: none;
-  user-select: none;
   z-index: 1;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 1.4s ease;
+  /* fade ribbon bottoms into sky so there's no hard edge */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+  mask-image:         linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
 }
-.login-scene[data-role="pharmacy"] .login-cross-deco { opacity: 1; }
+.login-scene[data-theme="dark"][data-role="pharmacy"] .login-aurora { opacity: 1; }
 
-.login-cross-1 { top: 11%;  right: 7%; }
-.login-cross-2 { top: 42%;  right: 4%; }
+/* Shared ribbon base — wide, low-height, float in sky via top positioning */
+.aur-r {
+  position: absolute;
+  left: -20%; width: 140%;
+  border-radius: 50%;
+  filter: blur(12px);
+}
 
-@keyframes cross-pulse-1 {
-  0%, 100% { transform: scale(1)    rotate(0deg);  opacity: 0.5; }
-  50%      { transform: scale(1.14) rotate(6deg);  opacity: 0.82; }
+/* Ribbon 1 — main bright band, mid-sky */
+.aur-r1 {
+  top: 28%; height: 85px;
+  background: radial-gradient(ellipse 75% 100% at 50% 50%,
+    rgba(0,234,86,0.60) 0%, rgba(0,218,78,0.36) 46%, transparent 100%);
+  animation: aur-wave-a 12s ease-in-out infinite 0s;
 }
-@keyframes cross-pulse-2 {
-  0%, 100% { transform: scale(1)    rotate(0deg);  opacity: 0.4; }
-  50%      { transform: scale(1.12) rotate(-8deg); opacity: 0.7; }
+/* Ribbon 2 — higher band, slightly cooler */
+.aur-r2 {
+  top: 12%; height: 70px;
+  background: radial-gradient(ellipse 68% 100% at 44% 50%,
+    rgba(0,218,76,0.50) 0%, rgba(0,208,72,0.28) 48%, transparent 100%);
+  filter: blur(10px);
+  animation: aur-wave-b 15s ease-in-out infinite -5s;
 }
-.login-cross-1 { animation: cross-pulse-1 4.5s ease-in-out infinite; }
-.login-cross-2 { animation: cross-pulse-2 5.5s ease-in-out infinite 1.8s; }
+/* Ribbon 3 — near top, most diffuse */
+.aur-r3 {
+  top: 2%; height: 58px;
+  background: radial-gradient(ellipse 62% 100% at 56% 50%,
+    rgba(0,205,72,0.36) 0%, rgba(0,195,66,0.18) 50%, transparent 100%);
+  filter: blur(9px);
+  animation: aur-wave-c 10s ease-in-out infinite -8s;
+}
+/* Ribbon 4 — bright lime highlight, lower than main */
+.aur-r4 {
+  top: 38%; height: 65px;
+  background: radial-gradient(ellipse 70% 100% at 52% 50%,
+    rgba(58,254,120,0.52) 0%, rgba(30,240,100,0.28) 45%, transparent 100%);
+  filter: blur(11px);
+  animation: aur-wave-a 9s ease-in-out infinite -2s;
+}
+/* Ribbon 5 — wide soft glow across the whole aurora zone */
+.aur-r5 {
+  top: 18%; height: 82px;
+  background: radial-gradient(ellipse 80% 100% at 38% 50%,
+    rgba(0,228,82,0.46) 0%, rgba(0,212,76,0.22) 50%, transparent 100%);
+  filter: blur(15px);
+  animation: aur-wave-b 18s ease-in-out infinite -11s;
+}
+
+@keyframes aur-wave-a {
+  0%,  100% { transform: translateX(0)     translateY(0)     skewX(0deg);    opacity: 0.84; }
+  32%        { transform: translateX(40px)  translateY(-14px) skewX(2.5deg);  opacity: 1.00; }
+  68%        { transform: translateX(-26px) translateY(9px)   skewX(-1.5deg); opacity: 0.56; }
+}
+@keyframes aur-wave-b {
+  0%,  100% { transform: translateX(0)     translateY(0)     skewX(0deg);  opacity: 0.74; }
+  44%        { transform: translateX(-44px) translateY(15px)  skewX(-3deg); opacity: 0.96; }
+  78%        { transform: translateX(30px)  translateY(-10px) skewX(2deg);  opacity: 0.50; }
+}
+@keyframes aur-wave-c {
+  0%,  100% { transform: translateX(0)     translateY(0)     skewX(0deg);    opacity: 0.56; }
+  55%        { transform: translateX(55px)  translateY(-18px) skewX(3.5deg); opacity: 0.80; }
+}
 
 /* ── Horizon ─────────────────────────────────────────────────────────── */
 
@@ -334,6 +554,72 @@
 }
 .login-scene[data-theme="dark"] .login-horizon--night { opacity: 1; }
 .login-scene[data-role="pharmacy"] .login-horizon     { opacity: 0 !important; }
+
+/* ── Aurora gradient top border on card ─────────────────────────────── */
+
+@keyframes aurora-shift {
+  0%   { background-position: 0%   0%; }
+  100% { background-position: 300% 0%; }
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: 20;
+  border-radius: 26px 26px 0 0;
+  background: linear-gradient(90deg,
+    #6366f1, #8b5cf6, #ec4899, #f59e0b, #10b981, #3b82f6, #6366f1
+  );
+  background-size: 300% 100%;
+  animation: aurora-shift 5s linear infinite;
+  opacity: 0.80;
+  pointer-events: none;
+}
+.login-scene[data-theme="dark"] .login-card::before {
+  opacity: 0.96;
+  height: 2.5px;
+}
+
+/* ── Heartbeat glow ring ──────────────────────────────────────────────── */
+
+@keyframes hb-ring-pulse {
+  0%, 38%, 100% { opacity: 0;   transform: scale(0.85); }
+  46%           { opacity: 0.7; transform: scale(1);    }
+  68%           { opacity: 0;   transform: scale(1.75); }
+}
+.hb-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hb-ring-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Typewriter cursor ───────────────────────────────────────────────── */
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.login-cursor {
+  display: inline-block;
+  margin-left: 1px;
+  font-weight: 300;
+  animation: cursor-blink 0.5s step-end infinite;
+}
+
+/* ── Time-of-day icon ────────────────────────────────────────────────── */
+
+.login-welcome-greeting {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.login-time-icon {
+  flex-shrink: 0;
+  color: var(--clr-text-muted);
+  opacity: 0.80;
+}
 
 /* ── Warning alert ───────────────────────────────────────────────────── */
 .form-alert.warning {
@@ -691,8 +977,29 @@
   padding: 6px 32px 32px;
   background: rgba(248,250,255,0.60);
 }
+/* Subtle role-colour tint radiating from top-right corner — glass reflecting the scene */
+.login-scene[data-role="doctor"] .login-form {
+  background:
+    radial-gradient(ellipse at 96% 4%, rgba(37,99,235,0.07) 0%, transparent 58%),
+    rgba(248,250,255,0.60);
+}
+.login-scene[data-role="pharmacy"] .login-form {
+  background:
+    radial-gradient(ellipse at 96% 4%, rgba(5,150,105,0.07) 0%, transparent 58%),
+    rgba(247,252,250,0.60);
+}
 .login-scene[data-theme="dark"] .login-form {
   background: rgba(15,22,40,0.55);
+}
+.login-scene[data-theme="dark"][data-role="doctor"] .login-form {
+  background:
+    radial-gradient(ellipse at 96% 4%, rgba(59,130,246,0.10) 0%, transparent 55%),
+    rgba(15,22,40,0.55);
+}
+.login-scene[data-theme="dark"][data-role="pharmacy"] .login-form {
+  background:
+    radial-gradient(ellipse at 96% 4%, rgba(16,185,129,0.10) 0%, transparent 55%),
+    rgba(10,20,17,0.58);
 }
 
 .login-form::before {
@@ -860,6 +1167,45 @@
   color: #059669;
 }
 
+/* Masked password field — hides native dots so custom ones take over */
+.login-float-field--masked {
+  color: transparent !important;
+  caret-color: var(--clr-text);
+}
+.login-scene[data-theme="dark"] .login-float-field--masked {
+  caret-color: #f1f5f9;
+}
+
+/* Custom animated password dots overlay */
+.login-pwd-dots {
+  position: absolute;
+  left: 40px;
+  top: 20px; bottom: 6px; /* match input padding — sit in text region, not full field height */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 1;
+  max-width: calc(100% - 88px);
+  overflow: hidden;
+}
+
+@keyframes dot-pop {
+  from { opacity: 0; transform: scale(0.1); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+
+.login-pwd-dot {
+  display: inline-block;
+  font-size: 0.82rem;
+  line-height: 1;
+  color: #1e293b;
+  animation: dot-pop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.login-scene[data-theme="dark"] .login-pwd-dot {
+  color: #e2e8f0;
+}
+
 /* Eye toggle button */
 .login-eye-btn {
   position: absolute;
@@ -949,7 +1295,18 @@
   color: #ffffff;
   position: relative;
   overflow: hidden;
-  transition: background 0.22s, box-shadow 0.2s, transform 0.15s;
+  align-self: center;
+  transition: background 0.22s, box-shadow 0.2s, transform 0.15s,
+              width 0.4s cubic-bezier(0.4,0,0.2,1),
+              border-radius 0.4s cubic-bezier(0.4,0,0.2,1),
+              padding 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+.login-submit-btn--loading {
+  width: 46px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  pointer-events: none;
 }
 
 /* Shimmer sweep on hover */

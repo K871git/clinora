@@ -4,6 +4,9 @@ const DB_KEYWORDS = [
   'lost connection', 'server has gone away', 'pool timed out',
   'pooltimeout', 'error communicating with database',
   "can't connect to mysql", 'connection refused',
+  'broken pipe', 'connection reset', 'network error',
+  'no route to host', 'timed out', 'io error',
+  'connection closed', 'eof', 'unable to connect',
 ]
 
 function isDbError(msg) {

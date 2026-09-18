@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { listOpdRegister } from '../../services/visitService'
@@ -23,7 +23,19 @@ function fmtDateFull(dateStr) {
 function fmtDateShort(dateStr) {
   if (!dateStr) return ''
   const [y, m, d] = dateStr.split('-')
-  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+function OpdSort({ col, sortCol, sortDir }) {
+  const active = sortCol === col
+  const up   = !active || sortDir === 'asc'
+  const down = !active || sortDir === 'desc'
+  return (
+    <span className={`opd-sort${active ? ' opd-sort--active' : ''}`} aria-hidden="true">
+      {up   && <svg width="7" height="5" viewBox="0 0 7 5"><path d="M1 4L3.5 1L6 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={active && sortDir === 'desc' ? 0.3 : 1}/></svg>}
+      {down && <svg width="7" height="5" viewBox="0 0 7 5"><path d="M1 1L3.5 4L6 1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={active && sortDir === 'asc' ? 0.3 : 1}/></svg>}
+    </span>
+  )
 }
 
 const PAY_COLOR = { paid: 'var(--clr-success)', partial: 'var(--clr-warning)', unpaid: 'var(--clr-danger)' }
@@ -35,6 +47,25 @@ export default function OPDRegisterPage() {
   const [date,    setDate]    = useState(todayStr())
   const [visits,  setVisits]  = useState([])
   const [loading, setLoading] = useState(true)
+  const [sortCol, setSortCol] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
+
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
+
+  const sorted = useMemo(() => {
+    if (!sortCol) return visits
+    return [...visits].sort((a, b) => {
+      let cmp = 0
+      if (sortCol === 'name') cmp = (a.patient?.name ?? '').localeCompare(b.patient?.name ?? '')
+      else if (sortCol === 'time') cmp = new Date(a.visited_at ?? 0) - new Date(b.visited_at ?? 0)
+      else if (sortCol === 'status') cmp = (a.status ?? '').localeCompare(b.status ?? '')
+      else if (sortCol === 'fee') cmp = (a.consultation_fee || 0) - (b.consultation_fee || 0)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [visits, sortCol, sortDir])
 
   const load = useCallback(() => {
     setLoading(true)
@@ -126,18 +157,26 @@ export default function OPDRegisterPage() {
             <thead>
               <tr>
                 <th className="opd-th-num">#</th>
-                <th>Patient</th>
-                <th className="opd-th-time">Time</th>
+                <th className="opd-th--sortable" onClick={() => toggleSort('name')}>
+                  Patient <OpdSort col="name" sortCol={sortCol} sortDir={sortDir} />
+                </th>
+                <th className="opd-th-time opd-th--sortable" onClick={() => toggleSort('time')}>
+                  Time <OpdSort col="time" sortCol={sortCol} sortDir={sortDir} />
+                </th>
                 <th className="opd-th-age">Age / Sex</th>
                 <th>Notes / Complaint</th>
-                <th className="opd-th-status">Status</th>
-                <th className="opd-th-fee">Fee</th>
+                <th className="opd-th-status opd-th--sortable" onClick={() => toggleSort('status')}>
+                  Status <OpdSort col="status" sortCol={sortCol} sortDir={sortDir} />
+                </th>
+                <th className="opd-th-fee opd-th--sortable" onClick={() => toggleSort('fee')}>
+                  Fee <OpdSort col="fee" sortCol={sortCol} sortDir={sortDir} />
+                </th>
                 <th className="opd-th-pay">Payment</th>
                 <th className="opd-th-fu">Follow-up</th>
               </tr>
             </thead>
             <tbody>
-              {visits.map((v, idx) => {
+              {sorted.map((v, idx) => {
                 const name = v.patient?.name ?? '—'
                 const isOpen = v.status === 'open'
                 return (

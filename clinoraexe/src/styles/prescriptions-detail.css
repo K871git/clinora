@@ -437,6 +437,135 @@ html[data-theme="dark"] .rx-hcard-actions {
 .nrx-sub       { color: var(--clr-text-muted); margin-left: 4px; }
 .nrx-notes     { min-height: 100px; resize: vertical; }
 
+/* Medicines card header */
+.nrx-medicines-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* Load Template button */
+.nrx-tmpl-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--clr-primary);
+  color: var(--clr-primary);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.nrx-tmpl-load-btn:hover { background: rgba(37,99,235,.06); }
+
+/* Template picker panel */
+.nrx-tmpl-picker {
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.nrx-tmpl-empty { font-size: 13px; color: var(--clr-text-muted); margin: 0; }
+.nrx-tmpl-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.nrx-tmpl-chip {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  font-family: inherit;
+}
+.nrx-tmpl-chip:hover { border-color: var(--clr-primary); background: rgba(37,99,235,.05); }
+.nrx-tmpl-chip-count { color: var(--clr-text-muted); margin-left: 5px; }
+.nrx-tmpl-dismiss {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+.nrx-tmpl-dismiss:hover { color: var(--clr-text); }
+
+/* Save as Template button + popover */
+.nrx-tmpl-save-wrap {
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.nrx-tmpl-save-btn {
+  font-size: 12px;
+  font-family: inherit;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.nrx-tmpl-save-btn:hover:not(:disabled) { border-color: var(--clr-primary); color: var(--clr-primary); }
+.nrx-tmpl-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.nrx-tmpl-popover {
+  position: absolute;
+  bottom: 110%;
+  left: 0;
+  z-index: 50;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  min-width: 240px;
+}
+.nrx-tmpl-popover-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clr-text);
+  margin-bottom: 6px;
+}
+.nrx-tmpl-popover-input { font-size: 12px; margin-bottom: 8px; }
+.nrx-tmpl-popover-actions { display: flex; gap: 6px; }
+.nrx-tmpl-popover-save {
+  flex: 1;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 0;
+  background: var(--clr-primary);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.nrx-tmpl-popover-save:disabled { opacity: 0.5; cursor: not-allowed; }
+.nrx-tmpl-popover-cancel {
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 10px;
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--clr-text-muted);
+}
+
+/* Action bar greyed-out during edit */
+.rx-hcard-actions--editing { opacity: 0.5; pointer-events: none; }
+
 /* ─── Invoice price inputs (pharmacy dispensing view) ──────────────────── */
 .rx-price-wrap {
   display: flex;

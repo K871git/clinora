@@ -1,8 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import DataTable from 'datatables.net-react'
-import DT from 'datatables.net-bs5'
-import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'
 import {
   getClinicPrescriptions,
   listTemplates,
@@ -16,8 +13,6 @@ import PageLoader from '../../components/ui/PageLoader'
 import '../../styles/prescriptions.css'
 import { confirmDelete } from '../../lib/swal'
 
-DataTable.use(DT)
-
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
 const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#3b82f6']
@@ -26,9 +21,6 @@ const avatarColor = (name) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.l
 const fmtDate = (s) => s
   ? new Date(s).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
   : '—'
-
-/* ── Medicine list cache (keyed by prescription ID, avoids JSON in HTML) */
-const _medsCache = new Map()
 
 /* ── Status metadata ─────────────────────────────────────────────────── */
 const STATUS_META = {
@@ -75,114 +67,19 @@ function computeDateRange(key) {
   }
 }
 
-/* ── SVG icons (inline strings for DataTables HTML rendering) ─────────── */
+const PAGE_SIZE = 15
 
-const ICON_EYE = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-const ICON_EDIT = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`
-const ICON_TRASH = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>`
-
-/* ── Column definitions ───────────────────────────────────────────────── */
-
-const COLUMNS = [
-  {
-    title: 'Patient',
-    data:  null,
-    width: '190px',
-    render(data, type, row) {
-      if (type !== 'display') return row.patient?.name ?? ''
-      const name  = row.patient?.name ?? 'Unknown'
-      const color = avatarColor(name)
-      return `<div class="d-flex align-items-center gap-2">
-        <div class="rx-avatar" style="background:${color}">${name[0].toUpperCase()}</div>
-        <span class="fw-semibold">${name}</span>
-      </div>`
-    },
-  },
-  {
-    title: 'Date',
-    data:  'prescribed_at',
-    width: '120px',
-    render(d, type) {
-      if (type !== 'display') return d ?? ''
-      return `<span class="rx-cell-date">${fmtDate(d)}</span>`
-    },
-  },
-  {
-    title:     'Medicines',
-    data:      null,
-    orderable: false,
-    render(data, type, row) {
-      const items = row.items ?? []
-      if (type !== 'display') return items.map(i => i.medicine_name).join(', ')
-      if (items.length === 0) return '<span class="text-muted">—</span>'
-      const allNames = items.map(i => i.medicine_name)
-      const totalLen = allNames.join('').length
-      _medsCache.set(row.id, allNames)
-      if (totalLen <= 20) {
-        const badges = allNames.map(n => `<span class="rx-med-badge">${n}</span>`).join('')
-        return `<div class="rx-medicine-cell">${badges}</div>`
-      }
-      const first   = allNames[0]
-      const display = first.length > 16 ? first.slice(0, 15) + '…' : first
-      return `<div class="rx-medicine-cell">
-        <span class="rx-med-badge">${display}</span>
-        ${allNames.length > 1 ? `<button class="rx-eye-btn" data-action="med-modal" data-id="${row.id}" title="View all medicines">
-          ${ICON_EYE}
-        </button>` : ''}
-      </div>`
-    },
-  },
-  {
-    title: 'Status',
-    data:  'status',
-    width: '100px',
-    render(d, type) {
-      if (type !== 'display') return d ?? ''
-      const m = STATUS_META[d] ?? { label: d, cls: 'rx-badge' }
-      return `<span class="${m.cls}">${m.label}</span>`
-    },
-  },
-  {
-    title:     'Actions',
-    data:      null,
-    orderable: false,
-    width:     '140px',
-    render(data, type, row) {
-      if (type !== 'display') return ''
-      const isDraft = row.status === 'draft'
-      return `<div class="rx-row-actions">
-        <button class="rx-act-btn" data-action="view-pdf" data-id="${row.id}" title="View PDF">
-          ${ICON_EYE} PDF
-        </button>
-        ${isDraft ? `
-        <button class="rx-act-btn" data-action="edit" data-id="${row.id}" title="Edit">
-          ${ICON_EDIT}
-        </button>
-        <button class="rx-act-btn rx-act-btn--del" data-action="delete" data-id="${row.id}" title="Delete">
-          ${ICON_TRASH}
-        </button>` : ''}
-      </div>`
-    },
-  },
-]
-
-const DT_OPTIONS = {
-  dom:       "<'rx-dt-top'f>rt<'rx-dt-bottom'lip>",
-  autoWidth: false,
-  pageLength: 15,
-  lengthMenu: [10, 15, 25, 50],
-  order:      [[1, 'desc']],
-  language: {
-    search:            '',
-    searchPlaceholder: 'Search patient, medicine…',
-    lengthMenu:        'Show _MENU_',
-    info:              '_START_–_END_ of _TOTAL_',
-    infoEmpty:         'No prescriptions',
-    infoFiltered:      '(filtered from _MAX_)',
-    paginate:          { previous: '‹', next: '›' },
-    emptyTable:        'No prescriptions yet.',
-    zeroRecords:       'No prescriptions match.',
-  },
+/* ── Sort chevron ────────────────────────────────────────────────────── */
+function RxSort({ col, sortCol, sortDir }) {
+  const active = sortCol === col
+  return (
+    <span className={`rx-sort${active ? ' rx-sort--active' : ''}`}>
+      <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+        <path d="M4 0L7.5 5H.5z" opacity={active && sortDir === 'asc' ? 1 : 0.3} />
+        <path d="M4 12L.5 7h7z" opacity={active && sortDir === 'desc' ? 1 : 0.3} />
+      </svg>
+    </span>
+  )
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -381,9 +278,11 @@ export default function PrescriptionsPage() {
   const [dateRange,      setDateRange]      = useState('')
   const [dateDropdown,   setDateDropdown]   = useState(false)
   const [medModal,       setMedModal]       = useState(null)
-  const tableWrapRef = useRef(null)
+  const [search,         setSearch]         = useState('')
+  const [sortCol,        setSortCol]        = useState('prescribed_at')
+  const [sortDir,        setSortDir]        = useState('desc')
+  const [page,           setPage]           = useState(0)
 
-  // Filter entirely in React — no DT.ext.search needed
   const filteredPrescriptions = useMemo(() => {
     let list = prescriptions
     if (activeTab) {
@@ -402,6 +301,39 @@ export default function PrescriptionsPage() {
     return list
   }, [prescriptions, activeTab, dateRange])
 
+  const sorted = useMemo(() => {
+    let list = filteredPrescriptions
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      list = list.filter(p => {
+        const name = (p.patient?.name ?? '').toLowerCase()
+        const meds = (p.items ?? []).map(i => i.medicine_name).join(' ').toLowerCase()
+        return name.includes(q) || meds.includes(q)
+      })
+    }
+    return [...list].sort((a, b) => {
+      let av, bv
+      if (sortCol === 'patient') {
+        av = (a.patient?.name ?? '').toLowerCase()
+        bv = (b.patient?.name ?? '').toLowerCase()
+      } else if (sortCol === 'status') {
+        av = a.status ?? ''
+        bv = b.status ?? ''
+      } else {
+        av = a.prescribed_at ?? ''
+        bv = b.prescribed_at ?? ''
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [filteredPrescriptions, search, sortCol, sortDir])
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginated  = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  useEffect(() => { setPage(0) }, [search, sortCol, sortDir, activeTab, dateRange])
+
   useEffect(() => {
     getClinicPrescriptions({ per_page: 1000 })
       .then(({ data }) => {
@@ -411,39 +343,6 @@ export default function PrescriptionsPage() {
       .catch(() => setLoadStatus('error'))
   }, [])
 
-  // Delegated click handler for all DataTable action buttons (data-action attributes).
-  // Avoids inline onclick strings which are blocked by CSP in the built app.
-  useEffect(() => {
-    const el = tableWrapRef.current
-    if (!el) return
-    const handler = async (e) => {
-      const btn = e.target.closest('[data-action]')
-      if (!btn) return
-      e.stopPropagation()
-      const action = btn.dataset.action
-      const id     = Number(btn.dataset.id)
-      if (action === 'med-modal') {
-        setMedModal(_medsCache.get(id) ?? [])
-      } else if (action === 'view-pdf') {
-        navigate(`/prescriptions/${id}/print`)
-      } else if (action === 'edit') {
-        navigate(`/prescriptions/${id}`)
-      } else if (action === 'delete') {
-        const ok = await confirmDelete({ title: 'Delete prescription?', text: 'This cannot be undone.' })
-        if (!ok) return
-        try {
-          await deletePrescription(id)
-          setPrescriptions(prev => prev.filter(p => p.id !== id))
-        } catch {
-          alert('Could not delete — please try again.')
-        }
-      }
-    }
-    el.addEventListener('click', handler)
-    return () => el.removeEventListener('click', handler)
-  }, [navigate])
-
-  // Close date dropdown on outside click
   useEffect(() => {
     if (!dateDropdown) return
     const h = () => setDateDropdown(false)
@@ -451,32 +350,31 @@ export default function PrescriptionsPage() {
     return () => document.removeEventListener('click', h, true)
   }, [dateDropdown])
 
-  function handleStatusFilter(key) {
-    setActiveTab(key)
+  function toggleSort(col) {
+    if (sortCol === col) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortCol(col)
+      setSortDir('asc')
+    }
   }
 
-  function handleDateFilter(key) {
-    setDateRange(key)
-    setDateDropdown(false)
+  async function handleDelete(e, rx) {
+    e.stopPropagation()
+    const ok = await confirmDelete({ title: 'Delete prescription?', text: 'This cannot be undone.' })
+    if (!ok) return
+    try {
+      await deletePrescription(rx.id)
+      setPrescriptions(prev => prev.filter(p => p.id !== rx.id))
+    } catch {
+      alert('Could not delete — please try again.')
+    }
   }
-
-  const options = useMemo(() => ({
-    ...DT_OPTIONS,
-    createdRow(row, data) {
-      row.style.cursor = 'pointer'
-      row.tabIndex     = 0
-      row.addEventListener('click', (e) => {
-        if (e.target.closest('.rx-eye-btn, .rx-act-btn, .rx-row-actions')) return
-        navigate(`/prescriptions/${data.id}`)
-      })
-      row.addEventListener('keydown', (e) => e.key === 'Enter' && navigate(`/prescriptions/${data.id}`))
-    },
-  }), [navigate])
 
   const dateLabel = DATE_RANGES.find(r => r.key === dateRange)?.label ?? 'All Time'
 
   return (
-    <div ref={tableWrapRef}>
+    <div>
       {/* Page-level tabs */}
       <div className="rx-page-tabs">
         <button
@@ -512,8 +410,8 @@ export default function PrescriptionsPage() {
               <h1 className="rx-title">Prescriptions</h1>
               {prescriptions.length > 0 && (
                 <span className="rx-count-badge">
-                  {filteredPrescriptions.length !== prescriptions.length
-                    ? `${filteredPrescriptions.length} / ${prescriptions.length}`
+                  {sorted.length !== prescriptions.length
+                    ? `${sorted.length} / ${prescriptions.length}`
                     : prescriptions.length.toLocaleString()}
                 </span>
               )}
@@ -543,7 +441,7 @@ export default function PrescriptionsPage() {
                       <button
                         key={r.key}
                         className={`rx-date-item${dateRange === r.key ? ' active' : ''}`}
-                        onClick={() => handleDateFilter(r.key)}
+                        onClick={() => { setDateRange(r.key); setDateDropdown(false) }}
                       >
                         {r.label}
                       </button>
@@ -558,7 +456,7 @@ export default function PrescriptionsPage() {
                   <button
                     key={tab.key}
                     className={`rx-status-pill${activeTab === tab.key ? ' active' : ''}`}
-                    onClick={() => handleStatusFilter(tab.key)}
+                    onClick={() => setActiveTab(tab.key)}
                   >
                     {tab.label}
                   </button>
@@ -577,22 +475,176 @@ export default function PrescriptionsPage() {
 
           {loadStatus === 'done' && (
             <div className="card p-3 rx-table-wrap">
-              <DataTable
-                className="table table-hover align-middle w-100"
-                data={filteredPrescriptions}
-                columns={COLUMNS}
-                options={options}
-              >
+              {/* Search toolbar */}
+              <div className="rx-toolbar">
+                <div className="rx-search-wrap">
+                  <svg className="rx-search-icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5l3 3"/>
+                  </svg>
+                  <input
+                    className="rx-search"
+                    type="text"
+                    placeholder="Search patient, medicine…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <table className="rx-custom-table">
                 <thead>
                   <tr>
-                    <th>Patient</th>
-                    <th>Date</th>
-                    <th>Medicines</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th className="rx-th rx-th--sortable" onClick={() => toggleSort('patient')}>
+                      Patient <RxSort col="patient" sortCol={sortCol} sortDir={sortDir} />
+                    </th>
+                    <th className="rx-th rx-th--sortable" onClick={() => toggleSort('prescribed_at')}>
+                      Date <RxSort col="prescribed_at" sortCol={sortCol} sortDir={sortDir} />
+                    </th>
+                    <th className="rx-th">Medicines</th>
+                    <th className="rx-th rx-th--sortable" onClick={() => toggleSort('status')}>
+                      Status <RxSort col="status" sortCol={sortCol} sortDir={sortDir} />
+                    </th>
+                    <th className="rx-th rx-th--actions">Actions</th>
                   </tr>
                 </thead>
-              </DataTable>
+                <tbody>
+                  {paginated.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="rx-td-empty">
+                        {search ? 'No prescriptions match your search.' : 'No prescriptions yet.'}
+                      </td>
+                    </tr>
+                  )}
+                  {paginated.map(rx => {
+                    const name    = rx.patient?.name ?? 'Unknown'
+                    const color   = avatarColor(name)
+                    const items   = rx.items ?? []
+                    const allMeds = items.map(i => i.medicine_name)
+                    const meta    = STATUS_META[rx.status] ?? { label: rx.status, cls: 'rx-badge' }
+                    const isDraft = rx.status === 'draft'
+                    const firstMed = allMeds[0]
+                    const medDisplay = firstMed && firstMed.length > 16
+                      ? firstMed.slice(0, 15) + '…'
+                      : firstMed
+
+                    return (
+                      <tr
+                        key={rx.id}
+                        className="rx-tr"
+                        onClick={() => navigate(`/prescriptions/${rx.id}`)}
+                        tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && navigate(`/prescriptions/${rx.id}`)}
+                      >
+                        <td className="rx-td">
+                          <div className="rx-patient-cell">
+                            <div className="rx-avatar" style={{ background: color }}>
+                              {name[0].toUpperCase()}
+                            </div>
+                            <span className="rx-patient-name">{name}</span>
+                          </div>
+                        </td>
+                        <td className="rx-td">
+                          <span className="rx-cell-date">{fmtDate(rx.prescribed_at)}</span>
+                        </td>
+                        <td className="rx-td">
+                          {allMeds.length === 0 ? (
+                            <span className="rx-td-muted">—</span>
+                          ) : (
+                            <div className="rx-medicine-cell">
+                              <span className="rx-med-badge">{medDisplay}</span>
+                              {allMeds.length > 1 && (
+                                <button
+                                  className="rx-eye-btn"
+                                  title="View all medicines"
+                                  onClick={e => { e.stopPropagation(); setMedModal(allMeds) }}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="rx-td">
+                          <span className={meta.cls}>{meta.label}</span>
+                        </td>
+                        <td className="rx-td" onClick={e => e.stopPropagation()}>
+                          <div className="rx-row-actions">
+                            <button
+                              className="rx-act-btn"
+                              title="View PDF"
+                              onClick={() => navigate(`/prescriptions/${rx.id}/print`)}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                              PDF
+                            </button>
+                            {isDraft && (
+                              <>
+                                <button
+                                  className="rx-act-btn"
+                                  title="Edit"
+                                  onClick={() => navigate(`/prescriptions/${rx.id}`)}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                  </svg>
+                                </button>
+                                <button
+                                  className="rx-act-btn rx-act-btn--del"
+                                  title="Delete"
+                                  onClick={e => handleDelete(e, rx)}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6l-1 14H6L5 6"/>
+                                    <path d="M10 11v6M14 11v6"/>
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              {/* Table footer */}
+              {sorted.length > 0 && (
+                <div className="rx-table-footer">
+                  <span className="rx-table-info">
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
+                  </span>
+                  <div className="rx-pagination">
+                    <button
+                      className="rx-page-btn"
+                      disabled={page === 0}
+                      onClick={() => setPage(p => p - 1)}
+                    >‹</button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button
+                        key={i}
+                        className={`rx-page-btn${page === i ? ' active' : ''}`}
+                        onClick={() => setPage(i)}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button
+                      className="rx-page-btn"
+                      disabled={page >= totalPages - 1}
+                      onClick={() => setPage(p => p + 1)}
+                    >›</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>

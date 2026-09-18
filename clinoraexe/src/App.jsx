@@ -6,6 +6,7 @@ import AppRoutes from './routes'
 import LicenseGate from './components/LicenseGate'
 import SetupWizard from './components/SetupWizard'
 import ConsentScreen from './components/ConsentScreen'
+import NetworkGuard from './components/NetworkGuard'
 
 const Spinner = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f1f5f9' }}>
@@ -39,10 +40,12 @@ export default function App() {
 
   /* DEV MODE — re-wrap with <LicenseGate> before production build */
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <NetworkGuard>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </NetworkGuard>
   )
 }

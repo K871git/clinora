@@ -141,6 +141,28 @@
   color: #94a3b8;
 }
 
+.lg-footer-contact {
+  color: #2563eb;
+  cursor: default;
+}
+
+.lg-subtitle--expired {
+  color: #ef4444;
+}
+
+/* Expiry warning banner — shown inside the app when subscription is expiring */
+.lg-expiry-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9000;
+  background: #fef3c7;
+  border-bottom: 1px solid #f59e0b;
+  color: #92400e;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
 .lg-spinner {
   width: 36px;
   height: 36px;

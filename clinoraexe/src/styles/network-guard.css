@@ -1,0 +1,131 @@
+/* ── Network Guard Overlay ───────────────────────────────────────────────── */
+
+.ng-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 12, 28, 0.82);
+  backdrop-filter: blur(6px);
+  animation: ng-fade-in 0.25s ease;
+}
+
+@keyframes ng-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ng-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 44px 36px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+  animation: ng-slide-up 0.28s ease;
+}
+
+@keyframes ng-slide-up {
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.ng-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fef2f2;
+  margin: 0 auto 20px;
+  color: #ef4444;
+}
+
+.ng-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px;
+}
+
+.ng-msg {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+.ng-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.ng-tips span {
+  font-size: 0.8rem;
+  color: #475569;
+  padding-left: 18px;
+  position: relative;
+}
+
+.ng-tips span::before {
+  content: '•';
+  position: absolute;
+  left: 6px;
+  color: #94a3b8;
+}
+
+.ng-retry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  margin-bottom: 14px;
+}
+
+.ng-retry-btn:hover:not(:disabled) { background: #1d4ed8; }
+.ng-retry-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.ng-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ng-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ng-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ng-auto {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.ng-auto strong {
+  color: #64748b;
+}

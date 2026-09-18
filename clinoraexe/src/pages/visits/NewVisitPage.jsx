@@ -241,7 +241,7 @@ export default function NewVisitPage() {
             <div className="nvp-primary-actions">
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-secondary nvp-btn-complete"
                 onClick={() => submit('complete')}
                 disabled={submitting}
               >
@@ -255,6 +255,7 @@ export default function NewVisitPage() {
               >
                 {submitting && activeAction === 'prescription' ? <><Spinner size={12} /> Saving…</> : '+ Prescription'}
               </button>
+              <span className="nvp-action-sep" aria-hidden="true" />
               <button
                 type="button"
                 className="btn-primary nvp-submit"

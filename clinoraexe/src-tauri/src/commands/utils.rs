@@ -1,3 +1,13 @@
+/// Lightweight DB health check — used by the frontend to detect reconnection.
+#[tauri::command]
+pub async fn ping_db(state: tauri::State<'_, crate::state::AppState>) -> Result<bool, String> {
+    sqlx::query("SELECT 1")
+        .execute(&state.db)
+        .await
+        .map(|_| true)
+        .map_err(|e| e.to_string())
+}
+
 /// Parse any datetime string the frontend might send into MySQL DATETIME format (YYYY-MM-DD HH:MM:SS).
 /// Handles: ISO 8601 with Z/offset ("2026-09-09T08:27:00.000Z"), local ISO ("2026-09-09T08:27:00"),
 /// datetime-local without seconds ("2026-09-09T08:27"), and already-correct MySQL format.

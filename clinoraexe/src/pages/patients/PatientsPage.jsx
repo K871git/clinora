@@ -1,10 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import DataTable from 'datatables.net-react'
-import DT from 'datatables.net-bs5'
-import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'
-import 'datatables.net-buttons-bs5'
-import 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css'
 import * as XLSX from 'xlsx'
 import { invoke } from '@tauri-apps/api/core'
 import { toast } from 'sonner'
@@ -12,8 +7,6 @@ import { listPatients } from '../../services/patientService'
 import PatientFormModal from './PatientFormModal'
 import PageLoader from '../../components/ui/PageLoader'
 import '../../styles/patients.css'
-
-DataTable.use(DT)
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -24,56 +17,6 @@ const fmtDate      = (s)    => s
   ? new Date(s).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
   : null
 const capitalize   = (s)    => s ? s[0].toUpperCase() + s.slice(1) : null
-const stripHtml    = (s)    => s.replace(/<[^>]+>/g, '').trim()
-
-/* ── DataTables column definitions ──────────────────────────────────── */
-
-const COLUMNS = [
-  {
-    title: 'Patient',
-    data:  null,
-    render(data, type, row) {
-      if (type !== 'display') return row.name
-      const color = avatarColor(row.name)
-      const badge = isNew(row.created_at)
-        ? '<span class="badge bg-success ms-2 fw-normal" style="font-size:.62rem;letter-spacing:.02em">New</span>'
-        : ''
-      return `<div class="d-flex align-items-center gap-2">
-        <div class="pt-avatar" style="background:${color}">${row.name[0].toUpperCase()}</div>
-        <span class="fw-semibold">${row.name}${badge}</span>
-      </div>`
-    },
-  },
-  {
-    title: 'Contact',
-    data:  'mobile',
-    defaultContent: '<span class="text-muted">—</span>',
-  },
-  {
-    title: 'Age',
-    data:  'age',
-    render(d, type) {
-      if (type !== 'display') return d ?? ''
-      return d != null ? `${d} yrs` : '<span class="text-muted">—</span>'
-    },
-  },
-  {
-    title: 'Gender',
-    data:  'gender',
-    render(d, type) {
-      if (type !== 'display') return d ?? ''
-      return capitalize(d) ?? '<span class="text-muted">—</span>'
-    },
-  },
-  {
-    title: 'Last Visit',
-    data:  'last_visit_at',
-    render(d, type) {
-      if (type !== 'display') return d ?? ''
-      return d ? fmtDate(d) : '<span class="text-muted">Never</span>'
-    },
-  },
-]
 
 /* ── Export helpers ─────────────────────────────────────────────────── */
 
@@ -97,24 +40,20 @@ function buildCsv(rows) {
   return BOM + body
 }
 
-function handleCopy(dt) {
-  const rows = dt.rows({ search: 'applied' }).data().toArray()
-  const text = [EXPORT_COLS, ...rows.map(patientRow)]
-    .map(r => r.join('\t')).join('\n')
+function doExportCopy(rows) {
+  const text = [EXPORT_COLS, ...rows.map(patientRow)].map(r => r.join('\t')).join('\n')
   navigator.clipboard.writeText(text)
     .then(() => toast.success('Copied to clipboard'))
     .catch(() => toast.error('Copy failed'))
 }
 
-function handleCsv(dt) {
-  const rows = dt.rows({ search: 'applied' }).data().toArray()
+function doExportCsv(rows) {
   invoke('write_text_to_downloads', { content: buildCsv(rows), filename: 'patients.csv' })
     .then(saved => toast.success(`Exported to Downloads: ${saved}`))
     .catch(() => toast.error('Export failed'))
 }
 
-function handleExcel(dt) {
-  const rows = dt.rows({ search: 'applied' }).data().toArray()
+function doExportExcel(rows) {
   const data = rows.map(r => ({
     'Name':       r.name,
     'Contact':    r.mobile || '',
@@ -131,54 +70,35 @@ function handleExcel(dt) {
     .catch(() => toast.error('Export failed'))
 }
 
-const DT_OPTIONS = {
-  dom: "<'pt-dt-top'Bf>rt<'pt-dt-bottom'lip>",
+/* ── Sorting ─────────────────────────────────────────────────────────── */
 
-  buttons: [
-    {
-      text:      '⎘ Copy',
-      className: 'pt-exp-btn',
-      action(e, dt) { handleCopy(dt) },
-    },
-    {
-      text:      '↓ CSV',
-      className: 'pt-exp-btn',
-      action(e, dt) { handleCsv(dt) },
-    },
-    {
-      text:      '↓ Excel',
-      className: 'pt-exp-btn pt-exp-btn--excel',
-      action(e, dt) { handleExcel(dt) },
-    },
-    {
-      text:      '⎙ Print',
-      className: 'pt-exp-btn',
-      action()   { window.print() },
-    },
-  ],
+const PAGE_SIZE = 15
 
-  pageLength:  15,
-  lengthMenu:  [10, 15, 25, 50, 100],
-  order:       [[0, 'asc']],
-
-  language: {
-    search:         '',
-    searchPlaceholder: 'Search patients…',
-    lengthMenu:     'Show _MENU_',
-    info:           'Showing _START_–_END_ of _TOTAL_',
-    infoEmpty:      'No patients',
-    infoFiltered:   '(filtered from _MAX_)',
-    paginate:       { previous: '‹ Prev', next: 'Next ›' },
-    emptyTable:     'No patients registered yet.',
-    zeroRecords:    'No patients match your search.',
+const SORT_FNS = {
+  name:       (a, b) => a.name.localeCompare(b.name),
+  age:        (a, b) => (a.age ?? -1) - (b.age ?? -1),
+  gender:     (a, b) => (a.gender ?? '').localeCompare(b.gender ?? ''),
+  last_visit: (a, b) => {
+    if (!a.last_visit_at && !b.last_visit_at) return 0
+    if (!a.last_visit_at) return 1
+    if (!b.last_visit_at) return -1
+    return new Date(b.last_visit_at) - new Date(a.last_visit_at)
   },
-
-  columnDefs: [
-    { targets: [2, 3, 4], className: 'text-muted' },
-  ],
 }
 
-/* ── Page ───────────────────────────────────────────────────────────── */
+function SortChevron({ col, sortCol, sortDir }) {
+  const active = sortCol === col
+  const up   = !active || sortDir === 'asc'
+  const down = !active || sortDir === 'desc'
+  return (
+    <span className={`pt-sort${active ? ' pt-sort--active' : ''}`} aria-hidden="true">
+      {up   && <svg width="7" height="5" viewBox="0 0 7 5"><path d="M1 4L3.5 1L6 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={active && sortDir === 'desc' ? 0.3 : 1}/></svg>}
+      {down && <svg width="7" height="5" viewBox="0 0 7 5"><path d="M1 1L3.5 4L6 1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={active && sortDir === 'asc' ? 0.3 : 1}/></svg>}
+    </span>
+  )
+}
+
+/* ── Page ────────────────────────────────────────────────────────────── */
 
 export default function PatientsPage() {
   const navigate = useNavigate()
@@ -187,30 +107,46 @@ export default function PatientsPage() {
   const [showAdd,  setShowAdd]  = useState(
     () => new URLSearchParams(window.location.search).get('new') === '1'
   )
+  const [search,   setSearch]   = useState('')
+  const [sortCol,  setSortCol]  = useState('name')
+  const [sortDir,  setSortDir]  = useState('asc')
+  const [page,     setPage]     = useState(1)
 
   useEffect(() => {
     if (window.location.search.includes('new=1'))
       window.history.replaceState({}, '', window.location.pathname)
-
     listPatients({ per_page: 1000 })
-      .then(({ data }) => {
-        setPatients(data.data ?? [])
-        setStatus('done')
-      })
+      .then(({ data }) => { setPatients(data.data ?? []); setStatus('done') })
       .catch(() => setStatus('error'))
   }, [])
 
-  /* row click → patient detail */
-  const createdRow = (row, data) => {
-    row.style.cursor = 'pointer'
-    row.tabIndex = 0
-    row.addEventListener('click', () => navigate(`/patients/${data.id}`))
-    row.addEventListener('keydown', (e) => e.key === 'Enter' && navigate(`/patients/${data.id}`))
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+    setPage(1)
   }
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const list = q
+      ? patients.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          (p.mobile ?? '').includes(q) ||
+          (p.gender ?? '').toLowerCase().includes(q)
+        )
+      : patients
+    const cmp = SORT_FNS[sortCol] ?? SORT_FNS.name
+    return [...list].sort((a, b) => sortDir === 'asc' ? cmp(a, b) : -cmp(a, b))
+  }, [patients, search, sortCol, sortDir])
+
+  useEffect(() => { setPage(1) }, [search])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <div>
-      {/* ── Header ─────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="pt-header">
         <div className="pt-header-left">
           <h1 className="pt-title">Patients</h1>
@@ -225,36 +161,121 @@ export default function PatientsPage() {
 
       {status === 'loading' && <PageLoader />}
 
-      {/* ── Error ──────────────────────────────────────────────────────── */}
       {status === 'error' && (
-        <div className="card state-panel">
-          Could not load patients — check your connection.
-        </div>
+        <div className="card state-panel">Could not load patients — check your connection.</div>
       )}
 
-      {/* ── DataTable ──────────────────────────────────────────────────── */}
       {status === 'done' && (
-        <div className="card p-3 pt-table-wrap">
-          <DataTable
-            className="table table-hover align-middle w-100"
-            data={patients}
-            columns={COLUMNS}
-            options={{ ...DT_OPTIONS, createdRow }}
-          >
-            <thead>
-              <tr>
-                <th>Patient</th>
-                <th>Contact</th>
-                <th>Age</th>
-                <th>Gender</th>
-                <th>Last Visit</th>
-              </tr>
-            </thead>
-          </DataTable>
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+
+          {/* Toolbar: search + exports */}
+          <div className="pt-toolbar">
+            <div className="pt-search-wrap">
+              <svg className="pt-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+              <input
+                className="pt-search"
+                type="search"
+                placeholder="Search patients…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="pt-export-btns">
+              <span className="pt-result-count">{filtered.length} / {patients.length}</span>
+              <button className="pt-exp-btn" onClick={() => doExportCopy(filtered)}>⎘ Copy</button>
+              <button className="pt-exp-btn" onClick={() => doExportCsv(filtered)}>↓ CSV</button>
+              <button className="pt-exp-btn pt-exp-btn--excel" onClick={() => doExportExcel(filtered)}>↓ Excel</button>
+              <button className="pt-exp-btn" onClick={() => window.print()}>⎙ Print</button>
+            </div>
+          </div>
+
+          {/* Table */}
+          {filtered.length === 0 ? (
+            <div className="pt-empty">
+              {search ? 'No patients match your search.' : 'No patients registered yet.'}
+            </div>
+          ) : (
+            <>
+              <div className="pt-scroll-wrap">
+                <table className="pt-table">
+                  <thead>
+                    <tr>
+                      <th className="pt-th pt-th--sortable" onClick={() => toggleSort('name')}>
+                        Patient <SortChevron col="name" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                      <th className="pt-th">Contact</th>
+                      <th className="pt-th pt-th--sortable pt-th--narrow" onClick={() => toggleSort('age')}>
+                        Age <SortChevron col="age" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                      <th className="pt-th pt-th--sortable pt-th--narrow" onClick={() => toggleSort('gender')}>
+                        Gender <SortChevron col="gender" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                      <th className="pt-th pt-th--sortable" onClick={() => toggleSort('last_visit')}>
+                        Last Visit <SortChevron col="last_visit" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginated.map(p => (
+                      <tr
+                        key={p.id}
+                        className="pt-tr"
+                        onClick={() => navigate(`/patients/${p.id}`)}
+                        tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && navigate(`/patients/${p.id}`)}
+                      >
+                        <td className="pt-td-patient">
+                          <div className="pt-avatar" style={{ background: avatarColor(p.name) }}>
+                            {p.name[0].toUpperCase()}
+                          </div>
+                          <span className="pt-patient-name">{p.name}</span>
+                          {isNew(p.created_at) && <span className="pt-new-badge">New</span>}
+                        </td>
+                        <td className="pt-td-muted">{p.mobile || '—'}</td>
+                        <td className="pt-td-muted">{p.age != null ? `${p.age} yrs` : '—'}</td>
+                        <td className="pt-td-muted">{capitalize(p.gender) ?? '—'}</td>
+                        <td className="pt-td-muted">
+                          {p.last_visit_at
+                            ? fmtDate(p.last_visit_at)
+                            : <span className="pt-never">Never visited</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="pt-table-footer">
+                <span className="pt-footer-info">
+                  {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                  {filtered.length !== patients.length ? ` (${patients.length} total)` : ''}
+                </span>
+                {totalPages > 1 && (
+                  <div className="pt-pagination">
+                    <button className="pt-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹ Prev</button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                      .reduce((acc, n, i, arr) => {
+                        if (i > 0 && n - arr[i - 1] > 1) acc.push('…')
+                        acc.push(n)
+                        return acc
+                      }, [])
+                      .map((n, i) => n === '…'
+                        ? <span key={`e${i}`} className="pt-page-ellipsis">…</span>
+                        : <button key={n} className={`pt-page-btn${n === page ? ' pt-page-btn--active' : ''}`} onClick={() => setPage(n)}>{n}</button>
+                      )
+                    }
+                    <button className="pt-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next ›</button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {/* ── Add modal ──────────────────────────────────────────────────── */}
       {showAdd && (
         <PatientFormModal
           onClose={() => setShowAdd(false)}

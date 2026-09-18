@@ -843,3 +843,301 @@ html[data-theme="dark"] .pd-fee-tag {
   /* Hide action badges */
   .badge { display: none !important; }
 }
+
+/* ── Patient timeline (tl-*) ────────────────────────────────────────── */
+
+.tl-list {
+  margin-top: var(--space-md);
+  padding-bottom: var(--space-lg);
+}
+
+.tl-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.tl-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.tl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 16px;
+  box-sizing: border-box;
+}
+
+.tl-connector {
+  width: 2px;
+  flex: 1;
+  background: var(--clr-border);
+  min-height: 24px;
+  margin-top: 4px;
+}
+
+.tl-card {
+  flex: 1;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: default;
+  transition: border-color 0.15s;
+}
+
+.tl-card--clickable { cursor: pointer; }
+
+.tl-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.tl-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.tl-date {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+.tl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+  margin-bottom: 2px;
+}
+
+.tl-notes {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  line-height: 1.5;
+}
+
+.tl-sub {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CUSTOM PATIENT TABLE (replaces DataTable)
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Toolbar row */
+.pt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-wrap: wrap;
+}
+.pt-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+.pt-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--clr-text-muted);
+  pointer-events: none;
+}
+.pt-search {
+  width: 100%;
+  padding: 7px 10px 7px 32px;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.pt-search:focus { border-color: var(--clr-primary); }
+.pt-export-btns {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.pt-result-count {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  padding-right: 4px;
+}
+
+/* Table container */
+.pt-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Table */
+.pt-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+/* Column headers */
+.pt-th {
+  padding: 10px 14px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+  text-align: left;
+  border-bottom: 1.5px solid var(--clr-border);
+  background: var(--clr-bg);
+}
+.pt-th--sortable { cursor: pointer; user-select: none; }
+.pt-th--sortable:hover { color: var(--clr-text); }
+.pt-th--narrow { width: 90px; }
+
+/* Sort chevron */
+.pt-sort {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  vertical-align: middle;
+  margin-left: 4px;
+  opacity: 0.35;
+}
+.pt-sort--active { opacity: 1; color: var(--clr-primary); }
+
+/* Table rows */
+.pt-tr {
+  border-bottom: 1px solid var(--clr-border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.pt-tr:last-child { border-bottom: none; }
+.pt-tr:hover td { background: var(--clr-surface-hover); }
+.pt-tr:focus-visible { outline: 2px solid var(--clr-primary); outline-offset: -2px; }
+
+/* Patient name cell */
+.pt-td-patient {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pt-patient-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+.pt-new-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+html[data-theme="dark"] .pt-new-badge {
+  background: rgba(5,150,105,.15);
+  color: #34d399;
+  border-color: rgba(52,211,153,.25);
+}
+.pt-never {
+  color: var(--clr-text-muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Muted data cells */
+.pt-td-muted {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  vertical-align: middle;
+}
+
+/* Empty state */
+.pt-empty {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--clr-text-muted);
+}
+
+/* Footer: count + pagination */
+.pt-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pt-footer-info {
+  font-size: 12.5px;
+  color: var(--clr-text-muted);
+}
+
+/* Pagination */
+.pt-pagination { display: flex; align-items: center; gap: 3px; }
+.pt-page-btn {
+  min-width: 32px;
+  height: 30px;
+  padding: 0 8px;
+  font-size: 12.5px;
+  font-family: inherit;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pt-page-btn:hover:not(:disabled) {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  background: rgba(37,99,235,.05);
+}
+.pt-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pt-page-btn--active {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+  color: #fff;
+  font-weight: 600;
+}
+.pt-page-ellipsis {
+  padding: 0 4px;
+  color: var(--clr-text-muted);
+  font-size: 12.5px;
+}
+
+/* Print: hide toolbar and pagination, show plain table */
+@media print {
+  .pt-toolbar,
+  .pt-table-footer { display: none !important; }
+  .pt-th { background: #f0f0f0 !important; color: #000 !important; }
+  .pt-td-patient, .pt-td-muted { color: #000 !important; }
+  .pt-tr:hover td { background: none !important; }
+}
