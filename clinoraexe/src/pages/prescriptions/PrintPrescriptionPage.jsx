@@ -48,7 +48,7 @@ function MedicineList({ items }) {
 
 /* ── Signature block ─────────────────────────────────────────────────── */
 
-function Signature({ name, qualification }) {
+function Signature({ name, qualification, registrationNumber }) {
   return (
     <div className="print-signature-section">
       <div className="print-signature-block">
@@ -56,6 +56,9 @@ function Signature({ name, qualification }) {
         <div className="print-signature-name">{name}</div>
         {qualification && (
           <div className="print-signature-qual">{qualification}</div>
+        )}
+        {registrationNumber && (
+          <div className="print-signature-qual">Reg. No: {registrationNumber}</div>
         )}
       </div>
     </div>
@@ -234,6 +237,9 @@ export default function PrintPrescriptionPage() {
               {ps.show_doctor_contact && clinic.qualification && (
                 <div className="print-qualification">{clinic.qualification}</div>
               )}
+              {ps.show_doctor_contact && clinic.registration_number && (
+                <div className="print-reg-number">Reg. No: {clinic.registration_number}</div>
+              )}
               {ps.show_clinic_contact && clinic.address && (
                 <div className="print-address">{clinic.address}</div>
               )}
@@ -274,7 +280,7 @@ export default function PrintPrescriptionPage() {
           )}
 
           {/* Signature */}
-          <Signature name={sigName} qualification={clinic.qualification} />
+          <Signature name={sigName} qualification={clinic.qualification} registrationNumber={clinic.registration_number} />
 
           {/* Custom footer banner */}
           {ps.prescription_footer && (

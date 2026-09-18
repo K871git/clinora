@@ -15,7 +15,7 @@ function flattenErrors(errors) {
 }
 
 const CLINIC_DEFAULTS = {
-  name: '', doctor_name: '', qualification: '', address: '', contact: '',
+  name: '', doctor_name: '', qualification: '', registration_number: '', address: '', contact: '',
 }
 
 const PRESC_DEFAULTS = {
@@ -109,11 +109,12 @@ export default function SettingsPage() {
         const c  = data.clinic
         const ps = data
         setClinic({
-          name:          c.name          ?? '',
-          doctor_name:   c.doctor_name   ?? '',
-          qualification: c.qualification ?? '',
-          address:       c.address       ?? '',
-          contact:       c.contact       ?? '',
+          name:                c.name                ?? '',
+          doctor_name:         c.doctor_name         ?? '',
+          qualification:       c.qualification       ?? '',
+          registration_number: c.registration_number ?? '',
+          address:             c.address             ?? '',
+          contact:             c.contact             ?? '',
         })
         setPresc({
           prescription_header:  ps.prescription_header  ?? '',
@@ -154,11 +155,12 @@ export default function SettingsPage() {
     setClinicSaved(false)
     try {
       await updateClinic({
-        name:          clinic.name.trim(),
-        doctor_name:   clinic.doctor_name.trim(),
-        qualification: clinic.qualification.trim() || null,
-        address:       clinic.address.trim()       || null,
-        contact:       clinic.contact.trim()       || null,
+        name:                clinic.name.trim(),
+        doctor_name:         clinic.doctor_name.trim(),
+        qualification:       clinic.qualification.trim()       || null,
+        registration_number: clinic.registration_number.trim() || null,
+        address:             clinic.address.trim()             || null,
+        contact:             clinic.contact.trim()             || null,
       })
       setClinicSaved(true)
     } catch (err) {
@@ -276,6 +278,21 @@ export default function SettingsPage() {
                 />
                 <span className="stg-hint">Shown below the doctor name on prescriptions.</span>
                 {clinicErrors.qualification && <span className="stg-error">{clinicErrors.qualification}</span>}
+              </div>
+
+              <div className="stg-field">
+                <label className="stg-label">
+                  Registration Number
+                  <span className="stg-label-opt">optional</span>
+                </label>
+                <input
+                  className={`stg-input${clinicErrors.registration_number ? ' has-error' : ''}`}
+                  value={clinic.registration_number}
+                  onChange={e => setClinicField('registration_number', e.target.value)}
+                  placeholder="e.g. MH-12345 or NMC/2023/1234"
+                />
+                <span className="stg-hint">Doctor's MCI / NMC / state council registration number. Printed on prescriptions.</span>
+                {clinicErrors.registration_number && <span className="stg-error">{clinicErrors.registration_number}</span>}
               </div>
 
               <div className="stg-field">

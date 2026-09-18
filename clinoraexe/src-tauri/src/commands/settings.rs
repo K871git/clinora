@@ -10,6 +10,7 @@ pub struct ClinicPayload {
     pub name: Option<String>,
     pub doctor_name: Option<String>,
     pub qualification: Option<String>,
+    pub registration_number: Option<String>,
     pub address: Option<String>,
     pub contact: Option<String>,
 }
@@ -63,6 +64,7 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
             "name": clinic.get::<String, _>("name"),
             "doctor_name": clinic.get::<String, _>("doctor_name"),
             "qualification": clinic.get::<Option<String>, _>("qualification"),
+            "registration_number": clinic.get::<Option<String>, _>("registration_number"),
             "address": clinic.get::<Option<String>, _>("address"),
             "contact": clinic.get::<Option<String>, _>("contact")
         },
@@ -102,10 +104,11 @@ pub async fn update_clinic(data: ClinicPayload, state: State<'_, AppState>) -> A
     let session = get_session(&state)?;
     sqlx::query(
         "UPDATE clinics SET name=COALESCE(?,name), doctor_name=COALESCE(?,doctor_name),
-         qualification=?, address=?, contact=?, updated_at=NOW() WHERE id=?"
+         qualification=?, registration_number=?, address=?, contact=?, updated_at=NOW() WHERE id=?"
     )
     .bind(&data.name).bind(&data.doctor_name).bind(&data.qualification)
-    .bind(&data.address).bind(&data.contact).bind(session.clinic_id)
+    .bind(&data.registration_number).bind(&data.address).bind(&data.contact)
+    .bind(session.clinic_id)
     .execute(&state.db).await?;
     get_settings(state).await
 }

@@ -9,6 +9,7 @@ import VitalSignsTab from '../../components/emr/VitalSignsTab'
 import MedicalHistoryTab from '../../components/emr/MedicalHistoryTab'
 import LabReportsTab from '../../components/emr/LabReportsTab'
 import PatientNotesTab from '../../components/emr/PatientNotesTab'
+import MedicationsTab from '../../components/emr/MedicationsTab'
 import ErrorBoundary from '../../components/ui/ErrorBoundary'
 import '../../styles/patients.css'
 import '../../styles/emr.css'
@@ -253,12 +254,13 @@ export default function PatientDetailPage() {
       {/* ── EMR Tabs ─────────────────────────────────────────────────── */}
       <div className="pd-tabs" style={{ marginTop: 'var(--space-lg)' }}>
         {[
-          { key: 'overview',  label: 'Overview' },
-          { key: 'vitals',    label: 'Vitals' },
-          { key: 'history',   label: 'Medical History' },
-          { key: 'lab',       label: 'Lab Reports' },
-          { key: 'notes',     label: 'Notes' },
-          { key: 'timeline',  label: 'Timeline' },
+          { key: 'overview',     label: 'Overview' },
+          { key: 'medications',  label: 'Medications' },
+          { key: 'vitals',       label: 'Vitals' },
+          { key: 'history',      label: 'Medical History' },
+          { key: 'lab',          label: 'Lab Reports' },
+          { key: 'notes',        label: 'Notes' },
+          { key: 'timeline',     label: 'Timeline' },
         ].map(t => (
           <button key={t.key} className={`pd-tab${activeTab === t.key ? ' pd-tab--active' : ''}`}
             onClick={() => setActiveTab(t.key)}>
@@ -336,6 +338,12 @@ export default function PatientDetailPage() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'medications' && (
+        <div className="card pd-history-panel" style={{ padding: 'var(--space-lg)' }}>
+          <MedicationsTab prescriptions={prescriptions} status={historyStatus} />
         </div>
       )}
 

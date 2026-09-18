@@ -382,3 +382,110 @@
   gap: 8px;
   margin-top: var(--space-lg);
 }
+
+/* ── Medications Tab ────────────────────────────────────────────────── */
+.meds-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.meds-rx-card {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.meds-rx-card:hover {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(var(--clr-primary-rgb, 99,102,241), 0.08);
+}
+
+.meds-rx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.meds-rx-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+.meds-rx-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meds-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meds-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--clr-bg);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--clr-primary);
+}
+
+.meds-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.meds-item-meta {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+.meds-item-note {
+  font-size: 11.5px;
+  color: var(--clr-text-muted);
+  font-style: italic;
+}
+
+.meds-rx-empty {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  padding: 4px 0;
+}
+
+.meds-rx-footer {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--clr-primary);
+  text-align: right;
+}
+
+.emr-loading {
+  padding: 24px 0;
+  color: var(--clr-text-muted);
+  font-size: 13px;
+}
+
+.emr-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  color: var(--clr-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
