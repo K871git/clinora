@@ -441,7 +441,10 @@
 @media print {
   body { margin: 0; background: white; }
 
-  .print-hide { display: none !important; }
+  /* Hide all screen-only UI */
+  .print-hide,
+  .print-toolbar,
+  .print-no-template-warn { display: none !important; }
 
   .print-page {
     background: white;
@@ -455,19 +458,40 @@
     margin: 0;
     box-shadow: none;
     border: none;
+    /* Force colors — critical for clinic header, stamps, logos */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .print-paper--standalone { padding: 12mm 14mm 12mm; }
   .print-paper--template   { padding: 0; }
 
-  @page {
-    size: A4 portrait;
-    margin: 0;
+  /* Keep each medicine item intact — no mid-item page break */
+  .print-med-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Signature always on same page as last medicine */
+  .print-signature-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Notes block stays together */
+  .print-notes-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .print-template-bg-img,
   .print-template-bg-pdf {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
   }
 }

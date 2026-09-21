@@ -166,7 +166,11 @@ pub async fn create_patient(data: PatientPayload, state: State<'_, AppState>) ->
     .bind(consent_obtained).bind(&consent_date)
     .execute(&state.db).await?;
 
-    get_patient(result.last_insert_id(), state).await
+    let new_id = result.last_insert_id();
+    crate::commands::audit::log_audit(
+        &state.db, session.clinic_id, session.id, "create", "patient", new_id, Some(&name)
+    ).await;
+    get_patient(new_id, state).await
 }
 
 #[tauri::command]
@@ -197,6 +201,9 @@ pub async fn update_patient(id: u64, data: PatientPayload, state: State<'_, AppS
     .bind(id).bind(session.clinic_id)
     .execute(&state.db).await?;
 
+    crate::commands::audit::log_audit(
+        &state.db, session.clinic_id, session.id, "update", "patient", id, None
+    ).await;
     get_patient(id, state).await
 }
 

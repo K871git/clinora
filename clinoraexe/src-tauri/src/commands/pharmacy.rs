@@ -58,9 +58,11 @@ async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::My
         "unit_price": r.get::<Option<f64>, _>("unit_price")
     })).collect();
 
+    // Sum in integer paise to avoid f64 accumulation errors (e.g. 3×33.33 = 99.98 in f64)
     let total_amount: f64 = items_json.iter()
         .filter_map(|i| i["unit_price"].as_f64())
-        .sum();
+        .map(|v| (v * 100.0).round() as i64)
+        .sum::<i64>() as f64 / 100.0;
 
     Ok(json!({
         "id": row.get::<u64, _>("id"),

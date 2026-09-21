@@ -5,13 +5,22 @@ pub struct AppError(pub String);
 
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
-        AppError(e.to_string())
+        // Log full detail server-side only; never expose internal DB messages to the client
+        eprintln!("[db-error] {:?}", e);
+        let msg = match &e {
+            sqlx::Error::RowNotFound  => "Record not found.",
+            sqlx::Error::PoolTimedOut => "Database is busy — please try again.",
+            sqlx::Error::PoolClosed   => "Database connection is closed.",
+            _                         => "A database error occurred.",
+        };
+        AppError(msg.to_string())
     }
 }
 
 impl From<bcrypt::BcryptError> for AppError {
     fn from(e: bcrypt::BcryptError) -> Self {
-        AppError(e.to_string())
+        eprintln!("[auth-error] {:?}", e);
+        AppError("Authentication error.".to_string())
     }
 }
 

@@ -1,4 +1,5 @@
 pub mod utils;
+pub mod audit;
 pub mod downloads;
 pub mod license;
 pub mod setup;

@@ -137,13 +137,14 @@ pub async fn backup_database(state: State<'_, AppState>) -> AppResult<Value> {
     let filename = format!("clinora_backup_{}.sql", now.format("%Y%m%d_%H%M%S"));
     let out_path = dl_dir.join(&filename);
 
-    // Try mysqldump from PATH
+    // Try mysqldump from PATH — pass password via env var, NOT CLI arg
+    // (CLI args are visible in process list / Task Manager)
     let mut cmd = Command::new("mysqldump");
+    cmd.env("MYSQL_PWD", &pass);
     cmd.args([
         &format!("--host={}", host),
         &format!("--port={}", port),
         &format!("--user={}", user),
-        &format!("--password={}", pass),
         "--single-transaction",
         "--routines",
         "--triggers",
@@ -202,11 +203,11 @@ pub async fn restore_database(path: String, state: State<'_, AppState>) -> AppRe
         .map_err(|e| crate::error::AppError(format!("Cannot read backup file: {e}")))?;
 
     let mut cmd = Command::new("mysql");
+    cmd.env("MYSQL_PWD", &pass);
     cmd.args([
         &format!("--host={}", host),
         &format!("--port={}", port),
         &format!("--user={}", user),
-        &format!("--password={}", pass),
         &dbname,
     ]);
     cmd.stdin(file);

@@ -97,6 +97,9 @@ pub async fn update_password(data: PasswordPayload, state: State<'_, AppState>) 
     let new_hash = bcrypt::hash(&data.password, bcrypt::DEFAULT_COST)?;
     sqlx::query("UPDATE users SET password=?, updated_at=NOW() WHERE id=?")
         .bind(new_hash).bind(session.id).execute(&state.db).await?;
+    crate::commands::audit::log_audit(
+        &state.db, session.clinic_id, session.id, "password_change", "user", session.id, None
+    ).await;
     Ok(())
 }
 
