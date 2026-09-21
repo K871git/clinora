@@ -7,6 +7,8 @@ import PharmacyLoader from '../components/ui/PharmacyLoader'
 import DoctorLoader from '../components/ui/DoctorLoader'
 import ErrorBoundary from '../components/ui/ErrorBoundary'
 import profileService from '../services/profileService'
+import { searchPatients } from '../services/patientService'
+import { getClinicVisits } from '../services/visitService'
 import '../styles/app-layout.css'
 
 /* ── Offline detection ───────────────────────────────────────────────── */
@@ -98,8 +100,47 @@ export default function AppLayout() {
   const [farewell, setFarewell]             = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [dbError, setDbError]         = useState(false)
+  const [searchOpen, setSearchOpen]   = useState(false)
   const profileRef = useRef(null)
   const avatarFileRef = useRef(null)
+
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(o => !o)
+        return
+      }
+      // Single-key shortcuts — skip when typing in inputs
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (document.activeElement?.isContentEditable) return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+
+      const role = user?.role
+      switch (e.key) {
+        case 'n': case 'N':
+          e.preventDefault()
+          navigate(role === 'pharmacy' ? '/pharmacy' : '/patients?new=1')
+          break
+        case 'p': case 'P':
+          e.preventDefault()
+          navigate(role === 'pharmacy' ? '/pharmacy/history' : '/prescriptions')
+          break
+        case 'd': case 'D':
+          e.preventDefault()
+          navigate(role === 'pharmacy' ? '/pharmacy' : '/')
+          break
+        case 'r': case 'R':
+          e.preventDefault()
+          navigate(role === 'pharmacy' ? '/pharmacy/revenue' : '/revenue')
+          break
+        default: break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [navigate, user?.role])
 
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('clinora-theme')
@@ -120,11 +161,7 @@ export default function AppLayout() {
   }, [])
 
   useEffect(() => {
-    if (user?.role === 'pharmacy') {
-      document.documentElement.dataset.role = 'pharmacy'
-    } else {
-      delete document.documentElement.dataset.role
-    }
+    document.documentElement.dataset.role = user?.role === 'pharmacy' ? 'pharmacy' : 'doctor'
     return () => { delete document.documentElement.dataset.role }
   }, [user?.role])
 
@@ -389,6 +426,18 @@ export default function AppLayout() {
 
           <h1 className="shell-page-title">{pageTitle}</h1>
 
+          {/* Search trigger */}
+          <button
+            className="icon-btn gs-trigger-btn"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Global search (Ctrl+K)"
+            title="Search (Ctrl+K)"
+          >
+            <IconSearch />
+            <span className="gs-trigger-label">Search</span>
+            <kbd className="gs-trigger-kbd">Ctrl K</kbd>
+          </button>
+
           {/* Theme toggle */}
           <button
             className="icon-btn"
@@ -430,6 +479,142 @@ export default function AppLayout() {
             </div>
           </ErrorBoundary>
         </main>
+      </div>
+
+      {searchOpen && (
+        <GlobalSearch
+          role={user?.role}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={(path) => { setSearchOpen(false); navigate(path) }}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── Global Search Palette ──────────────────────────────────────────── */
+
+function GlobalSearch({ role, onClose, onNavigate }) {
+  const [q, setQ]           = useState('')
+  const [patients, setPatients] = useState([])
+  const [visits,   setVisits]   = useState([])
+  const [busy,     setBusy]     = useState(false)
+  const [cursor,   setCursor]   = useState(0)
+  const inputRef = useRef(null)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    function onKey(e) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  useEffect(() => {
+    clearTimeout(timerRef.current)
+    if (!q.trim()) { setPatients([]); setVisits([]); setBusy(false); return }
+    setBusy(true)
+    timerRef.current = setTimeout(async () => {
+      try {
+        const [pRes, vRes] = await Promise.all([
+          searchPatients(q.trim()),
+          role !== 'pharmacy'
+            ? getClinicVisits({ q: q.trim(), per_page: 5 })
+            : Promise.resolve({ data: { data: [] } }),
+        ])
+        setPatients(pRes.data?.data ?? [])
+        setVisits(vRes.data?.data ?? [])
+        setCursor(0)
+      } catch { /* silent */ } finally {
+        setBusy(false)
+      }
+    }, 280)
+    return () => clearTimeout(timerRef.current)
+  }, [q, role])
+
+  const results = [
+    ...patients.map(p => ({ type: 'patient', id: p.id, label: p.name, sub: p.mobile || (p.age ? `${p.age} yrs` : ''), path: `/patients/${p.id}` })),
+    ...visits.map(v => ({ type: 'visit', id: v.id, label: v.patient?.name ?? '—', sub: v.visited_at ? new Date(v.visited_at + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '', path: `/patients/${v.patient_id}` })),
+  ]
+
+  function handleKey(e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setCursor(c => Math.min(c + 1, results.length - 1)) }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)) }
+    if (e.key === 'Enter' && results[cursor]) onNavigate(results[cursor].path)
+  }
+
+  return (
+    <div className="gs-backdrop" onClick={onClose}>
+      <div className="gs-palette" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Global search">
+        <div className="gs-input-row">
+          <svg className="gs-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            ref={inputRef}
+            className="gs-input"
+            type="search"
+            placeholder="Search patients or visits…"
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            onKeyDown={handleKey}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {busy && <span className="gs-spinner" aria-hidden="true" />}
+          <kbd className="gs-esc-hint" onClick={onClose}>Esc</kbd>
+        </div>
+
+        {results.length > 0 && (
+          <div className="gs-results">
+            {patients.length > 0 && (
+              <div className="gs-group-label">Patients</div>
+            )}
+            {patients.map((p, i) => {
+              const item = results[i]
+              return (
+                <button key={`p-${p.id}`} className={`gs-item${cursor === i ? ' gs-item--on' : ''}`}
+                  onClick={() => onNavigate(item.path)}
+                  onMouseEnter={() => setCursor(i)}
+                >
+                  <span className="gs-item-icon gs-item-icon--patient">🧑‍⚕️</span>
+                  <span className="gs-item-label">{p.name}</span>
+                  {item.sub && <span className="gs-item-sub">{item.sub}</span>}
+                  <span className="gs-item-arrow">→</span>
+                </button>
+              )
+            })}
+
+            {visits.length > 0 && (
+              <div className="gs-group-label">Visits</div>
+            )}
+            {visits.map((v, i) => {
+              const idx = patients.length + i
+              const item = results[idx]
+              return (
+                <button key={`v-${v.id}`} className={`gs-item${cursor === idx ? ' gs-item--on' : ''}`}
+                  onClick={() => onNavigate(item.path)}
+                  onMouseEnter={() => setCursor(idx)}
+                >
+                  <span className="gs-item-icon">📋</span>
+                  <span className="gs-item-label">{v.patient?.name ?? '—'}</span>
+                  {item.sub && <span className="gs-item-sub">{item.sub}</span>}
+                  <span className="gs-item-arrow">→</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {q.trim() && !busy && results.length === 0 && (
+          <div className="gs-empty">No results for "{q}"</div>
+        )}
+
+        {!q.trim() && (
+          <div className="gs-hint-row">
+            <span>↑↓ navigate</span><span>↵ open</span><span>Esc close</span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -639,6 +824,15 @@ function IconMenu() {
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor"
       strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
       <path d="M2 4h14M2 9h14M2 14h14" />
+    </svg>
+  )
+}
+
+function IconSearch() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
     </svg>
   )
 }

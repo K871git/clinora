@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { listLabReports, createLabReport, updateLabReport, deleteLabReport } from '../../services/labReportService'
+import EmptyState from '../ui/EmptyState'
 
 const STATUSES = ['ordered', 'received', 'reviewed']
 const EMPTY_FORM = {
@@ -146,7 +147,9 @@ export default function LabReportsTab({ patientId, visitId }) {
       </div>
 
       {loading && <div className="emr-empty">Loading…</div>}
-      {!loading && items.length === 0 && <div className="emr-empty">No lab reports yet.</div>}
+      {!loading && items.length === 0 && (
+        <EmptyState compact icon="🧪" title="No lab reports yet" description="Add the first report using the button above." />
+      )}
 
       {!loading && items.length > 0 && (
         <div className="lab-list">

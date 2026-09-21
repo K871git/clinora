@@ -19,3 +19,8 @@ export async function getRevenueDetails() {
   const result = await invoke('get_revenue')
   return { data: result }
 }
+
+export async function getVisitStatsByDoctor(period = 'this_month') {
+  const result = await invoke('get_visit_stats_by_doctor', { period })
+  return { data: result }
+}

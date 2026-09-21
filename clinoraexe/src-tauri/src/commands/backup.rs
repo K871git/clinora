@@ -177,3 +177,55 @@ pub async fn backup_database(state: State<'_, AppState>) -> AppResult<Value> {
         "size_kb":  size_kb,
     }))
 }
+
+#[tauri::command]
+pub async fn restore_database(path: String, state: State<'_, AppState>) -> AppResult<Value> {
+    let _session = get_session(&state)?;
+
+    let db_url = load_db_url()
+        .ok_or_else(|| crate::error::AppError("Cannot read database config.".into()))?;
+
+    let (user, pass, host, port, dbname) = parse_db_url(&db_url)
+        .ok_or_else(|| crate::error::AppError("Cannot parse database URL.".into()))?;
+
+    let path = path.trim().to_string();
+    let file_path = std::path::Path::new(&path);
+
+    if !file_path.exists() {
+        return Err(crate::error::AppError(format!("File not found: {}", path)));
+    }
+    if !file_path.is_file() {
+        return Err(crate::error::AppError("Path must point to a .sql backup file.".into()));
+    }
+
+    let file = std::fs::File::open(file_path)
+        .map_err(|e| crate::error::AppError(format!("Cannot read backup file: {e}")))?;
+
+    let mut cmd = Command::new("mysql");
+    cmd.args([
+        &format!("--host={}", host),
+        &format!("--port={}", port),
+        &format!("--user={}", user),
+        &format!("--password={}", pass),
+        &dbname,
+    ]);
+    cmd.stdin(file);
+
+    let output = cmd.output().map_err(|e| {
+        crate::error::AppError(format!(
+            "mysql client not found or failed to run.\n\
+             Make sure MySQL is installed and mysql is in your PATH.\n\
+             Error: {e}"
+        ))
+    })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(crate::error::AppError(format!(
+            "Restore failed:\n{}",
+            stderr.trim()
+        )));
+    }
+
+    Ok(json!({ "restored": true }))
+}

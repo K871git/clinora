@@ -160,6 +160,7 @@ pub fn run() {
             commands::dashboard::get_pending_rx,
             commands::dashboard::get_revenue,
             commands::dashboard::get_revenue_transactions,
+            commands::dashboard::get_visit_stats_by_doctor,
             // Patients
             commands::patients::list_patients,
             commands::patients::get_patient,
@@ -270,8 +271,9 @@ pub fn run() {
             commands::medical_history::get_patient_allergies,
             // Patient Timeline
             commands::timeline::get_patient_timeline,
-            // Backup
+            // Backup / Restore
             commands::backup::backup_database,
+            commands::backup::restore_database,
             commands::backup::update_backup_path,
             commands::backup::get_backup_path,
             // Prescription Templates
@@ -307,6 +309,10 @@ pub fn run() {
             commands::certificates::get_certificate,
             commands::certificates::list_patient_certificates,
             commands::certificates::delete_certificate,
+            // Pharmacy Returns / Credit Notes
+            commands::pharmacy_returns::create_pharmacy_return,
+            commands::pharmacy_returns::list_pharmacy_returns,
+            commands::pharmacy_returns::get_pharmacy_return,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

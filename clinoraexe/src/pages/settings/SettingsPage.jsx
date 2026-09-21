@@ -91,6 +91,12 @@ export default function SettingsPage() {
   const [pathSaving,   setPathSaving]  = useState(false)
   const [pathMsg,      setPathMsg]     = useState(null)
 
+  /* restore */
+  const [restorePath,  setRestorePath]  = useState('')
+  const [restoring,    setRestoring]    = useState(false)
+  const [restoreMsg,   setRestoreMsg]   = useState(null)
+  const [restoreConfirm, setRestoreConfirm] = useState(false)
+
   /* prescription settings form */
   const [presc,       setPresc]       = useState(PRESC_DEFAULTS)
   const [prescSaving, setPrescSaving] = useState(false)
@@ -635,6 +641,92 @@ export default function SettingsPage() {
           >
             {backing ? 'Creating backup…' : 'Backup Now'}
           </button>
+        </div>
+      </div>
+
+      {/* ── Restore Backup ─────────────────────────────────────────────── */}
+      <div className="stg-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="stg-card-head">
+          <div className="stg-card-head-row">
+            <span className="stg-card-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 1 0 .49-3.7" />
+              </svg>
+            </span>
+            <div>
+              <div className="stg-card-title">Restore from Backup</div>
+              <p className="stg-card-desc">Load a <code>.sql</code> backup file to restore your clinic data.</p>
+            </div>
+          </div>
+        </div>
+        <div className="stg-card-body">
+          <div className="stg-alert stg-alert--warn" style={{ marginBottom: 16 }}>
+            <strong>Warning:</strong> Restoring will overwrite your current database with the backup file contents. This cannot be undone — take a fresh backup first if in doubt.
+          </div>
+
+          <div className="stg-field">
+            <label className="stg-label">Backup File Path</label>
+            <input
+              className="stg-input"
+              value={restorePath}
+              onChange={e => { setRestorePath(e.target.value); setRestoreMsg(null); setRestoreConfirm(false) }}
+              placeholder="e.g. C:\Users\Admin\Downloads\clinora_backup_20260921_140000.sql"
+            />
+            <span className="stg-hint">Paste the full path to the <code>.sql</code> backup file.</span>
+          </div>
+
+          {restoreMsg && (
+            <div className={`form-alert ${restoreMsg.ok ? 'success' : 'danger'}`} style={{ marginBottom: 12 }}>
+              <p className="form-alert-body">{restoreMsg.text}</p>
+            </div>
+          )}
+
+          {!restoreConfirm ? (
+            <button
+              type="button"
+              className="stg-save-btn"
+              style={{ background: '#ef4444', borderColor: '#ef4444' }}
+              disabled={!restorePath.trim() || restoring}
+              onClick={() => setRestoreConfirm(true)}
+            >
+              Restore Database…
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, color: 'var(--clr-text-muted)' }}>
+                Are you sure? This will overwrite all current data.
+              </span>
+              <button
+                type="button"
+                className="stg-save-btn"
+                style={{ background: '#ef4444', borderColor: '#ef4444' }}
+                disabled={restoring}
+                onClick={async () => {
+                  setRestoring(true)
+                  setRestoreMsg(null)
+                  try {
+                    await invoke('restore_database', { path: restorePath.trim() })
+                    setRestoreMsg({ ok: true, text: 'Database restored successfully. Please restart the application.' })
+                    setRestoreConfirm(false)
+                  } catch (err) {
+                    setRestoreMsg({ ok: false, text: typeof err === 'string' ? err : 'Restore failed — check the file path and try again.' })
+                    setRestoreConfirm(false)
+                  } finally { setRestoring(false) }
+                }}
+              >
+                {restoring ? 'Restoring…' : 'Yes, Restore Now'}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: '8px 16px', fontSize: 13 }}
+                onClick={() => setRestoreConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

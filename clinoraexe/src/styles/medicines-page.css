@@ -560,3 +560,117 @@
 [data-theme="dark"] .ml-export-item:hover {
   background: rgba(255,255,255,.06);
 }
+
+/* ── Stock alert panel (ml-alert-*) ──────────────────────────────────────── */
+.ml-alert-panel {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 14px 16px 12px;
+  margin-bottom: 14px;
+  animation: ml-alert-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes ml-alert-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+[data-theme="dark"] .ml-alert-panel {
+  background: rgba(251,191,36,.06);
+  border-color: rgba(251,191,36,.3);
+}
+.ml-alert-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ml-alert-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ml-alert-title {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #92400e;
+  letter-spacing: 0.01em;
+}
+[data-theme="dark"] .ml-alert-title { color: #fbbf24; }
+.ml-alert-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: rgba(0,0,0,.06);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.ml-alert-dismiss:hover { background: rgba(0,0,0,.12); }
+[data-theme="dark"] .ml-alert-dismiss { background: rgba(255,255,255,.08); }
+[data-theme="dark"] .ml-alert-dismiss:hover { background: rgba(255,255,255,.14); }
+.ml-alert-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ml-alert-group {
+  min-width: 200px;
+  flex: 1;
+}
+.ml-alert-group-hdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ml-alert-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ml-alert-dot--red   { background: #ef4444; }
+.ml-alert-dot--amber { background: #f59e0b; }
+.ml-alert-dot--blue  { background: #3b82f6; }
+html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
+.ml-alert-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+.ml-alert-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ml-alert-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+}
+.ml-alert-name {
+  font-weight: 550;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.ml-alert-meta {
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+  font-size: 11px;
+}

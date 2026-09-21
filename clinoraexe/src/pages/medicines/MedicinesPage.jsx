@@ -10,9 +10,11 @@ import {
   updateMedicine,
   deleteMedicine,
   importMedicines,
+  getStockAlerts,
 } from '../../services/medicineService'
 import Spinner from '../../components/ui/Spinner'
 import MedicineImportModal from '../../components/medicines/MedicineImportModal'
+import EmptyState from '../../components/ui/EmptyState'
 
 const UNIT_OPTIONS = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Drops', 'Cream', 'Gel', 'Powder', 'Sachet', 'Inhaler', 'Patch']
 
@@ -24,6 +26,81 @@ const CATEGORY_OPTIONS = [
 
 const BLANK_FORM = {
   name: '', generic_name: '', category: '', unit: '', quantity: '', price: '',
+}
+
+/* ── Stock alert panel ───────────────────────────────────────────────────── */
+
+function fmtExpiry(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function AlertGroup({ variant, label, items, renderMeta }) {
+  if (!items.length) return null
+  return (
+    <div className={`ml-alert-group ml-alert-group--${variant}`}>
+      <div className="ml-alert-group-hdr">
+        <span className={`ml-alert-dot ml-alert-dot--${variant}`} />
+        <span className="ml-alert-group-label">{label} ({items.length})</span>
+      </div>
+      <ul className="ml-alert-list">
+        {items.map(m => (
+          <li key={m.id} className="ml-alert-item">
+            <span className="ml-alert-name">{m.name}</span>
+            <span className="ml-alert-meta">{renderMeta(m)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function StockAlertPanel({ alerts, onDismiss }) {
+  if (!alerts) return null
+  const total = alerts.expired.length + alerts.expiring_soon.length + alerts.low_stock.length
+  if (total === 0) return null
+
+  return (
+    <div className="ml-alert-panel">
+      <div className="ml-alert-hdr">
+        <div className="ml-alert-hdr-left">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+            style={{ flexShrink: 0, color: '#b45309' }}>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span className="ml-alert-title">
+            {total} stock alert{total !== 1 ? 's' : ''} need attention
+          </span>
+        </div>
+        <button className="ml-alert-dismiss" onClick={onDismiss} title="Dismiss">×</button>
+      </div>
+
+      <div className="ml-alert-groups">
+        <AlertGroup
+          variant="red"
+          label="Expired"
+          items={alerts.expired}
+          renderMeta={m => `exp. ${fmtExpiry(m.expiry_date)} · qty ${m.quantity}`}
+        />
+        <AlertGroup
+          variant="amber"
+          label="Expiring Soon"
+          items={alerts.expiring_soon}
+          renderMeta={m => `exp. ${fmtExpiry(m.expiry_date)} · qty ${m.quantity}`}
+        />
+        <AlertGroup
+          variant="blue"
+          label="Low Stock"
+          items={alerts.low_stock}
+          renderMeta={m => `qty ${m.quantity} · reorder at ${m.reorder_level}`}
+        />
+      </div>
+    </div>
+  )
 }
 
 /* ── Export helpers ────────────────────────────────────────────────────── */
@@ -651,6 +728,14 @@ export default function MedicinesPage() {
   const [editing,   setEditing]   = useState(null)
   const [form,      setForm]      = useState(BLANK_FORM)
   const [saving,    setSaving]    = useState(false)
+  const [alerts,    setAlerts]    = useState(null)
+  const [alertsDismissed, setAlertsDismissed] = useState(false)
+
+  useEffect(() => {
+    getStockAlerts()
+      .then(({ data }) => setAlerts(data))
+      .catch(() => {})
+  }, [])
 
   function load() {
     setStatus('loading')
@@ -770,6 +855,11 @@ export default function MedicinesPage() {
         {UNIT_OPTIONS.map(u => <option key={u} value={u} />)}
       </datalist>
 
+      {/* Stock alerts */}
+      {!alertsDismissed && (
+        <StockAlertPanel alerts={alerts} onDismiss={() => setAlertsDismissed(true)} />
+      )}
+
       {/* Toolbar */}
       <div className="ml-toolbar">
         <input
@@ -808,11 +898,11 @@ export default function MedicinesPage() {
             <Spinner size={26} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="ml-empty">
-            {medicines.length === 0
-              ? 'No medicines in the library yet. Add one or import from a CSV file.'
-              : 'No medicines match your search.'}
-          </div>
+          <EmptyState
+            icon="💊"
+            title={medicines.length === 0 ? 'No medicines yet' : 'No medicines match your search'}
+            description={medicines.length === 0 ? 'Add a medicine or import from a CSV file.' : 'Try a different name or category.'}
+          />
         ) : (
           <div className="ml-table-wrap">
             <table className="ml-table">

@@ -17,9 +17,9 @@ function getGreeting() {
 }
 
 function getDayStr() {
-  const now   = new Date()
-  const day   = now.toLocaleDateString('en-US', { weekday: 'long' })
-  const date  = now.getDate()
+  const now = new Date()
+  const day = now.toLocaleDateString('en-US', { weekday: 'long' })
+  const date = now.getDate()
   const month = now.toLocaleDateString('en-US', { month: 'long' })
   return `${day} · ${date} ${month} ${now.getFullYear()}`
 }
@@ -34,8 +34,8 @@ function SunDeco() {
   return (
     <svg className="login-deco login-deco-sun" width="260" height="260" viewBox="0 0 260 260" aria-hidden="true">
       <circle cx="130" cy="130" r="124" fill="#fef08a" opacity="0.18" />
-      <circle cx="130" cy="130" r="90"  fill="#fde68a" opacity="0.45" />
-      <circle cx="130" cy="130" r="62"  fill="#fcd34d" opacity="0.80" />
+      <circle cx="130" cy="130" r="90" fill="#fde68a" opacity="0.45" />
+      <circle cx="130" cy="130" r="62" fill="#fcd34d" opacity="0.80" />
     </svg>
   )
 }
@@ -45,42 +45,74 @@ function CloudsDeco() {
     <svg className="login-deco login-deco-clouds" viewBox="0 0 1200 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       {/* Each <g> gets its own slow drift animation */}
       <g className="cloud-grp-1">
-        <ellipse cx="160" cy="80"  rx="100" ry="40" fill="white" opacity="0.82" />
-        <ellipse cx="96"  cy="100" rx="64"  ry="32" fill="white" opacity="0.82" />
-        <ellipse cx="224" cy="100" rx="68"  ry="30" fill="white" opacity="0.82" />
+        <ellipse cx="160" cy="80" rx="100" ry="40" fill="white" opacity="0.82" />
+        <ellipse cx="96" cy="100" rx="64" ry="32" fill="white" opacity="0.82" />
+        <ellipse cx="224" cy="100" rx="68" ry="30" fill="white" opacity="0.82" />
       </g>
       <g className="cloud-grp-2">
-        <ellipse cx="820" cy="62"  rx="82"  ry="34" fill="white" opacity="0.72" />
-        <ellipse cx="756" cy="78"  rx="54"  ry="26" fill="white" opacity="0.72" />
-        <ellipse cx="884" cy="78"  rx="56"  ry="24" fill="white" opacity="0.72" />
+        <ellipse cx="820" cy="62" rx="82" ry="34" fill="white" opacity="0.72" />
+        <ellipse cx="756" cy="78" rx="54" ry="26" fill="white" opacity="0.72" />
+        <ellipse cx="884" cy="78" rx="56" ry="24" fill="white" opacity="0.72" />
       </g>
       <g className="cloud-grp-3">
-        <ellipse cx="520" cy="40"  rx="56"  ry="22" fill="white" opacity="0.55" />
-        <ellipse cx="472" cy="54"  rx="36"  ry="18" fill="white" opacity="0.55" />
-        <ellipse cx="568" cy="54"  rx="38"  ry="17" fill="white" opacity="0.55" />
+        <ellipse cx="520" cy="40" rx="56" ry="22" fill="white" opacity="0.55" />
+        <ellipse cx="472" cy="54" rx="36" ry="18" fill="white" opacity="0.55" />
+        <ellipse cx="568" cy="54" rx="38" ry="17" fill="white" opacity="0.55" />
       </g>
     </svg>
   )
 }
 
 function StarsDeco() {
-  const S = [
-    [6,4,0],[19,11,1],[34,3,0],[51,14,1],[67,5,0],[83,10,1],[97,2,0],
-    [11,24,1],[27,20,0],[45,28,0],[63,18,1],[79,25,0],[94,14,1],
-    [5,42,0],[21,38,1],[40,46,0],[58,35,1],[74,43,0],[90,32,0],
-    [13,58,1],[31,54,0],[52,61,1],[69,55,0],[86,50,1],[98,62,0],
-    [8,74,0],[27,70,1],[48,77,0],[66,72,1],[84,68,0],[96,78,1],
+  // [x, y, r, opacity, dur_s, delay_s] — viewBox 0 0 100 85
+  const stars = [
+    // Bright feature stars
+    [10,8,0.42,0.92,3.5,1.2],[45,5,0.40,0.90,4.2,2.8],[78,12,0.44,0.95,3.8,0.4],
+    [23,18,0.38,0.88,5.0,3.5],[62,22,0.40,0.92,4.5,1.8],[88,7,0.42,0.90,3.2,0.8],
+    [5,35,0.38,0.88,4.8,2.2],[93,28,0.40,0.92,5.2,4.0],[36,48,0.42,0.95,3.6,0.6],
+    [71,42,0.38,0.90,4.0,3.2],[16,62,0.40,0.88,5.5,1.5],[55,58,0.44,0.92,3.4,4.5],
+    [84,55,0.38,0.90,4.8,2.0],[98,72,0.40,0.88,3.8,0.2],
+    // Medium
+    [18,4,0.28,0.76,6.2,2.5],[33,14,0.24,0.72,4.5,1.8],[58,9,0.26,0.74,7.0,3.0],
+    [76,18,0.28,0.76,5.8,0.6],[92,14,0.24,0.72,4.2,4.2],[8,25,0.26,0.74,6.5,1.2],
+    [41,28,0.28,0.76,5.2,3.8],[70,30,0.24,0.72,3.9,2.2],[97,38,0.26,0.74,7.3,0.9],
+    [28,42,0.28,0.76,4.6,4.5],[48,50,0.24,0.72,6.0,1.5],[78,48,0.26,0.74,5.4,3.2],
+    [14,68,0.28,0.76,4.8,2.0],[38,65,0.24,0.72,6.8,1.0],[65,62,0.26,0.74,5.0,3.6],
+    [88,78,0.28,0.76,3.7,0.4],[2,75,0.24,0.72,7.0,4.8],[52,78,0.26,0.74,4.3,2.6],
+    // Small
+    [6,14,0.16,0.58,5.5,1.5],[26,8,0.14,0.55,6.2,3.2],[50,16,0.16,0.58,4.8,2.8],
+    [68,4,0.14,0.55,7.5,0.6],[85,22,0.16,0.58,5.0,4.1],[3,52,0.14,0.55,6.8,1.8],
+    [20,55,0.16,0.58,4.2,3.5],[35,60,0.14,0.55,7.2,0.2],[72,65,0.16,0.58,4.5,4.8],
+    [80,72,0.14,0.55,6.5,1.2],[96,62,0.16,0.58,5.2,3.8],[12,78,0.14,0.55,7.8,0.8],
+    [32,82,0.16,0.58,4.0,2.2],[60,80,0.14,0.55,6.2,4.5],[75,82,0.16,0.58,5.5,1.0],
+    [90,68,0.14,0.55,7.0,3.2],[44,72,0.16,0.58,4.8,0.4],[18,38,0.14,0.55,6.5,2.8],
+    [62,38,0.16,0.58,5.0,4.2],[8,44,0.14,0.55,7.2,1.8],[30,48,0.16,0.58,4.5,3.5],
+    [82,35,0.14,0.55,6.8,0.5],[95,50,0.16,0.58,5.5,2.2],[46,35,0.14,0.55,7.5,4.8],
+    [60,48,0.16,0.58,4.2,1.2],[55,70,0.14,0.55,6.0,3.8],[72,55,0.16,0.58,5.8,0.8],
   ]
   return (
-    <svg className="login-deco login-deco-stars" viewBox="0 0 100 85" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      {S.map(([x, y, bright], i) => (
-        <circle key={i} cx={x} cy={y}
-          r={bright ? 0.28 : 0.14}
-          fill={bright ? '#fffde8' : 'white'}
-          opacity={bright ? 0.85 : 0.5}
-          className={bright ? 'star-bright' : undefined}
-          style={bright ? { animationDelay: `${((i * 0.47) % 3).toFixed(2)}s` } : undefined}
-        />
+    <svg className="login-deco login-deco-stars" viewBox="0 0 100 85"
+      preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <filter id="dr-sglo" x="-200%" y="-200%" width="500%" height="500%">
+          <feGaussianBlur stdDeviation="0.18"/>
+        </filter>
+      </defs>
+      {/* Subtle halos only on the brightest stars */}
+      <g filter="url(#dr-sglo)" opacity="0.28">
+        {stars.filter(s => s[2] >= 0.40).map(([x,y,r],i) => (
+          <circle key={`h${i}`} cx={x} cy={y} r={r+0.18} fill="#ddeeff"/>
+        ))}
+      </g>
+      {/* All stars with individual twinkling */}
+      {stars.map(([x,y,r,op,dur,del],i) => (
+        <circle key={i} cx={x} cy={y} r={r}
+          fill={i%3===0 ? '#fffde8' : i%5===0 ? '#e8f0ff' : 'white'}>
+          <animate attributeName="opacity"
+            values={`${op};${+(op*0.05).toFixed(2)};${op}`}
+            dur={`${dur}s`} begin={`-${del}s`} repeatCount="indefinite"
+            calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+        </circle>
       ))}
     </svg>
   )
@@ -141,73 +173,299 @@ function MoonDeco() {
   )
 }
 
-/* ── Horizon silhouette ──────────────────────────────────────────────── */
+/* ── Doctor floral horizon ───────────────────────────────────────────── */
 
-function HorizonDeco() {
+const SunflowerPlant = () => {
+  const A = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]
   return (
     <>
-      {/* Day treeline */}
+      <rect x="-1.5" y="-44" width="3" height="44" rx="1.5" fill="rgba(21,128,61,0.88)" />
+      <ellipse cx="-6" cy="-20" rx="6.5" ry="2.5" transform="rotate(-22,-6,-20)" fill="rgba(21,128,61,0.66)" />
+      <ellipse cx="6" cy="-31" rx="6.5" ry="2.5" transform="rotate(22,6,-31)" fill="rgba(21,128,61,0.66)" />
+      <g transform="translate(0,-44)">
+        {A.map((a, i) => (
+          <g key={i} transform={`rotate(${a})`}>
+            <ellipse cx="0" cy="-9" rx="2.8" ry="5.5" fill="rgba(251,191,36,0.92)" />
+          </g>
+        ))}
+        <circle cx="0" cy="0" r="5.5" fill="rgba(120,53,15,0.95)" />
+        <circle cx="0" cy="0" r="3.5" fill="rgba(92,40,10,0.55)" />
+      </g>
+    </>
+  )
+}
+
+const DaisyPlant = () => {
+  const A = [0, 40, 80, 120, 160, 200, 240, 280, 320]
+  return (
+    <>
+      <rect x="-1" y="-30" width="2" height="30" rx="1" fill="rgba(21,128,61,0.82)" />
+      <g transform="translate(0,-30)">
+        {A.map((a, i) => (
+          <g key={i} transform={`rotate(${a})`}>
+            <ellipse cx="0" cy="-8" rx="2.2" ry="5" fill="rgba(255,255,255,0.90)" />
+          </g>
+        ))}
+        <circle cx="0" cy="0" r="3.5" fill="rgba(250,204,21,0.95)" />
+      </g>
+    </>
+  )
+}
+
+const WildStem = () => (
+  <>
+    <line x1="0" y1="0" x2="-2" y2="-28" stroke="rgba(21,128,61,0.72)" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="-2" y1="-28" x2="-7" y2="-36" stroke="rgba(21,128,61,0.70)" strokeWidth="1.2" strokeLinecap="round" />
+    <line x1="-2" y1="-28" x2="3" y2="-34" stroke="rgba(21,128,61,0.66)" strokeWidth="1.1" strokeLinecap="round" />
+    <circle cx="-7" cy="-37" r="2.5" fill="rgba(251,191,36,0.82)" />
+    <circle cx="3" cy="-35" r="2.0" fill="rgba(255,255,255,0.80)" />
+    <circle cx="-2" cy="-30" r="1.4" fill="rgba(251,191,36,0.62)" />
+  </>
+)
+
+const MoonflowerPlant = () => (
+  <>
+    <rect x="-1" y="-44" width="2" height="44" rx="1" fill="rgba(30,41,59,0.82)" />
+    <g transform="translate(0,-44)">
+      <path d="M-2,0 C-5,-8 -10,-16 -11,-22 L11,-22 C10,-16 5,-8 2,0 Z" fill="rgba(226,232,240,0.90)" />
+      <ellipse cx="0" cy="-22" rx="10" ry="3" fill="rgba(241,245,249,0.75)" />
+      <ellipse cx="0" cy="-13" rx="4" ry="6" fill="rgba(241,245,249,0.40)" />
+    </g>
+  </>
+)
+
+const EveningPrimrose = () => (
+  <>
+    <rect x="-1" y="-36" width="2" height="36" rx="1" fill="rgba(30,41,59,0.78)" />
+    <g transform="translate(0,-36)">
+      <ellipse cx="0" cy="-8" rx="4" ry="7.5" fill="rgba(253,224,71,0.75)" />
+      <ellipse cx="0" cy="8" rx="4" ry="7.5" fill="rgba(253,224,71,0.75)" />
+      <ellipse cx="-8" cy="0" rx="7.5" ry="4" fill="rgba(253,224,71,0.75)" />
+      <ellipse cx="8" cy="0" rx="7.5" ry="4" fill="rgba(253,224,71,0.75)" />
+      <circle cx="0" cy="0" r="3.5" fill="rgba(180,130,18,0.88)" />
+    </g>
+  </>
+)
+
+const ClosedDaisy = () => {
+  const A = [0, 45, 90, 135, 180, 225, 270, 315]
+  return (
+    <>
+      <line x1="0" y1="0" x2="1" y2="-30" stroke="rgba(30,41,59,0.78)" strokeWidth="1.8" strokeLinecap="round" />
+      <g transform="translate(1,-30)">
+        {A.map((a, i) => (
+          <g key={i} transform={`rotate(${a})`}>
+            <ellipse cx="0" cy="5" rx="1.8" ry="4" fill="rgba(71,85,105,0.72)" />
+          </g>
+        ))}
+        <circle cx="0" cy="0" r="2.8" fill="rgba(51,65,85,0.88)" />
+      </g>
+    </>
+  )
+}
+
+function DoctorHorizonDeco() {
+  const SF = (dur, del) => ({ className: 'dr-sunflower', style: { animationDuration: dur, animationDelay: del } })
+  const DY = (dur, del) => ({ className: 'dr-daisy', style: { animationDuration: dur, animationDelay: del } })
+  const WS = (dur, del) => ({ className: 'dr-wildflower', style: { animationDuration: dur, animationDelay: del } })
+  const MF = (dur, del) => ({ className: 'dr-moonflower', style: { animationDuration: dur, animationDelay: del } })
+  const EP = (dur, del) => ({ className: 'dr-primrose', style: { animationDuration: dur, animationDelay: del } })
+  const CD = (dur, del) => ({ className: 'dr-closeddaisy', style: { animationDuration: dur, animationDelay: del } })
+
+  return (
+    <>
       <svg className="login-horizon login-horizon--day" viewBox="0 0 1440 130" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <path d="M0,130 L0,88 C200,38 400,78 600,52 C800,26 1000,66 1200,44 C1300,33 1370,50 1440,46 L1440,130 Z" fill="rgba(134,239,172,0.18)" />
         <path d="M0,130 L0,108 C180,88 360,104 540,96 C720,88 900,104 1080,96 C1260,88 1360,100 1440,98 L1440,130 Z" fill="rgba(74,222,128,0.26)" />
         <path d="M0,130 L0,120 L1440,120 L1440,130 Z" fill="rgba(34,197,94,0.30)" />
-        {/* trees */}
-        <polygon points="48,120 60,86 72,120"   fill="rgba(21,128,61,0.68)" />
-        <polygon points="62,120 77,74 92,120"   fill="rgba(16,100,48,0.75)" />
-        <polygon points="84,120 96,88 108,120"  fill="rgba(21,128,61,0.62)" />
-        <polygon points="200,120 211,90 222,120" fill="rgba(21,128,61,0.58)" />
-        <polygon points="216,120 230,80 244,120" fill="rgba(16,100,48,0.70)" />
-        <polygon points="238,120 248,93 258,120" fill="rgba(21,128,61,0.55)" />
-        <polygon points="400,120 414,82 428,120" fill="rgba(16,100,48,0.72)" />
-        <polygon points="422,120 434,91 446,120" fill="rgba(21,128,61,0.62)" />
-        <polygon points="682,120 696,84 710,120" fill="rgba(21,128,61,0.65)" />
-        <polygon points="704,120 720,74 736,120" fill="rgba(16,100,48,0.73)" />
-        <polygon points="730,120 742,87 754,120" fill="rgba(21,128,61,0.58)" />
-        <polygon points="924,120 937,86 950,120" fill="rgba(16,100,48,0.68)" />
-        <polygon points="944,120 958,80 972,120" fill="rgba(21,128,61,0.72)" />
-        <polygon points="1202,120 1215,84 1228,120" fill="rgba(21,128,61,0.62)" />
-        <polygon points="1222,120 1237,74 1252,120" fill="rgba(16,100,48,0.75)" />
-        <polygon points="1246,120 1258,88 1270,120" fill="rgba(21,128,61,0.58)" />
-        <polygon points="1384,120 1395,90 1406,120" fill="rgba(16,100,48,0.65)" />
-        <polygon points="1400,120 1414,82 1428,120" fill="rgba(21,128,61,0.68)" />
+        {/* Front row */}
+        <g transform="translate(64,120)  scale(0.86)"><g {...SF('4.2s', '0.0s')}><SunflowerPlant /></g></g>
+        <g transform="translate(79,120)  scale(1.02)"><g {...SF('4.8s', '0.9s')}><SunflowerPlant /></g></g>
+        <g transform="translate(120,120) scale(0.62)"><g {...DY('3.1s', '0.4s')}><DaisyPlant /></g></g>
+        <g transform="translate(132,120) scale(0.68)"><g {...DY('3.6s', '1.2s')}><DaisyPlant /></g></g>
+        <g transform="translate(144,120) scale(0.58)"><g {...DY('2.9s', '2.2s')}><DaisyPlant /></g></g>
+        <g transform="translate(240,120) scale(0.50)"><g {...WS('2.8s', '1.5s')}><WildStem /></g></g>
+        <g transform="translate(256,120) scale(0.56)"><g {...WS('3.2s', '0.3s')}><WildStem /></g></g>
+        <g transform="translate(296,120) scale(0.70)"><g {...DY('3.3s', '0.8s')}><DaisyPlant /></g></g>
+        <g transform="translate(310,120) scale(0.64)"><g {...DY('3.8s', '2.5s')}><DaisyPlant /></g></g>
+        <g transform="translate(418,120) scale(0.98)"><g {...SF('4.5s', '0.5s')}><SunflowerPlant /></g></g>
+        <g transform="translate(435,120) scale(0.80)"><g {...SF('5.1s', '1.8s')}><SunflowerPlant /></g></g>
+        <g transform="translate(474,120) scale(0.62)"><g {...DY('3.0s', '0.6s')}><DaisyPlant /></g></g>
+        <g transform="translate(486,120) scale(0.68)"><g {...DY('3.4s', '1.9s')}><DaisyPlant /></g></g>
+        <g transform="translate(498,120) scale(0.52)"><g {...WS('2.9s', '3.1s')}><WildStem /></g></g>
+        <g transform="translate(596,120) scale(0.72)"><g {...DY('3.5s', '0.2s')}><DaisyPlant /></g></g>
+        <g transform="translate(610,120) scale(0.66)"><g {...DY('3.0s', '1.4s')}><DaisyPlant /></g></g>
+        <g transform="translate(624,120) scale(0.58)"><g {...WS('2.7s', '2.8s')}><WildStem /></g></g>
+        <g transform="translate(714,120) scale(1.08)"><g {...SF('4.0s', '0.0s')}><SunflowerPlant /></g></g>
+        <g transform="translate(730,120) scale(0.92)"><g {...SF('4.6s', '1.3s')}><SunflowerPlant /></g></g>
+        <g transform="translate(746,120) scale(0.76)"><g {...SF('5.2s', '2.6s')}><SunflowerPlant /></g></g>
+        <g transform="translate(774,120) scale(0.64)"><g {...DY('3.2s', '0.7s')}><DaisyPlant /></g></g>
+        <g transform="translate(788,120) scale(0.70)"><g {...DY('3.7s', '1.8s')}><DaisyPlant /></g></g>
+        <g transform="translate(886,120) scale(0.54)"><g {...WS('3.0s', '4.0s')}><WildStem /></g></g>
+        <g transform="translate(902,120) scale(0.60)"><g {...DY('3.3s', '0.5s')}><DaisyPlant /></g></g>
+        <g transform="translate(916,120) scale(0.68)"><g {...DY('3.6s', '1.6s')}><DaisyPlant /></g></g>
+        <g transform="translate(930,120) scale(0.62)"><g {...WS('2.8s', '2.2s')}><WildStem /></g></g>
+        <g transform="translate(1046,120) scale(0.90)"><g {...SF('4.4s', '0.8s')}><SunflowerPlant /></g></g>
+        <g transform="translate(1062,120) scale(1.04)"><g {...SF('4.9s', '2.0s')}><SunflowerPlant /></g></g>
+        <g transform="translate(1098,120) scale(0.58)"><g {...DY('3.1s', '0.3s')}><DaisyPlant /></g></g>
+        <g transform="translate(1110,120) scale(0.66)"><g {...DY('3.5s', '1.5s')}><DaisyPlant /></g></g>
+        <g transform="translate(1208,120) scale(0.64)"><g {...DY('3.2s', '2.8s')}><DaisyPlant /></g></g>
+        <g transform="translate(1222,120) scale(0.70)"><g {...DY('3.8s', '0.6s')}><DaisyPlant /></g></g>
+        <g transform="translate(1236,120) scale(0.56)"><g {...WS('2.9s', '1.4s')}><WildStem /></g></g>
+        <g transform="translate(1254,120) scale(0.62)"><g {...DY('3.4s', '3.6s')}><DaisyPlant /></g></g>
+        <g transform="translate(1350,120) scale(0.84)"><g {...SF('4.3s', '1.2s')}><SunflowerPlant /></g></g>
+        <g transform="translate(1366,120) scale(0.94)"><g {...SF('5.0s', '0.4s')}><SunflowerPlant /></g></g>
+        <g transform="translate(1398,120) scale(0.60)"><g {...DY('3.0s', '2.0s')}><DaisyPlant /></g></g>
+        <g transform="translate(1412,120) scale(0.54)"><g {...WS('2.8s', '5.0s')}><WildStem /></g></g>
       </svg>
 
-      {/* Night treeline */}
       <svg className="login-horizon login-horizon--night" viewBox="0 0 1440 130" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <path d="M0,130 L0,88 C200,38 400,78 600,52 C800,26 1000,66 1200,44 C1300,33 1370,50 1440,46 L1440,130 Z" fill="rgba(15,23,42,0.35)" />
         <path d="M0,130 L0,108 C180,88 360,104 540,96 C720,88 900,104 1080,96 C1260,88 1360,100 1440,98 L1440,130 Z" fill="rgba(10,16,35,0.55)" />
         <path d="M0,130 L0,120 L1440,120 L1440,130 Z" fill="rgba(6,10,22,0.75)" />
-        <polygon points="48,120 60,86 72,120"   fill="rgba(5,10,22,0.92)" />
-        <polygon points="62,120 77,74 92,120"   fill="rgba(4,8,18,0.95)" />
-        <polygon points="84,120 96,88 108,120"  fill="rgba(5,10,22,0.88)" />
-        <polygon points="200,120 211,90 222,120" fill="rgba(5,10,22,0.88)" />
-        <polygon points="216,120 230,80 244,120" fill="rgba(4,8,18,0.93)" />
-        <polygon points="238,120 248,93 258,120" fill="rgba(5,10,22,0.85)" />
-        <polygon points="400,120 414,82 428,120" fill="rgba(4,8,18,0.93)" />
-        <polygon points="422,120 434,91 446,120" fill="rgba(5,10,22,0.88)" />
-        <polygon points="682,120 696,84 710,120" fill="rgba(5,10,22,0.90)" />
-        <polygon points="704,120 720,74 736,120" fill="rgba(4,8,18,0.95)" />
-        <polygon points="730,120 742,87 754,120" fill="rgba(5,10,22,0.86)" />
-        <polygon points="924,120 937,86 950,120" fill="rgba(4,8,18,0.92)" />
-        <polygon points="944,120 958,80 972,120" fill="rgba(5,10,22,0.90)" />
-        <polygon points="1202,120 1215,84 1228,120" fill="rgba(5,10,22,0.88)" />
-        <polygon points="1222,120 1237,74 1252,120" fill="rgba(4,8,18,0.95)" />
-        <polygon points="1246,120 1258,88 1270,120" fill="rgba(5,10,22,0.85)" />
-        <polygon points="1384,120 1395,90 1406,120" fill="rgba(4,8,18,0.90)" />
-        <polygon points="1400,120 1414,82 1428,120" fill="rgba(5,10,22,0.88)" />
+        {/* Night flowers — sparse, atmospheric, only moonflowers + evening primrose */}
+        <g transform="translate(64,120)  scale(0.86)"><g {...MF('5.5s', '0.0s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(79,120)  scale(1.02)"><g {...MF('6.0s', '0.9s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(144,120) scale(0.58)"><g {...EP('5.2s', '2.2s')}><EveningPrimrose /></g></g>
+        <g transform="translate(256,120) scale(0.56)"><g {...EP('5.5s', '0.3s')}><EveningPrimrose /></g></g>
+        <g transform="translate(418,120) scale(0.98)"><g {...MF('5.8s', '0.5s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(435,120) scale(0.80)"><g {...MF('6.4s', '1.8s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(486,120) scale(0.68)"><g {...EP('5.0s', '1.9s')}><EveningPrimrose /></g></g>
+        <g transform="translate(610,120) scale(0.66)"><g {...EP('5.3s', '1.4s')}><EveningPrimrose /></g></g>
+        <g transform="translate(714,120) scale(1.08)"><g {...MF('5.2s', '0.0s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(730,120) scale(0.92)"><g {...MF('5.8s', '1.3s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(746,120) scale(0.76)"><g {...MF('6.5s', '2.6s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(916,120) scale(0.68)"><g {...EP('5.1s', '1.6s')}><EveningPrimrose /></g></g>
+        <g transform="translate(1046,120) scale(0.90)"><g {...MF('5.6s', '0.8s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(1062,120) scale(1.04)"><g {...MF('6.2s', '2.0s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(1110,120) scale(0.66)"><g {...EP('5.2s', '1.5s')}><EveningPrimrose /></g></g>
+        <g transform="translate(1222,120) scale(0.70)"><g {...EP('5.5s', '0.6s')}><EveningPrimrose /></g></g>
+        <g transform="translate(1350,120) scale(0.84)"><g {...MF('5.4s', '1.2s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(1366,120) scale(0.94)"><g {...MF('6.0s', '0.4s')}><MoonflowerPlant /></g></g>
       </svg>
     </>
+  )
+}
+
+function DoctorPetalDeco() {
+  const petals = [
+    { l: '5%', b: '22%', s: 8, dur: '12s', del: '0.0s' },
+    { l: '18%', b: '18%', s: 6, dur: '15s', del: '2.5s' },
+    { l: '31%', b: '25%', s: 10, dur: '10s', del: '1.0s' },
+    { l: '42%', b: '20%', s: 7, dur: '14s', del: '4.2s' },
+    { l: '55%', b: '28%', s: 9, dur: '11s', del: '1.8s' },
+    { l: '66%', b: '22%', s: 6, dur: '16s', del: '3.5s' },
+    { l: '78%', b: '26%', s: 8, dur: '9s', del: '0.8s' },
+    { l: '88%', b: '20%', s: 7, dur: '13s', del: '2.0s' },
+    { l: '46%', b: '30%', s: 10, dur: '8s', del: '5.5s' },
+    { l: '24%', b: '32%', s: 6, dur: '17s', del: '7.0s' },
+    { l: '70%', b: '31%', s: 8, dur: '11s', del: '0.3s' },
+    { l: '11%', b: '27%', s: 5, dur: '14s', del: '9.0s' },
+  ]
+  return (
+    <div className="login-dr-petals" aria-hidden="true">
+      {petals.map((p, i) => (
+        <span key={i} className="dr-petal" style={{
+          left: p.l, bottom: p.b,
+          width: p.s + 'px', height: (p.s * 1.4) + 'px',
+          animationDuration: p.dur, animationDelay: p.del,
+        }} />
+      ))}
+    </div>
   )
 }
 
 function NorthernLightsDeco() {
   return (
     <div className="login-aurora" aria-hidden="true">
-      <div className="aur-r aur-r1" />
-      <div className="aur-r aur-r2" />
-      <div className="aur-r aur-r3" />
-      <div className="aur-r aur-r4" />
-      <div className="aur-r aur-r5" />
+      <svg className="login-aurora-svg" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMin slice">
+        <defs>
+          <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="#05081c" stopOpacity="0.72"/>
+            <stop offset="55%"  stopColor="#060e20" stopOpacity="0.28"/>
+            <stop offset="100%" stopColor="#060e1a" stopOpacity="0"/>
+          </linearGradient>
+          <radialGradient id="moon" cx="0.82" cy="0.10" r="0.30" gradientUnits="objectBoundingBox">
+            <stop offset="0%"   stopColor="#ddeeff" stopOpacity="0.52"/>
+            <stop offset="28%"  stopColor="#aaccff" stopOpacity="0.18"/>
+            <stop offset="68%"  stopColor="#6688cc" stopOpacity="0.04"/>
+            <stop offset="100%" stopColor="#4060a0" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="nebl" cx="0.08" cy="0.06" r="0.28" gradientUnits="objectBoundingBox">
+            <stop offset="0%"   stopColor="#1a2268" stopOpacity="0.26"/>
+            <stop offset="100%" stopColor="#1a2268" stopOpacity="0"/>
+          </radialGradient>
+          <linearGradient id="shg" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stopColor="white" stopOpacity="0"/>
+            <stop offset="50%"  stopColor="white" stopOpacity="0.52"/>
+            <stop offset="100%" stopColor="white" stopOpacity="0.92"/>
+          </linearGradient>
+          <filter id="sglo" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation="2.5"/>
+          </filter>
+        </defs>
+
+        <rect width="1440" height="300" fill="url(#nsky)"/>
+        <rect width="1440" height="300" fill="url(#nebl)"/>
+        <rect width="1440" height="300" fill="url(#moon)"/>
+
+        {/* Bright star halos */}
+        <g filter="url(#sglo)" opacity="0.45">
+          {[[1180,38,2.2],[318,22,1.9],[680,14,2.0],[852,56,2.3],[1355,26,1.8],[44,19,2.1],[540,46,2.0],[1052,20,1.9]].map(([cx,cy,r],i) => (
+            <circle key={i} cx={cx} cy={cy} r={r+2.2} fill="white"/>
+          ))}
+        </g>
+
+        {/* Stars — each with its own twinkling SVG animate */}
+        {[
+          [1180,38,2.2,0.95,4.2,1.3],[318,22,1.9,0.90,3.8,2.3],[680,14,2.0,0.92,5.1,0.5],
+          [852,56,2.3,0.95,3.5,3.1],[1355,26,1.8,0.88,4.8,1.8],[44,19,2.1,0.93,5.5,2.8],
+          [540,46,2.0,0.90,4.0,0.8],[1052,20,1.9,0.88,6.2,3.5],
+          [95,48,1.4,0.75,6.2,2.5],[210,16,1.3,0.70,4.5,1.8],[382,72,1.5,0.78,7.1,3.0],
+          [490,36,1.2,0.72,5.8,0.6],[572,90,1.4,0.76,4.2,4.2],[742,44,1.3,0.74,6.5,1.2],
+          [882,18,1.5,0.78,5.2,3.8],[962,76,1.2,0.70,3.9,2.2],[1142,84,1.3,0.72,4.6,4.5],
+          [1262,56,1.5,0.78,6.0,1.5],[1392,68,1.2,0.70,5.4,3.2],[148,92,1.3,0.74,4.8,2.0],
+          [432,14,1.4,0.76,6.8,1.0],[612,60,1.2,0.72,5.0,3.6],[792,90,1.5,0.78,3.7,0.4],
+          [1012,22,1.3,0.74,7.0,4.8],[1322,14,1.4,0.76,4.3,2.6],
+          [30,66,0.8,0.62,5.5,1.5],[76,8,0.9,0.65,6.2,3.2],[170,56,0.8,0.60,4.8,2.8],
+          [256,42,0.9,0.62,7.5,0.6],[342,90,0.8,0.60,5.0,4.1],[422,24,0.8,0.60,6.8,1.8],
+          [512,66,0.9,0.62,4.2,3.5],[592,12,0.8,0.60,7.2,0.2],[662,82,0.8,0.60,5.8,2.5],
+          [732,56,0.9,0.62,4.5,4.8],[812,32,0.8,0.60,6.5,1.2],[896,94,0.8,0.60,5.2,3.8],
+          [972,50,0.9,0.62,7.8,0.8],[1032,74,0.8,0.60,4.0,2.2],[1096,20,0.8,0.60,6.2,4.5],
+          [1162,66,0.9,0.62,5.5,1.0],[1226,34,0.8,0.60,7.0,3.2],[1296,82,0.8,0.60,4.8,0.4],
+          [1366,46,0.9,0.62,6.5,2.8],[1416,22,0.8,0.60,5.0,4.2],[18,42,0.8,0.60,7.2,1.8],
+          [112,76,0.9,0.62,4.5,3.5],[192,30,0.8,0.60,6.8,0.5],[276,70,0.8,0.60,5.5,2.2],
+          [356,16,0.9,0.62,7.5,4.8],[446,84,0.8,0.60,4.2,1.2],[526,40,0.8,0.60,6.0,3.8],
+          [616,74,0.9,0.62,5.8,0.8],[696,26,0.8,0.60,7.2,4.0],[776,64,0.8,0.60,4.8,1.6],
+          [856,10,0.9,0.62,6.5,3.2],[936,56,0.8,0.60,5.2,0.2],[1008,88,0.8,0.60,7.0,4.5],
+          [1078,44,0.9,0.62,4.5,1.8],[1156,30,0.8,0.60,6.2,3.0],[1212,74,0.8,0.60,5.8,0.6],
+          [1282,20,0.9,0.62,7.5,2.4],[1342,60,0.8,0.60,4.2,4.0],[1408,88,0.8,0.60,6.0,1.5],
+          [56,32,0.5,0.42,8.0,2.0],[132,86,0.5,0.40,6.5,0.5],[222,54,0.5,0.42,7.2,3.8],
+          [306,12,0.5,0.40,5.8,1.2],[396,60,0.5,0.42,8.5,4.5],[476,50,0.5,0.40,6.2,2.8],
+          [546,28,0.5,0.42,7.8,0.8],[626,94,0.5,0.40,5.5,3.5],[706,40,0.5,0.42,8.2,1.5],
+          [786,80,0.5,0.40,6.8,4.2],[866,18,0.5,0.42,7.5,0.2],[946,68,0.5,0.40,5.2,3.0],
+          [1026,32,0.5,0.42,8.8,1.8],[1092,90,0.5,0.40,6.5,4.8],[1172,54,0.5,0.42,7.2,2.5],
+          [1236,10,0.5,0.40,5.8,0.8],[1308,44,0.5,0.42,8.0,3.5],[1376,74,0.5,0.40,6.2,1.2],
+        ].map(([cx,cy,r,op,dur,del],i) => (
+          <circle key={i} cx={cx} cy={cy} r={r} fill="white">
+            <animate attributeName="opacity"
+              values={`${op};${+(op*0.05).toFixed(2)};${op}`}
+              dur={`${dur}s`} begin={`-${del}s`} repeatCount="indefinite"
+              calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+          </circle>
+        ))}
+
+        {/* Shooting star — sweeps diagonally every 25s */}
+        <g>
+          <animateTransform attributeName="transform" type="translate"
+            values="0,0; 1570,560" dur="25s" repeatCount="indefinite" calcMode="linear"/>
+          <animate attributeName="opacity"
+            values="0;0;0.88;0.88;0;0"
+            keyTimes="0;0.14;0.19;0.25;0.30;1"
+            dur="25s" repeatCount="indefinite"/>
+          <line x1="-130" y1="-48" x2="0" y2="0" stroke="url(#shg)" strokeWidth="1.8"/>
+        </g>
+      </svg>
     </div>
   )
 }
@@ -227,20 +485,20 @@ const GrassTuft = () => (
 const LavSprig = () => (
   <>
     <rect x="-1" y="-50" width="2" height="50" rx="1" />
-    <ellipse cx="-6" cy="-34" rx="5"   ry="2.4" />
-    <ellipse cx="6"  cy="-28" rx="5"   ry="2.4" />
+    <ellipse cx="-6" cy="-34" rx="5" ry="2.4" />
+    <ellipse cx="6" cy="-28" rx="5" ry="2.4" />
     <ellipse cx="-5" cy="-20" rx="4.5" ry="2.1" />
-    <ellipse cx="5"  cy="-15" rx="4.5" ry="2.1" />
-    <ellipse cx="-4" cy="-9"  rx="4"   ry="1.9" />
-    <ellipse cx="4"  cy="-5"  rx="4"   ry="1.9" />
-    <ellipse cx="0"  cy="-55" rx="3.5" ry="6.5" />
+    <ellipse cx="5" cy="-15" rx="4.5" ry="2.1" />
+    <ellipse cx="-4" cy="-9" rx="4" ry="1.9" />
+    <ellipse cx="4" cy="-5" rx="4" ry="1.9" />
+    <ellipse cx="0" cy="-55" rx="3.5" ry="6.5" />
   </>
 )
 
 /* Outer <g> = position+scale. Inner <g className> = wind animation rotating from base */
 function PharmacyHorizonDeco() {
   const G = (dur, del) => ({ className: 'ph-grass', style: { animationDuration: dur, animationDelay: del } })
-  const L = (dur, del) => ({ className: 'ph-lav',   style: { animationDuration: dur, animationDelay: del } })
+  const L = (dur, del) => ({ className: 'ph-lav', style: { animationDuration: dur, animationDelay: del } })
 
   const scene = (c1, c2, c3) => (
     <>
@@ -250,60 +508,60 @@ function PharmacyHorizonDeco() {
       {/* Mid hill */}
       <path d="M0,194 C200,178 480,187 740,178 C980,170 1220,184 1440,175 L1440,220 L0,220 Z" fill={c2} />
       <g fill={c2}>
-        <g transform="translate(116,193) scale(0.48)"><g {...G('3.1s','1.1s')}><GrassTuft /></g></g>
-        <g transform="translate(128,192) scale(0.60)"><g {...G('3.4s','0.0s')}><GrassTuft /></g></g>
-        <g transform="translate(140,193) scale(0.52)"><g {...G('3.9s','0.5s')}><GrassTuft /></g></g>
+        <g transform="translate(116,193) scale(0.48)"><g {...G('3.1s', '1.1s')}><GrassTuft /></g></g>
+        <g transform="translate(128,192) scale(0.60)"><g {...G('3.4s', '0.0s')}><GrassTuft /></g></g>
+        <g transform="translate(140,193) scale(0.52)"><g {...G('3.9s', '0.5s')}><GrassTuft /></g></g>
 
-        <g transform="translate(368,189) scale(0.70)"><g {...L('4.8s','0.3s')}><LavSprig /></g></g>
-        <g transform="translate(380,190) scale(0.78)"><g {...L('5.3s','1.0s')}><LavSprig /></g></g>
-        <g transform="translate(392,189) scale(0.66)"><g {...L('4.5s','1.8s')}><LavSprig /></g></g>
+        <g transform="translate(368,189) scale(0.70)"><g {...L('4.8s', '0.3s')}><LavSprig /></g></g>
+        <g transform="translate(380,190) scale(0.78)"><g {...L('5.3s', '1.0s')}><LavSprig /></g></g>
+        <g transform="translate(392,189) scale(0.66)"><g {...L('4.5s', '1.8s')}><LavSprig /></g></g>
 
-        <g transform="translate(836,182) scale(0.56)"><g {...G('3.7s','2.2s')}><GrassTuft /></g></g>
-        <g transform="translate(848,183) scale(0.50)"><g {...G('3.2s','0.8s')}><GrassTuft /></g></g>
-        <g transform="translate(860,183) scale(0.46)"><g {...G('4.0s','1.6s')}><GrassTuft /></g></g>
+        <g transform="translate(836,182) scale(0.56)"><g {...G('3.7s', '2.2s')}><GrassTuft /></g></g>
+        <g transform="translate(848,183) scale(0.50)"><g {...G('3.2s', '0.8s')}><GrassTuft /></g></g>
+        <g transform="translate(860,183) scale(0.46)"><g {...G('4.0s', '1.6s')}><GrassTuft /></g></g>
 
-        <g transform="translate(1072,179) scale(0.66)"><g {...L('5.1s','0.6s')}><LavSprig /></g></g>
-        <g transform="translate(1084,180) scale(0.74)"><g {...L('4.6s','1.4s')}><LavSprig /></g></g>
-        <g transform="translate(1096,179) scale(0.62)"><g {...L('5.5s','2.5s')}><LavSprig /></g></g>
+        <g transform="translate(1072,179) scale(0.66)"><g {...L('5.1s', '0.6s')}><LavSprig /></g></g>
+        <g transform="translate(1084,180) scale(0.74)"><g {...L('4.6s', '1.4s')}><LavSprig /></g></g>
+        <g transform="translate(1096,179) scale(0.62)"><g {...L('5.5s', '2.5s')}><LavSprig /></g></g>
 
-        <g transform="translate(1328,182) scale(0.54)"><g {...G('3.5s','3.2s')}><GrassTuft /></g></g>
-        <g transform="translate(1340,183) scale(0.48)"><g {...G('3.8s','0.4s')}><GrassTuft /></g></g>
+        <g transform="translate(1328,182) scale(0.54)"><g {...G('3.5s', '3.2s')}><GrassTuft /></g></g>
+        <g transform="translate(1340,183) scale(0.48)"><g {...G('3.8s', '0.4s')}><GrassTuft /></g></g>
       </g>
 
       {/* Front hill */}
       <path d="M0,202 C180,188 420,197 680,188 C920,180 1160,194 1440,185 L1440,220 L0,220 Z" fill={c3} />
       <g fill={c3}>
-        <g transform="translate(66,201)  scale(0.70)"><g {...G('2.9s','1.7s')}><GrassTuft /></g></g>
-        <g transform="translate(78,200)  scale(0.86)"><g {...G('3.0s','0.2s')}><GrassTuft /></g></g>
-        <g transform="translate(92,201)  scale(0.76)"><g {...G('3.5s','0.9s')}><GrassTuft /></g></g>
-        <g transform="translate(104,201) scale(0.64)"><g {...G('3.8s','2.8s')}><GrassTuft /></g></g>
+        <g transform="translate(66,201)  scale(0.70)"><g {...G('2.9s', '1.7s')}><GrassTuft /></g></g>
+        <g transform="translate(78,200)  scale(0.86)"><g {...G('3.0s', '0.2s')}><GrassTuft /></g></g>
+        <g transform="translate(92,201)  scale(0.76)"><g {...G('3.5s', '0.9s')}><GrassTuft /></g></g>
+        <g transform="translate(104,201) scale(0.64)"><g {...G('3.8s', '2.8s')}><GrassTuft /></g></g>
 
-        <g transform="translate(282,197) scale(0.88)"><g {...L('4.5s','0.1s')}><LavSprig /></g></g>
-        <g transform="translate(295,197) scale(1.00)"><g {...L('5.0s','0.7s')}><LavSprig /></g></g>
-        <g transform="translate(308,196) scale(1.08)"><g {...L('4.8s','1.5s')}><LavSprig /></g></g>
-        <g transform="translate(321,197) scale(0.92)"><g {...L('5.4s','2.4s')}><LavSprig /></g></g>
+        <g transform="translate(282,197) scale(0.88)"><g {...L('4.5s', '0.1s')}><LavSprig /></g></g>
+        <g transform="translate(295,197) scale(1.00)"><g {...L('5.0s', '0.7s')}><LavSprig /></g></g>
+        <g transform="translate(308,196) scale(1.08)"><g {...L('4.8s', '1.5s')}><LavSprig /></g></g>
+        <g transform="translate(321,197) scale(0.92)"><g {...L('5.4s', '2.4s')}><LavSprig /></g></g>
 
-        <g transform="translate(530,193) scale(0.74)"><g {...G('2.8s','2.2s')}><GrassTuft /></g></g>
-        <g transform="translate(542,192) scale(0.90)"><g {...G('3.3s','1.2s')}><GrassTuft /></g></g>
-        <g transform="translate(556,193) scale(0.80)"><g {...G('3.7s','0.4s')}><GrassTuft /></g></g>
-        <g transform="translate(568,193) scale(0.68)"><g {...G('4.1s','3.5s')}><GrassTuft /></g></g>
+        <g transform="translate(530,193) scale(0.74)"><g {...G('2.8s', '2.2s')}><GrassTuft /></g></g>
+        <g transform="translate(542,192) scale(0.90)"><g {...G('3.3s', '1.2s')}><GrassTuft /></g></g>
+        <g transform="translate(556,193) scale(0.80)"><g {...G('3.7s', '0.4s')}><GrassTuft /></g></g>
+        <g transform="translate(568,193) scale(0.68)"><g {...G('4.1s', '3.5s')}><GrassTuft /></g></g>
 
-        <g transform="translate(762,186) scale(0.94)"><g {...L('4.9s','0.5s')}><LavSprig /></g></g>
-        <g transform="translate(775,186) scale(1.06)"><g {...L('5.2s','1.3s')}><LavSprig /></g></g>
-        <g transform="translate(788,185) scale(1.12)"><g {...L('4.6s','2.1s')}><LavSprig /></g></g>
-        <g transform="translate(801,186) scale(0.98)"><g {...L('5.6s','3.0s')}><LavSprig /></g></g>
+        <g transform="translate(762,186) scale(0.94)"><g {...L('4.9s', '0.5s')}><LavSprig /></g></g>
+        <g transform="translate(775,186) scale(1.06)"><g {...L('5.2s', '1.3s')}><LavSprig /></g></g>
+        <g transform="translate(788,185) scale(1.12)"><g {...L('4.6s', '2.1s')}><LavSprig /></g></g>
+        <g transform="translate(801,186) scale(0.98)"><g {...L('5.6s', '3.0s')}><LavSprig /></g></g>
 
-        <g transform="translate(1006,191) scale(0.72)"><g {...G('4.2s','2.6s')}><GrassTuft /></g></g>
-        <g transform="translate(1018,190) scale(0.88)"><g {...G('3.6s','0.8s')}><GrassTuft /></g></g>
-        <g transform="translate(1032,191) scale(0.78)"><g {...G('3.1s','1.6s')}><GrassTuft /></g></g>
+        <g transform="translate(1006,191) scale(0.72)"><g {...G('4.2s', '2.6s')}><GrassTuft /></g></g>
+        <g transform="translate(1018,190) scale(0.88)"><g {...G('3.6s', '0.8s')}><GrassTuft /></g></g>
+        <g transform="translate(1032,191) scale(0.78)"><g {...G('3.1s', '1.6s')}><GrassTuft /></g></g>
 
-        <g transform="translate(1228,190) scale(0.90)"><g {...L('4.7s','0.9s')}><LavSprig /></g></g>
-        <g transform="translate(1241,190) scale(1.00)"><g {...L('5.1s','1.8s')}><LavSprig /></g></g>
-        <g transform="translate(1254,189) scale(1.06)"><g {...L('4.4s','3.2s')}><LavSprig /></g></g>
-        <g transform="translate(1267,190) scale(0.86)"><g {...L('5.8s','4.5s')}><LavSprig /></g></g>
+        <g transform="translate(1228,190) scale(0.90)"><g {...L('4.7s', '0.9s')}><LavSprig /></g></g>
+        <g transform="translate(1241,190) scale(1.00)"><g {...L('5.1s', '1.8s')}><LavSprig /></g></g>
+        <g transform="translate(1254,189) scale(1.06)"><g {...L('4.4s', '3.2s')}><LavSprig /></g></g>
+        <g transform="translate(1267,190) scale(0.86)"><g {...L('5.8s', '4.5s')}><LavSprig /></g></g>
 
-        <g transform="translate(1396,190) scale(0.78)"><g {...G('3.4s','5.0s')}><GrassTuft /></g></g>
-        <g transform="translate(1408,191) scale(0.70)"><g {...G('2.9s','2.4s')}><GrassTuft /></g></g>
+        <g transform="translate(1396,190) scale(0.78)"><g {...G('3.4s', '5.0s')}><GrassTuft /></g></g>
+        <g transform="translate(1408,191) scale(0.70)"><g {...G('2.9s', '2.4s')}><GrassTuft /></g></g>
       </g>
     </>
   )
@@ -325,18 +583,18 @@ function PharmacyHorizonDeco() {
 /* Golden pollen / spores drifting upward — gives the scene life */
 function PharmacyPollenDeco() {
   const dots = [
-    { l:'8%',  b:'24%', s:3.2, dur:'8.5s',  del:'0.0s'  },
-    { l:'16%', b:'20%', s:2.5, dur:'11.0s', del:'1.8s'  },
-    { l:'27%', b:'27%', s:2.0, dur:'9.2s',  del:'3.5s'  },
-    { l:'37%', b:'22%', s:3.5, dur:'7.8s',  del:'5.2s'  },
-    { l:'50%', b:'29%', s:2.8, dur:'12.5s', del:'2.1s'  },
-    { l:'60%', b:'21%', s:2.2, dur:'10.0s', del:'4.0s'  },
-    { l:'71%', b:'26%', s:3.0, dur:'8.0s',  del:'0.7s'  },
-    { l:'82%', b:'23%', s:2.6, dur:'13.0s', del:'2.9s'  },
-    { l:'91%', b:'27%', s:2.0, dur:'9.8s',  del:'1.4s'  },
-    { l:'43%', b:'32%', s:4.0, dur:'6.5s',  del:'3.8s'  },
-    { l:'22%', b:'31%', s:2.5, dur:'14.0s', del:'6.0s'  },
-    { l:'67%', b:'31%', s:3.0, dur:'11.5s', del:'0.3s'  },
+    { l: '8%', b: '24%', s: 3.2, dur: '8.5s', del: '0.0s' },
+    { l: '16%', b: '20%', s: 2.5, dur: '11.0s', del: '1.8s' },
+    { l: '27%', b: '27%', s: 2.0, dur: '9.2s', del: '3.5s' },
+    { l: '37%', b: '22%', s: 3.5, dur: '7.8s', del: '5.2s' },
+    { l: '50%', b: '29%', s: 2.8, dur: '12.5s', del: '2.1s' },
+    { l: '60%', b: '21%', s: 2.2, dur: '10.0s', del: '4.0s' },
+    { l: '71%', b: '26%', s: 3.0, dur: '8.0s', del: '0.7s' },
+    { l: '82%', b: '23%', s: 2.6, dur: '13.0s', del: '2.9s' },
+    { l: '91%', b: '27%', s: 2.0, dur: '9.8s', del: '1.4s' },
+    { l: '43%', b: '32%', s: 4.0, dur: '6.5s', del: '3.8s' },
+    { l: '22%', b: '31%', s: 2.5, dur: '14.0s', del: '6.0s' },
+    { l: '67%', b: '31%', s: 3.0, dur: '11.5s', del: '0.3s' },
   ]
   return (
     <div className="login-ph-pollen" aria-hidden="true">
@@ -383,15 +641,15 @@ function PharmacyLeavesDeco() {
 /* Healing wisps — Oogway's sacred tree energy rising from the botanical garden */
 function PharmacyWispsDeco() {
   const wisps = [
-    { l:'6%',  b:'22%', s:28, blur:13, color:'rgba(255,230,140,0.20)', dur:'14s', del:'0.0s' },
-    { l:'20%', b:'18%', s:18, blur:9,  color:'rgba(52,211,153,0.18)',  dur:'10s', del:'2.5s' },
-    { l:'33%', b:'25%', s:36, blur:15, color:'rgba(200,240,255,0.14)', dur:'18s', del:'1.0s' },
-    { l:'50%', b:'20%', s:22, blur:10, color:'rgba(255,220,100,0.16)', dur:'12s', del:'4.0s' },
-    { l:'65%', b:'24%', s:30, blur:12, color:'rgba(16,185,129,0.18)',  dur:'15s', del:'0.5s' },
-    { l:'82%', b:'18%', s:16, blur:8,  color:'rgba(52,211,153,0.20)',  dur:'9s',  del:'3.0s' },
-    { l:'46%', b:'30%', s:44, blur:18, color:'rgba(220,255,230,0.12)', dur:'22s', del:'7.0s' },
-    { l:'14%', b:'30%', s:20, blur:9,  color:'rgba(255,240,180,0.16)', dur:'11s', del:'5.0s' },
-    { l:'74%', b:'28%', s:24, blur:11, color:'rgba(180,255,220,0.14)', dur:'16s', del:'2.0s' },
+    { l: '6%', b: '22%', s: 28, blur: 13, color: 'rgba(255,230,140,0.20)', dur: '14s', del: '0.0s' },
+    { l: '20%', b: '18%', s: 18, blur: 9, color: 'rgba(52,211,153,0.18)', dur: '10s', del: '2.5s' },
+    { l: '33%', b: '25%', s: 36, blur: 15, color: 'rgba(200,240,255,0.14)', dur: '18s', del: '1.0s' },
+    { l: '50%', b: '20%', s: 22, blur: 10, color: 'rgba(255,220,100,0.16)', dur: '12s', del: '4.0s' },
+    { l: '65%', b: '24%', s: 30, blur: 12, color: 'rgba(16,185,129,0.18)', dur: '15s', del: '0.5s' },
+    { l: '82%', b: '18%', s: 16, blur: 8, color: 'rgba(52,211,153,0.20)', dur: '9s', del: '3.0s' },
+    { l: '46%', b: '30%', s: 44, blur: 18, color: 'rgba(220,255,230,0.12)', dur: '22s', del: '7.0s' },
+    { l: '14%', b: '30%', s: 20, blur: 9, color: 'rgba(255,240,180,0.16)', dur: '11s', del: '5.0s' },
+    { l: '74%', b: '28%', s: 24, blur: 11, color: 'rgba(180,255,220,0.14)', dur: '16s', del: '2.0s' },
   ]
   return (
     <div className="login-ph-wisps" aria-hidden="true">
@@ -439,19 +697,47 @@ function IlloDoctor() {
 function IlloPharmacy() {
   return (
     <svg width="120" height="130" viewBox="0 0 120 130" fill="none" aria-hidden="true">
+      {/* Pharmacy cross */}
       <rect x="48" y="6" width="24" height="58" rx="12"
         fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.60)" strokeWidth="2.5" />
       <rect x="18" y="24" width="84" height="24" rx="12"
         fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.60)" strokeWidth="2.5" />
       <rect x="48" y="24" width="24" height="24" fill="rgba(255,255,255,0.20)" />
+      {/* Pulse ring at cross center — like hb-ring on doctor */}
+      <circle cx="60" cy="36" r="20" stroke="rgba(180,255,220,0.82)" fill="none" strokeWidth="1.4"
+        className="ph-ring" />
+      {/* Dispensing particle — drops from cross bottom to capsule */}
+      <circle cx="60" r="2.2" fill="rgba(255,255,255,0.82)">
+        <animate attributeName="cy" values="66;82" dur="1.8s" begin="-0.9s"
+          repeatCount="indefinite" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animate attributeName="opacity" values="0;0.88;0.88;0"
+          keyTimes="0;0.15;0.78;1" dur="1.8s" begin="-0.9s" repeatCount="indefinite"/>
+      </circle>
+      {/* Pill capsule */}
       <rect x="14" y="84" width="92" height="36" rx="18"
         fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.90)" strokeWidth="2.5" />
       <path d="M32,84 L60,84 L60,120 L32,120 Q14,120 14,102 Q14,84 32,84 Z"
         fill="rgba(255,255,255,0.28)" />
       <line x1="60" y1="84" x2="60" y2="120" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" />
-      <circle cx="80" cy="99" r="3" fill="rgba(255,255,255,0.38)" />
-      <circle cx="90" cy="99" r="3" fill="rgba(255,255,255,0.38)" />
-      <circle cx="100" cy="99" r="3" fill="rgba(255,255,255,0.38)" />
+      {/* Pills — staggered pulse like pills being counted */}
+      <circle cx="80" cy="102" r="3" fill="rgba(255,255,255,0.42)">
+        <animate attributeName="opacity" values="0.38;0.94;0.38" dur="2.0s" begin="0s"
+          repeatCount="indefinite" calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+        <animate attributeName="r" values="3;4.2;3" dur="2.0s" begin="0s"
+          repeatCount="indefinite" calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+      </circle>
+      <circle cx="91" cy="102" r="3" fill="rgba(255,255,255,0.42)">
+        <animate attributeName="opacity" values="0.38;0.94;0.38" dur="2.0s" begin="0.44s"
+          repeatCount="indefinite" calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+        <animate attributeName="r" values="3;4.2;3" dur="2.0s" begin="0.44s"
+          repeatCount="indefinite" calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+      </circle>
+      <circle cx="102" cy="102" r="3" fill="rgba(255,255,255,0.42)">
+        <animate attributeName="opacity" values="0.38;0.94;0.38" dur="2.0s" begin="0.88s"
+          repeatCount="indefinite" calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+        <animate attributeName="r" values="3;4.2;3" dur="2.0s" begin="0.88s"
+          repeatCount="indefinite" calcMode="spline" keySplines="0.5 0 0.5 1;0.5 0 0.5 1"/>
+      </circle>
     </svg>
   )
 }
@@ -484,41 +770,41 @@ function IconEyeOff() {
 function TimeIcon({ hour }) {
   if (hour >= 21 || hour < 5) return (
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
-      <path d="M11.5 9.5A6 6 0 1 1 4.5 2.5a4.5 4.5 0 0 0 7 7z" fill="currentColor" opacity="0.75"/>
+      <path d="M11.5 9.5A6 6 0 1 1 4.5 2.5a4.5 4.5 0 0 0 7 7z" fill="currentColor" opacity="0.75" />
     </svg>
   )
   if (hour < 12) return (
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
-      <circle cx="7" cy="8" r="2.8" fill="currentColor" opacity="0.82"/>
-      <line x1="7" y1="1" x2="7" y2="3"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.6"/>
-      <line x1="2.5" y1="3.6" x2="3.8" y2="4.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
-      <line x1="11.5" y1="3.6" x2="10.2" y2="4.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
-      <line x1="0.5" y1="8" x2="2.3" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
-      <line x1="11.7" y1="8" x2="13.5" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
-      <path d="M1 12.5 Q7 6.5 13 12.5" stroke="currentColor" strokeWidth="1.1" fill="none" opacity="0.38"/>
+      <circle cx="7" cy="8" r="2.8" fill="currentColor" opacity="0.82" />
+      <line x1="7" y1="1" x2="7" y2="3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.6" />
+      <line x1="2.5" y1="3.6" x2="3.8" y2="4.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5" />
+      <line x1="11.5" y1="3.6" x2="10.2" y2="4.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5" />
+      <line x1="0.5" y1="8" x2="2.3" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55" />
+      <line x1="11.7" y1="8" x2="13.5" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55" />
+      <path d="M1 12.5 Q7 6.5 13 12.5" stroke="currentColor" strokeWidth="1.1" fill="none" opacity="0.38" />
     </svg>
   )
   if (hour < 17) return (
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
-      <circle cx="7" cy="7" r="2.8" fill="currentColor" opacity="0.88"/>
-      <line x1="7" y1="0.5" x2="7" y2="2.3"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
-      <line x1="7" y1="11.7" x2="7" y2="13.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
-      <line x1="0.5" y1="7" x2="2.3" y2="7"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
-      <line x1="11.7" y1="7" x2="13.5" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/>
-      <line x1="2.2" y1="2.2" x2="3.5" y2="3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
-      <line x1="10.5" y1="10.5" x2="11.8" y2="11.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
-      <line x1="11.8" y1="2.2" x2="10.5" y2="3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
-      <line x1="2.2" y1="11.8" x2="3.5" y2="10.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52"/>
+      <circle cx="7" cy="7" r="2.8" fill="currentColor" opacity="0.88" />
+      <line x1="7" y1="0.5" x2="7" y2="2.3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65" />
+      <line x1="7" y1="11.7" x2="7" y2="13.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65" />
+      <line x1="0.5" y1="7" x2="2.3" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65" />
+      <line x1="11.7" y1="7" x2="13.5" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.65" />
+      <line x1="2.2" y1="2.2" x2="3.5" y2="3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52" />
+      <line x1="10.5" y1="10.5" x2="11.8" y2="11.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52" />
+      <line x1="11.8" y1="2.2" x2="10.5" y2="3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52" />
+      <line x1="2.2" y1="11.8" x2="3.5" y2="10.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.52" />
     </svg>
   )
   return (
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="login-time-icon">
-      <path d="M2 9.5 Q7 3 12 9.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.65"/>
-      <circle cx="7" cy="9.5" r="2.4" fill="currentColor" opacity="0.82"/>
-      <line x1="7" y1="1.2" x2="7" y2="3"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.48"/>
-      <line x1="1.5" y1="5.2" x2="3" y2="6.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.45"/>
-      <line x1="12.5" y1="5.2" x2="11" y2="6.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.45"/>
-      <line x1="0" y1="11.5" x2="14" y2="11.5" stroke="currentColor" strokeWidth="0.9" opacity="0.32"/>
+      <path d="M2 9.5 Q7 3 12 9.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.65" />
+      <circle cx="7" cy="9.5" r="2.4" fill="currentColor" opacity="0.82" />
+      <line x1="7" y1="1.2" x2="7" y2="3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.48" />
+      <line x1="1.5" y1="5.2" x2="3" y2="6.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.45" />
+      <line x1="12.5" y1="5.2" x2="11" y2="6.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.45" />
+      <line x1="0" y1="11.5" x2="14" y2="11.5" stroke="currentColor" strokeWidth="0.9" opacity="0.32" />
     </svg>
   )
 }
@@ -548,29 +834,32 @@ function IconPharmacy() {
 
 /* ══════════════════════════════════════════════════════════════════════ */
 
+const ROLE_NAMES = { doctor: 'Doctor', pharmacy: 'Pharmacist' }
+
 export default function LoginPage() {
   const { login, token, user, loading } = useAuth()
   const navigate = useNavigate()
 
-  const [isDark, setIsDark]           = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
-  const [mounted, setMounted]         = useState(false)
-  const [role, setRole]               = useState('doctor')
-  const [greeting]                    = useState(() => getGreeting())
-  const [hour]                        = useState(() => new Date().getHours())
-  const [dayStr]                      = useState(() => getDayStr())
-  const [quote, setQuote]             = useState(randomQuote)
-  const [clinicName, setClinicName]   = useState('Clinora')
-  const [email, setEmail]             = useState('')
-  const [password, setPassword]       = useState('')
+  const [isDark, setIsDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const [mounted, setMounted] = useState(false)
+  const [role, setRole] = useState('doctor')
+  const [greeting] = useState(() => getGreeting())
+  const [hour] = useState(() => new Date().getHours())
+  const [dayStr] = useState(() => getDayStr())
+  const [quote, setQuote] = useState(randomQuote)
+  const [clinicName, setClinicName] = useState('Clinora')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [submitting, setSubmitting]   = useState(false)
-  const [error, setError]             = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [welcomeUser, setWelcomeUser] = useState(null)
   const [mountComplete, setMountComplete] = useState(false)
   const [displayedRole, setDisplayedRole] = useState('')
+  const [quoteKey, setQuoteKey] = useState(0)
+  const [dots, setDots] = useState([])
+  const nextDotId = useRef(0)
   const cardRef = useRef(null)
-
-  const ROLE_NAMES = { doctor: 'Doctor', pharmacy: 'Pharmacist' }
 
   const [sessionExpired] = useState(() => {
     const flag = sessionStorage.getItem('session_expired')
@@ -579,18 +868,19 @@ export default function LoginPage() {
   })
 
   useEffect(() => {
+    let t2
     const t = setTimeout(() => {
       setMounted(true)
-      setTimeout(() => setMountComplete(true), 750)
+      t2 = setTimeout(() => setMountComplete(true), 750)
     }, 200)
-    return () => clearTimeout(t)
+    return () => { clearTimeout(t); clearTimeout(t2) }
   }, [])
 
   function handleCardMouseMove(e) {
     if (!mountComplete || !cardRef.current) return
     const rect = cardRef.current.getBoundingClientRect()
-    const dx = (e.clientX - (rect.left + rect.width  / 2)) / (rect.width  / 2)
-    const dy = (e.clientY - (rect.top  + rect.height / 2)) / (rect.height / 2)
+    const dx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
+    const dy = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
     cardRef.current.style.transform = `perspective(1200px) rotateX(${-dy * 3}deg) rotateY(${dx * 5}deg)`
     cardRef.current.style.transition = 'transform 0.08s linear'
   }
@@ -602,13 +892,30 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
-    invoke('get_public_clinic_name').then(n => setClinicName(n)).catch(() => {})
+    invoke('get_public_clinic_name').then(n => setClinicName(n)).catch(() => { })
   }, [])
 
   useEffect(() => {
+    if (showPassword) return
+    setDots(prev => {
+      const active = prev.filter(d => !d.exiting)
+      const diff = password.length - active.length
+      if (diff > 0) {
+        const added = Array.from({ length: diff }, () => ({ id: nextDotId.current++, exiting: false }))
+        return [...prev, ...added]
+      }
+      if (diff < 0) {
+        const toExit = new Set(active.slice(diff).map(d => d.id))
+        return prev.map(d => toExit.has(d.id) ? { ...d, exiting: true } : d)
+      }
+      return prev
+    })
+  }, [password, showPassword])
+
+  useEffect(() => {
     setQuote(randomQuote())
+    setQuoteKey(k => k + 1)
     setError('')
-    // Typewriter effect on role name
     const target = ROLE_NAMES[role]
     let i = 0
     setDisplayedRole('')
@@ -641,7 +948,7 @@ export default function LoginPage() {
     }
   }
 
-  const canSubmit  = email.trim() && password && !submitting
+  const canSubmit = email.trim() && password && !submitting
   const isPharmacy = role === 'pharmacy'
 
   return (
@@ -653,10 +960,10 @@ export default function LoginPage() {
         {isDark ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="12" cy="12" r="5" />
-            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
         ) : (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -679,8 +986,9 @@ export default function LoginPage() {
       <PharmacyPollenDeco />
       <PharmacyLeavesDeco />
 
-      {/* Horizon treeline */}
-      <HorizonDeco />
+      {/* Doctor floral horizon + petal drift */}
+      <DoctorHorizonDeco />
+      <DoctorPetalDeco />
 
       {/* Card */}
       <div className="login-card" ref={cardRef} onMouseMove={handleCardMouseMove} onMouseLeave={handleCardMouseLeave}>
@@ -705,7 +1013,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div key={role + quote.text} className="login-brand-quote">
+          <div key={quoteKey} className="login-brand-quote">
             <p className="login-brand-quote-text">"{quote.text}"</p>
             {quote.author && <span className="login-brand-quote-author">— {quote.author}</span>}
           </div>
@@ -754,8 +1062,8 @@ export default function LoginPage() {
 
           <div className="login-float-group">
             <svg className="login-field-icon" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
             </svg>
             <input id="email" className="login-float-field" type="email" autoComplete="email"
               placeholder=" " required value={email}
@@ -765,7 +1073,7 @@ export default function LoginPage() {
 
           <div className="login-float-group">
             <svg className="login-field-icon" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
             <input
               id="password"
@@ -778,10 +1086,14 @@ export default function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               disabled={submitting}
             />
-            {!showPassword && password.length > 0 && (
+            {!showPassword && dots.length > 0 && (
               <div className="login-pwd-dots" aria-hidden="true">
-                {Array.from({ length: password.length }, (_, i) => (
-                  <span key={i} className="login-pwd-dot">•</span>
+                {dots.map(d => (
+                  <span
+                    key={d.id}
+                    className={`login-pwd-dot${d.exiting ? ' login-pwd-dot--out' : ''}`}
+                    onAnimationEnd={d.exiting ? () => setDots(p => p.filter(x => x.id !== d.id)) : undefined}
+                  />
                 ))}
               </div>
             )}

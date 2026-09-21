@@ -9,6 +9,7 @@ import { getStockItems, createStockItem, updateStockItem, deleteStockItem } from
 import { getStockAuditLog } from '../../services/stockAuditService'
 import Spinner from '../../components/ui/Spinner'
 import MedicineImportModal from '../../components/medicines/MedicineImportModal'
+import EmptyState from '../../components/ui/EmptyState'
 
 const UNIT_OPTIONS = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Drops', 'Cream', 'Gel', 'Powder', 'Sachet', 'Inhaler', 'Patch']
 const FALLBACK_CATS = ['Analgesic', 'Antibiotic', 'Antacid', 'Antifungal', 'Antihistamine', 'Antiseptic', 'Vitamin', 'Syrup', 'Tablet', 'Injection']
@@ -759,13 +760,11 @@ function MedicineTab({ preFilter }) {
             <Spinner size={26} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="ml-empty">
-            {medicines.length === 0
-              ? 'No medicines yet. Add or import to get started.'
-              : activeCat !== 'All'
-                ? `No medicines in "${activeCat}".`
-                : 'No medicines match your search.'}
-          </div>
+          <EmptyState
+            icon="💊"
+            title={medicines.length === 0 ? 'No medicines yet' : activeCat !== 'All' ? `No medicines in "${activeCat}"` : 'No medicines match your search'}
+            description={medicines.length === 0 ? 'Add a medicine or import from a CSV file.' : 'Try a different search or category.'}
+          />
         ) : (
           <div className="ml-table-wrap">
             <table className="ml-table">
@@ -1112,7 +1111,7 @@ function StockItemsTab() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><Spinner size={26} /></div>
       ) : items.length === 0 ? (
         <div className="card" style={{ marginTop: 'var(--space-sm)' }}>
-          <div className="ml-empty">No other items yet. Add water bottles, stationery, etc. above.</div>
+          <EmptyState icon="📦" title="No other items yet" description="Add water bottles, stationery, or other clinic supplies above." />
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden', marginTop: 'var(--space-sm)' }}>

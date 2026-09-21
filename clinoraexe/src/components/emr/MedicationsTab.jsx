@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import EmptyState from '../ui/EmptyState'
 
 const STATUS_LABEL = {
   draft:            'Draft',
@@ -25,14 +26,7 @@ export default function MedicationsTab({ prescriptions = [], status }) {
   }
 
   if (!prescriptions.length) {
-    return (
-      <div className="emr-empty">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3, marginBottom: 8 }}>
-          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-        </svg>
-        No prescriptions issued yet.
-      </div>
-    )
+    return <EmptyState compact icon="💊" title="No prescriptions yet" description="Prescriptions from this clinic will appear here." />
   }
 
   return (

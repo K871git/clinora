@@ -24,3 +24,4 @@ pub mod rx_templates;
 pub mod stock_audit;
 pub mod fee_templates;
 pub mod certificates;
+pub mod pharmacy_returns;

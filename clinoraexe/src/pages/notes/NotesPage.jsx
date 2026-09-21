@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { toast } from 'sonner'
+import EmptyState from '../../components/ui/EmptyState'
 import {
   listNotes, getNote, createNote, updateNote, deleteNote,
   saveNoteAttachment, deleteNoteAttachment,
@@ -438,9 +439,12 @@ ${imageBlocks}
 
         <div className="notes-list">
           {sortedNotes.length === 0 && (
-            <div className="notes-list-empty">
-              {search ? 'No notes match your search.' : 'No notes yet. Click + New to start.'}
-            </div>
+            <EmptyState
+              compact
+              icon="📝"
+              title={search ? 'No notes match' : 'No notes yet'}
+              description={search ? 'Try different keywords.' : 'Click + New to create your first note.'}
+            />
           )}
           {sortedNotes.map(n => {
             const isPinned = pinnedIds.has(n.id)

@@ -458,3 +458,42 @@ html[data-theme="dark"] .rv2-metric--amber .rv2-metric-value { color: #fbbf24; }
   width: 100%;
   height: 160px;
 }
+
+/* ─── Doctor stats panel ─────────────────────────────────────────────── */
+.rv-doctor-card {
+  padding: 0;
+  overflow: hidden;
+  margin-top: var(--space-md);
+}
+.rv-doctor-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--clr-text);
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--clr-border);
+}
+.rv-doctor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.rv-doctor-table thead tr {
+  background: var(--clr-surface);
+}
+.rv-doctor-table th {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--clr-text-muted);
+  border-bottom: 1px solid var(--clr-border);
+}
+.rv-doctor-row {
+  border-bottom: 1px solid var(--clr-border);
+  transition: background 0.1s;
+}
+.rv-doctor-row:last-child { border-bottom: none; }
+.rv-doctor-row:hover { background: var(--clr-bg); }
+.rv-doctor-table td { padding: 10px 14px; }
+.rv-doctor-name { font-weight: 500; }
