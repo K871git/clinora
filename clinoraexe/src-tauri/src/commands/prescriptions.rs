@@ -144,15 +144,19 @@ pub async fn create_prescription(
 
     let prescription_id = result.last_insert_id();
 
-    for (i, item) in data.items.iter().enumerate() {
-        sqlx::query(
-            "INSERT INTO prescription_items (prescription_id, medicine_name, dosage, frequency, duration, instructions, sort_order, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
-        )
-        .bind(prescription_id).bind(&item.medicine_name).bind(&item.dosage)
-        .bind(&item.frequency).bind(&item.duration).bind(&item.instructions)
-        .bind(item.sort_order.unwrap_or(i as u32))
-        .execute(&state.db).await?;
+    if !data.items.is_empty() {
+        let rows = data.items.iter().map(|_| "(?, ?, ?, ?, ?, ?, ?, NOW(), NOW())").collect::<Vec<_>>().join(", ");
+        let sql = format!(
+            "INSERT INTO prescription_items (prescription_id, medicine_name, dosage, frequency, duration, instructions, sort_order, created_at, updated_at) VALUES {}",
+            rows
+        );
+        let mut q = sqlx::query(&sql);
+        for (i, item) in data.items.iter().enumerate() {
+            q = q.bind(prescription_id).bind(&item.medicine_name).bind(&item.dosage)
+                 .bind(&item.frequency).bind(&item.duration).bind(&item.instructions)
+                 .bind(item.sort_order.unwrap_or(i as u32));
+        }
+        q.execute(&state.db).await?;
     }
 
     crate::commands::audit::log_audit(
@@ -220,15 +224,19 @@ pub async fn update_prescription(id: u64, data: PrescriptionPayload, state: Stat
     sqlx::query("UPDATE prescription_items SET deleted_at=NOW() WHERE prescription_id=? AND deleted_at IS NULL")
         .bind(id).execute(&state.db).await?;
 
-    for (i, item) in data.items.iter().enumerate() {
-        sqlx::query(
-            "INSERT INTO prescription_items (prescription_id, medicine_name, dosage, frequency, duration, instructions, sort_order, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
-        )
-        .bind(id).bind(&item.medicine_name).bind(&item.dosage)
-        .bind(&item.frequency).bind(&item.duration).bind(&item.instructions)
-        .bind(item.sort_order.unwrap_or(i as u32))
-        .execute(&state.db).await?;
+    if !data.items.is_empty() {
+        let rows = data.items.iter().map(|_| "(?, ?, ?, ?, ?, ?, ?, NOW(), NOW())").collect::<Vec<_>>().join(", ");
+        let sql = format!(
+            "INSERT INTO prescription_items (prescription_id, medicine_name, dosage, frequency, duration, instructions, sort_order, created_at, updated_at) VALUES {}",
+            rows
+        );
+        let mut q = sqlx::query(&sql);
+        for (i, item) in data.items.iter().enumerate() {
+            q = q.bind(id).bind(&item.medicine_name).bind(&item.dosage)
+                 .bind(&item.frequency).bind(&item.duration).bind(&item.instructions)
+                 .bind(item.sort_order.unwrap_or(i as u32));
+        }
+        q.execute(&state.db).await?;
     }
 
     crate::commands::audit::log_audit(

@@ -237,10 +237,6 @@ pub async fn delete_template(name: String, state: State<'_, AppState>) -> AppRes
     let session = get_session(&state)?;
     let cid = session.clinic_id;
 
-    if name.contains('/') || name.contains('\\') || name.contains("..") {
-        return Err("Invalid template name.".into());
-    }
-
     let active: Option<String> = sqlx::query(
         "SELECT prescription_template FROM clinic_settings WHERE clinic_id=?"
     ).bind(cid).fetch_optional(&state.db).await?
@@ -251,9 +247,18 @@ pub async fn delete_template(name: String, state: State<'_, AppState>) -> AppRes
             .bind(cid).execute(&state.db).await?;
     }
 
-    let path = templates_dir(cid)?.join(&name);
-    if path.exists() {
-        std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+    let tpl_dir = templates_dir(cid)?;
+    std::fs::create_dir_all(&tpl_dir).ok();
+    let candidate = tpl_dir.join(&name);
+    if candidate.exists() {
+        let root_canon = tpl_dir.canonicalize()
+            .map_err(|_| "Templates directory unavailable.")?;
+        let safe = candidate.canonicalize()
+            .map_err(|_| "Invalid template path.")?;
+        if !safe.starts_with(&root_canon) {
+            return Err("Access denied: path is outside the templates directory.".into());
+        }
+        std::fs::remove_file(&safe).map_err(|e| e.to_string())?;
     }
 
     Ok(())

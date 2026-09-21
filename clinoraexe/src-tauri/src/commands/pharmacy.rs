@@ -5,6 +5,10 @@ use serde_json::{json, Value};
 use sqlx::Row;
 use tauri::State;
 
+fn require_pharmacy(state: &AppState) -> crate::error::AppResult<crate::state::SessionUser> {
+    crate::state::require_role(state, &["pharmacy"])
+}
+
 // Parse quantity from dosage text, e.g. "4 tablets" → 4, "2 caps" → 2, "500mg" → 1 (strength ≠ count)
 fn parse_dosage_qty(dosage: Option<&str>) -> i32 {
     let Some(s) = dosage else { return 1 };
@@ -108,7 +112,7 @@ async fn get_pharmacy_prescription_detail(id: u64, clinic_id: u64, db: &sqlx::My
 
 #[tauri::command]
 pub async fn get_pharmacy_stats(state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let cid = session.clinic_id;
     let db = &state.db;
 
@@ -124,7 +128,7 @@ pub async fn get_pharmacy_stats(state: State<'_, AppState>) -> AppResult<Value> 
 
 #[tauri::command]
 pub async fn list_pharmacy_prescriptions(state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let rows = sqlx::query(
         "SELECT pr.id, pr.status,
                 DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
@@ -187,13 +191,13 @@ pub async fn list_pharmacy_prescriptions(state: State<'_, AppState>) -> AppResul
 
 #[tauri::command]
 pub async fn get_pharmacy_prescription(id: u64, state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     get_pharmacy_prescription_detail(id, session.clinic_id, &state.db).await
 }
 
 #[tauri::command]
 pub async fn start_dispensing(id: u64, state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let current = sqlx::query("SELECT status FROM prescriptions WHERE id=? AND clinic_id=? AND deleted_at IS NULL")
         .bind(id).bind(session.clinic_id).fetch_optional(&state.db).await?.ok_or("Prescription not found.")?;
     if current.get::<String, _>("status") != "sent_to_pharmacy" {
@@ -214,7 +218,7 @@ pub async fn complete_pharmacy_prescription(
     payment_notes: Option<String>,
     state: State<'_, AppState>,
 ) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let current = sqlx::query("SELECT status FROM prescriptions WHERE id=? AND clinic_id=? AND deleted_at IS NULL")
         .bind(id).bind(session.clinic_id).fetch_optional(&state.db).await?.ok_or("Prescription not found.")?;
     let status = current.get::<String, _>("status");
@@ -297,7 +301,7 @@ pub async fn complete_pharmacy_prescription(
 
 #[tauri::command]
 pub async fn get_pharmacy_history(q: Option<String>, state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let mut sql = "SELECT pr.id, pr.status,
                           DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                           DATE_FORMAT(pr.completed_at, '%Y-%m-%dT%H:%i:%s') as completed_at,
@@ -338,7 +342,7 @@ pub async fn get_pharmacy_history(q: Option<String>, state: State<'_, AppState>)
 
 #[tauri::command]
 pub async fn record_prescription_payment(id: u64, data: PaymentPayload, state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     if !["paid", "partial", "unpaid"].contains(&data.payment_status.as_str()) {
         return Err("Invalid payment status.".into());
     }
@@ -354,7 +358,7 @@ pub async fn record_prescription_payment(id: u64, data: PaymentPayload, state: S
 
 #[tauri::command]
 pub async fn get_pharmacy_revenue(state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let row = sqlx::query(
         "SELECT
             COALESCE(SUM(CASE WHEN DATE(pr.completed_at)=CURDATE() THEN it.total ELSE 0 END),0) * 1e0 as t_rev,
@@ -415,7 +419,7 @@ pub async fn get_pharmacy_revenue_transactions(
     filter: Option<String>,
     state: State<'_, AppState>,
 ) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let period = period.unwrap_or_else(|| "this_month".to_string());
 
     let date_filter = match period.as_str() {
@@ -464,7 +468,7 @@ pub async fn get_pharmacy_revenue_transactions(
 
 #[tauri::command]
 pub async fn save_pharmacist_notes(id: u64, notes: Option<String>, state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let notes = notes.filter(|s| !s.trim().is_empty());
     sqlx::query(
         "UPDATE prescriptions SET pharmacist_notes=?, updated_at=NOW()
@@ -477,7 +481,7 @@ pub async fn save_pharmacist_notes(id: u64, notes: Option<String>, state: State<
 
 #[tauri::command]
 pub async fn get_pharmacy_stock_summary(state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let row = sqlx::query(
         "SELECT
            COUNT(*) as total_skus,
@@ -508,7 +512,7 @@ pub async fn get_patient_dispense_history(
     exclude_id: u64,
     state: State<'_, AppState>,
 ) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let db = &state.db;
 
     let rows = sqlx::query(
@@ -554,7 +558,7 @@ pub async fn get_patient_dispense_history(
 
 #[tauri::command]
 pub async fn get_pharmacy_live_counts(state: State<'_, AppState>) -> AppResult<Value> {
-    let session = get_session(&state)?;
+    let session = require_pharmacy(&state)?;
     let row = sqlx::query(
         "SELECT
            CAST(COALESCE(SUM(status='dispensing'), 0) AS UNSIGNED) as dispensing,

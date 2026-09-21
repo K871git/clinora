@@ -112,6 +112,9 @@ pub async fn upload_avatar(data: AvatarPayload, state: State<'_, AppState>) -> A
         return Err("Invalid file type. Only JPG, PNG, and WebP are allowed.".into());
     }
 
+    if data.data.len() > 10_000_000 {
+        return Err("Avatar file too large (max ~7 MB).".into());
+    }
     let bytes = base64_decode(&data.data)?;
     let exe_dir = std::env::current_exe()
         .map_err(|e| e.to_string())?
