@@ -5,6 +5,21 @@ use serde_json::{json, Value};
 use sqlx::Row;
 use tauri::State;
 
+// Parse quantity from dosage text, e.g. "4 tablets" → 4, "2 caps" → 2, "500mg" → 1 (strength ≠ count)
+fn parse_dosage_qty(dosage: Option<&str>) -> i32 {
+    let Some(s) = dosage else { return 1 };
+    let mut parts = s.split_whitespace();
+    let n: i32 = match parts.next().and_then(|w| w.parse().ok()) {
+        Some(n) if n > 0 => n,
+        _ => return 1,
+    };
+    let unit = parts.next().unwrap_or("").to_lowercase();
+    let unit = unit.trim_end_matches('.');
+    let count_units = ["tablet","tablets","tab","tabs","capsule","capsules","cap","caps",
+                       "pill","pills","sachet","sachets","patch","patches","drop","drops","ml"];
+    if count_units.contains(&unit) { n.min(50) } else { 1 }
+}
+
 #[derive(Deserialize)]
 pub struct DispenseItem {
     pub id: u64,
@@ -251,19 +266,21 @@ pub async fn complete_pharmacy_prescription(
 
     // Decrement medicine stock quantity for each dispensed item and log to audit
     let dispensed = sqlx::query(
-        "SELECT medicine_name FROM prescription_items WHERE prescription_id=? AND deleted_at IS NULL"
+        "SELECT medicine_name, dosage FROM prescription_items WHERE prescription_id=? AND deleted_at IS NULL"
     ).bind(id).fetch_all(&state.db).await?;
     for row in &dispensed {
         let name: String = row.get("medicine_name");
+        let dosage: Option<String> = row.get("dosage");
+        let deduct_qty = parse_dosage_qty(dosage.as_deref());
         if let Ok(Some(med_row)) = sqlx::query(
             "SELECT id, quantity FROM medicines WHERE clinic_id=? AND LOWER(name)=LOWER(?) AND quantity>0 LIMIT 1"
         ).bind(session.clinic_id).bind(&name).fetch_optional(&state.db).await {
             let med_id: u64 = med_row.get("id");
             let old_qty: i32 = med_row.get::<u32, _>("quantity") as i32;
-            let new_qty: i32 = (old_qty - 1).max(0);
+            let new_qty: i32 = (old_qty - deduct_qty).max(0);
             sqlx::query(
-                "UPDATE medicines SET quantity=GREATEST(0, quantity-1), updated_at=NOW() WHERE id=?"
-            ).bind(med_id).execute(&state.db).await?;
+                "UPDATE medicines SET quantity=GREATEST(0, quantity-?), updated_at=NOW() WHERE id=?"
+            ).bind(deduct_qty).bind(med_id).execute(&state.db).await?;
             let _ = sqlx::query(
                 "INSERT INTO stock_audit_log
                    (clinic_id, item_type, item_id, item_name, old_qty, new_qty, change_delta, reason, prescription_id, created_at)

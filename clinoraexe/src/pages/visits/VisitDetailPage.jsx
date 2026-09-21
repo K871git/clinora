@@ -13,6 +13,7 @@ import PageLoader from '../../components/ui/PageLoader'
 import { confirmDiscard } from '../../lib/swal'
 import SoapNotesSection from '../../components/emr/SoapNotesSection'
 import VitalSignsTab from '../../components/emr/VitalSignsTab'
+import DatePicker from '../../components/ui/DatePicker'
 import { updateFollowup } from '../../services/visitService'
 
 /* ── Avatar ──────────────────────────────────────────────────────────────── */
@@ -307,8 +308,13 @@ export default function VisitDetailPage() {
 
   async function handleSaveFollowup() {
     if (followupDate) {
-      const today = new Date(); today.setHours(0, 0, 0, 0)
-      if (new Date(followupDate) < today) {
+      const year = parseInt(followupDate.slice(0, 4), 10)
+      if (year < 2000 || year > 2099) {
+        toast.error('Please enter a valid year between 2000 and 2099.')
+        return
+      }
+      const todayStr = new Date().toISOString().split('T')[0]
+      if (followupDate < todayStr) {
         toast.error('Follow-up date must be today or in the future.')
         return
       }
@@ -548,13 +554,12 @@ export default function VisitDetailPage() {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 12, color: 'var(--clr-text-muted)', fontWeight: 600 }}>Follow-up Date</label>
-            <input
-              type="date"
-              className="field"
-              style={{ width: 180 }}
+            <DatePicker
               value={followupDate}
-              min={new Date().toISOString().split('T')[0]}
-              onChange={e => setFollowupDate(e.target.value)}
+              onChange={setFollowupDate}
+              minDate={new Date().toISOString().split('T')[0]}
+              maxDate="2099-12-31"
+              placeholder="DD/MM/YYYY"
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 200 }}>

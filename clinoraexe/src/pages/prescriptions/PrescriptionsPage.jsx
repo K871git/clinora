@@ -46,24 +46,27 @@ const DATE_RANGES = [
   { key: 'month', label: 'This Month' },
 ]
 
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 function computeDateRange(key) {
-  const now   = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const end   = new Date(today.getTime() + 864e5)
+  const now = new Date()
+  const todayStr = localDateStr(now)
   switch (key) {
-    case 'today': return { start: today, end }
+    case 'today': return { startStr: todayStr, endStr: todayStr }
     case 'week': {
-      const s = new Date(today); s.setDate(s.getDate() - s.getDay())
-      return { start: s, end }
+      const s = new Date(now); s.setDate(s.getDate() - s.getDay())
+      return { startStr: localDateStr(s), endStr: todayStr }
     }
     case '30d': {
-      const s = new Date(today); s.setDate(s.getDate() - 29)
-      return { start: s, end }
+      const s = new Date(now); s.setDate(s.getDate() - 29)
+      return { startStr: localDateStr(s), endStr: todayStr }
     }
     case 'month':
-      return { start: new Date(now.getFullYear(), now.getMonth(), 1), end }
+      return { startStr: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`, endStr: todayStr }
     default:
-      return { start: null, end: null }
+      return { startStr: null, endStr: null }
   }
 }
 
@@ -301,12 +304,12 @@ export default function PrescriptionsPage() {
       list = list.filter(p => p.status === activeTab)
     }
     if (dateRange) {
-      const { start, end } = computeDateRange(dateRange)
-      if (start) {
+      const { startStr, endStr } = computeDateRange(dateRange)
+      if (startStr) {
         list = list.filter(p => {
-          const d = new Date(p.prescribed_at)
-          if (isNaN(d.getTime())) return true
-          return d >= start && (!end || d < end)
+          if (!p.prescribed_at) return false
+          const dateStr = p.prescribed_at.slice(0, 10)
+          return dateStr >= startStr && dateStr <= endStr
         })
       }
     }
