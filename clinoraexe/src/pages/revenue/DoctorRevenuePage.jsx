@@ -3,10 +3,11 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { invoke } from '@tauri-apps/api/core'
-import { getRevenueDetails } from '../../services/dashboardService'
+import { getRevenueDetails, getVisitStatsByDoctor } from '../../services/dashboardService'
 import { recordVisitPayment, getRevenueTransactions } from '../../services/visitService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
+import EmptyState from '../../components/ui/EmptyState'
 
 async function exportCsv(txs, period, filter) {
   const BOM  = '﻿'
@@ -176,13 +177,14 @@ function RevenueChart({ txs, period }) {
 }
 
 export default function DoctorRevenuePage() {
-  const [data,      setData]      = useState(null)
-  const [status,    setStatus]    = useState('loading')
-  const [period,    setPeriod]    = useState('this_month')
-  const [filter,    setFilter]    = useState('all')
-  const [txs,       setTxs]       = useState([])
-  const [txLoading, setTxLoading] = useState(false)
-  const [savingId,  setSavingId]  = useState(null)
+  const [data,        setData]        = useState(null)
+  const [status,      setStatus]      = useState('loading')
+  const [period,      setPeriod]      = useState('this_month')
+  const [filter,      setFilter]      = useState('all')
+  const [txs,         setTxs]         = useState([])
+  const [txLoading,   setTxLoading]   = useState(false)
+  const [savingId,    setSavingId]    = useState(null)
+  const [doctorStats, setDoctorStats] = useState([])
 
   const loadStats = useCallback(() => {
     getRevenueDetails()
@@ -203,6 +205,13 @@ export default function DoctorRevenuePage() {
   useEffect(() => {
     if (status === 'done') loadTxs(period, filter)
   }, [period, filter, status, loadTxs])
+
+  useEffect(() => {
+    if (status !== 'done') return
+    getVisitStatsByDoctor(period)
+      .then(({ data: r }) => setDoctorStats(r.data ?? []))
+      .catch(() => {})
+  }, [period, status])
 
   async function markPaid(tx) {
     setSavingId(tx.id)
@@ -289,6 +298,33 @@ export default function DoctorRevenuePage() {
       {/* Revenue chart */}
       {!txLoading && <RevenueChart txs={txs} period={period} />}
 
+      {/* Doctor performance */}
+      {doctorStats.length > 0 && (
+        <div className="card rv-doctor-card">
+          <div className="rv-doctor-title">Visits by Doctor</div>
+          <table className="rv-doctor-table">
+            <thead>
+              <tr>
+                <th>Doctor</th>
+                <th style={{ textAlign: 'right' }}>Visits</th>
+                <th style={{ textAlign: 'right' }}>Completed</th>
+                <th style={{ textAlign: 'right' }}>Collected</th>
+              </tr>
+            </thead>
+            <tbody>
+              {doctorStats.map(d => (
+                <tr key={d.doctor_id} className="rv-doctor-row">
+                  <td className="rv-doctor-name">{d.doctor_name}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{d.total_visits}</td>
+                  <td style={{ textAlign: 'right', color: 'var(--clr-text-muted)' }}>{d.completed}</td>
+                  <td style={{ textAlign: 'right', color: '#059669', fontWeight: 600 }}>{fmtMoney(d.revenue_collected)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Transaction list */}
       <div className="card rv-debt-card" style={{ marginTop: 'var(--space-md)' }}>
         <div className="rv-debt-header">
@@ -314,13 +350,11 @@ export default function DoctorRevenuePage() {
             <Spinner size={24} />
           </div>
         ) : txs.length === 0 ? (
-          <div className="rv-empty-state">
-            {filter === 'outstanding'
-              ? 'No outstanding payments — all clear!'
-              : filter === 'collected'
-              ? 'No collected payments for this period.'
-              : 'No billed visits for this period.'}
-          </div>
+          <EmptyState
+            icon={filter === 'outstanding' ? '✅' : '📋'}
+            title={filter === 'outstanding' ? 'All payments collected' : filter === 'collected' ? 'No collected payments' : 'No billed visits'}
+            description={filter === 'outstanding' ? 'No outstanding payments for this period.' : filter === 'collected' ? 'No paid visits in this period.' : 'No visits recorded for this period.'}
+          />
         ) : (
           <div className="rv-debt-table-wrap">
             <table className="rv-debt-table">

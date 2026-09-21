@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { listVitals, createVital, deleteVital } from '../../services/vitalSignService'
+import EmptyState from '../ui/EmptyState'
 
 function fmtDate(s) {
   if (!s) return '—'
@@ -89,7 +90,9 @@ export default function VitalSignsTab({ patientId, visitId }) {
 
       {/* History list */}
       {loading && <div className="emr-empty">Loading…</div>}
-      {!loading && vitals.length === 0 && <div className="emr-empty">No vitals recorded yet.</div>}
+      {!loading && vitals.length === 0 && (
+        <EmptyState compact icon="📊" title="No vitals recorded yet" description="Record vitals using the form above." />
+      )}
       {!loading && vitals.length > 0 && (
         <div>
           {vitals.map(v => (

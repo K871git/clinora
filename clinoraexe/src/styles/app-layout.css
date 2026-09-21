@@ -881,3 +881,195 @@ html[data-role="pharmacy"] .shell-header {
 html[data-role="doctor"] .nav-link-active {
   background-color: rgba(37,99,235,0.07);
 }
+
+/* ─── Global Search Palette ─────────────────────────────────────────────── */
+.gs-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.gs-trigger-btn:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-text);
+}
+.gs-trigger-label {
+  font-size: 13px;
+}
+.gs-trigger-kbd {
+  font-size: 10px;
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--clr-text-muted);
+  font-family: inherit;
+  letter-spacing: .3px;
+}
+
+.gs-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  backdrop-filter: blur(3px);
+}
+
+.gs-palette {
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  animation: gs-in 0.15s ease;
+}
+@keyframes gs-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.gs-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--clr-border);
+}
+.gs-search-icon {
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+.gs-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  background: transparent;
+  color: var(--clr-text);
+  font-family: inherit;
+}
+.gs-input::placeholder { color: var(--clr-text-muted); }
+.gs-input::-webkit-search-cancel-button { display: none; }
+
+.gs-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--clr-border);
+  border-top-color: var(--clr-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.gs-esc-hint {
+  font-size: 10px;
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.gs-esc-hint:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+
+.gs-results {
+  padding: 6px 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.gs-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--clr-text-muted);
+  padding: 8px 16px 4px;
+}
+
+.gs-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--clr-text);
+  transition: background 0.1s;
+}
+.gs-item:hover,
+.gs-item--on {
+  background: var(--clr-bg);
+}
+.gs-item-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.gs-item-label {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gs-item-sub {
+  font-size: 11.5px;
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+.gs-item-arrow {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.gs-item:hover .gs-item-arrow,
+.gs-item--on .gs-item-arrow { opacity: 1; }
+
+.gs-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--clr-text-muted);
+}
+
+.gs-hint-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  border-top: 1px solid var(--clr-border);
+}
+
+html[data-theme="dark"] .gs-backdrop { background: rgba(0, 0, 0, 0.6); }
+html[data-theme="dark"] .gs-palette  { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5); }
+
+@media (max-width: 640px) {
+  .gs-trigger-label, .gs-trigger-kbd { display: none; }
+  .gs-trigger-btn { padding: 6px; }
+  .gs-backdrop { padding-top: 16px; }
+}

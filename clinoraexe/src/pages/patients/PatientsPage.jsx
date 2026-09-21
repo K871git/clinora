@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { listPatients } from '../../services/patientService'
 import PatientFormModal from './PatientFormModal'
 import PageLoader from '../../components/ui/PageLoader'
+import EmptyState from '../../components/ui/EmptyState'
 import '../../styles/patients.css'
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
@@ -193,9 +194,11 @@ export default function PatientsPage() {
 
           {/* Table */}
           {filtered.length === 0 ? (
-            <div className="pt-empty">
-              {search ? 'No patients match your search.' : 'No patients registered yet.'}
-            </div>
+            <EmptyState
+              icon="🧑‍⚕️"
+              title={search ? 'No patients match your search' : 'No patients registered yet'}
+              description={search ? 'Try a different name or phone number.' : 'Add your first patient using the button above.'}
+            />
           ) : (
             <>
               <div className="pt-scroll-wrap">

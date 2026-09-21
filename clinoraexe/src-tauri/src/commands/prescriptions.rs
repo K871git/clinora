@@ -155,6 +155,9 @@ pub async fn create_prescription(
         .execute(&state.db).await?;
     }
 
+    crate::commands::audit::log_audit(
+        &state.db, session.clinic_id, session.id, "create", "prescription", prescription_id, None
+    ).await;
     get_prescription(prescription_id, state).await
 }
 
@@ -228,6 +231,9 @@ pub async fn update_prescription(id: u64, data: PrescriptionPayload, state: Stat
         .execute(&state.db).await?;
     }
 
+    crate::commands::audit::log_audit(
+        &state.db, session.clinic_id, session.id, "update", "prescription", id, None
+    ).await;
     get_prescription(id, state).await
 }
 
@@ -257,6 +263,9 @@ pub async fn delete_prescription(id: u64, state: State<'_, AppState>) -> AppResu
         .bind(id).execute(&state.db).await?;
     sqlx::query("UPDATE prescriptions SET deleted_at=NOW() WHERE id=?")
         .bind(id).execute(&state.db).await?;
+    crate::commands::audit::log_audit(
+        &state.db, session.clinic_id, session.id, "delete", "prescription", id, None
+    ).await;
     Ok(())
 }
 

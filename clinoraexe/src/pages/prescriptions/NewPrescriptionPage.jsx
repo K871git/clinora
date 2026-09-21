@@ -92,7 +92,7 @@ export default function NewPrescriptionPage() {
           // Fetch allergies silently after visit loads
           getPatientAllergies(data.patient_id)
             .then(a => { if (!cancelled) setAllergies(a ?? []) })
-            .catch(() => {})
+            .catch(err => { console.warn('[allergies] could not load — allergy warnings unavailable', err) })
         }
       })
       .catch((err) => {

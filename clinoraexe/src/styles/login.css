@@ -66,12 +66,15 @@
   );
 }
 .login-scene[data-role="doctor"][data-theme="dark"] {
-  background: linear-gradient(180deg,
-    #020617 0%,
-    #0c1325 40%,
-    #1e1b4b 72%,
-    #2d1f7a 100%
-  );
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.55) 100%),
+    linear-gradient(180deg,
+      #010209 0%,
+      #030810 28%,
+      #050e1f 58%,
+      #080d28 80%,
+      #0a0f32 100%
+    );
 }
 
 /* ── Pharmacy backgrounds ─────────────────────────────────────────────*/
@@ -122,13 +125,17 @@
   background: rgba(255,255,255,0.32);
   color: rgba(15,23,42,0.65);
   cursor: pointer;
-  transition: background 0.2s, transform 0.18s;
+  will-change: transform;
+  transition: background 0.22s ease,
+              transform  0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s ease;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 .login-theme-toggle:hover {
-  background: rgba(255,255,255,0.55);
-  transform: scale(1.08);
+  background: rgba(255,255,255,0.58);
+  transform: scale(1.10);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.14);
 }
 .login-scene[data-theme="dark"] .login-theme-toggle {
   border-color: rgba(255,255,255,0.14);
@@ -450,86 +457,29 @@
   filter: brightness(1.5) saturate(0.75);
 }
 
-/* ── Northern Lights — pharmacy dark only ────────────────────────────── */
-/*    Horizontal curtain ribbons floating in the upper sky (not beams)    */
+/* ── Night sky — pharmacy dark only ──────────────────────────────────── */
 
 .login-aurora {
   position: absolute;
   top: 0; left: 0;
-  width: 100%; height: 60%;   /* only upper sky */
+  width: 100%; height: 55%;
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
   opacity: 0;
-  transition: opacity 1.4s ease;
-  /* fade ribbon bottoms into sky so there's no hard edge */
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
-  mask-image:         linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+  transition: opacity 1.8s ease;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  mask-image:         linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 .login-scene[data-theme="dark"][data-role="pharmacy"] .login-aurora { opacity: 1; }
 
-/* Shared ribbon base — wide, low-height, float in sky via top positioning */
-.aur-r {
+.login-aurora-svg {
   position: absolute;
-  left: -20%; width: 140%;
-  border-radius: 50%;
-  filter: blur(12px);
+  inset: 0;
+  width: 100%; height: 100%;
 }
 
-/* Ribbon 1 — main bright band, mid-sky */
-.aur-r1 {
-  top: 28%; height: 85px;
-  background: radial-gradient(ellipse 75% 100% at 50% 50%,
-    rgba(0,234,86,0.60) 0%, rgba(0,218,78,0.36) 46%, transparent 100%);
-  animation: aur-wave-a 12s ease-in-out infinite 0s;
-}
-/* Ribbon 2 — higher band, slightly cooler */
-.aur-r2 {
-  top: 12%; height: 70px;
-  background: radial-gradient(ellipse 68% 100% at 44% 50%,
-    rgba(0,218,76,0.50) 0%, rgba(0,208,72,0.28) 48%, transparent 100%);
-  filter: blur(10px);
-  animation: aur-wave-b 15s ease-in-out infinite -5s;
-}
-/* Ribbon 3 — near top, most diffuse */
-.aur-r3 {
-  top: 2%; height: 58px;
-  background: radial-gradient(ellipse 62% 100% at 56% 50%,
-    rgba(0,205,72,0.36) 0%, rgba(0,195,66,0.18) 50%, transparent 100%);
-  filter: blur(9px);
-  animation: aur-wave-c 10s ease-in-out infinite -8s;
-}
-/* Ribbon 4 — bright lime highlight, lower than main */
-.aur-r4 {
-  top: 38%; height: 65px;
-  background: radial-gradient(ellipse 70% 100% at 52% 50%,
-    rgba(58,254,120,0.52) 0%, rgba(30,240,100,0.28) 45%, transparent 100%);
-  filter: blur(11px);
-  animation: aur-wave-a 9s ease-in-out infinite -2s;
-}
-/* Ribbon 5 — wide soft glow across the whole aurora zone */
-.aur-r5 {
-  top: 18%; height: 82px;
-  background: radial-gradient(ellipse 80% 100% at 38% 50%,
-    rgba(0,228,82,0.46) 0%, rgba(0,212,76,0.22) 50%, transparent 100%);
-  filter: blur(15px);
-  animation: aur-wave-b 18s ease-in-out infinite -11s;
-}
-
-@keyframes aur-wave-a {
-  0%,  100% { transform: translateX(0)     translateY(0)     skewX(0deg);    opacity: 0.84; }
-  32%        { transform: translateX(40px)  translateY(-14px) skewX(2.5deg);  opacity: 1.00; }
-  68%        { transform: translateX(-26px) translateY(9px)   skewX(-1.5deg); opacity: 0.56; }
-}
-@keyframes aur-wave-b {
-  0%,  100% { transform: translateX(0)     translateY(0)     skewX(0deg);  opacity: 0.74; }
-  44%        { transform: translateX(-44px) translateY(15px)  skewX(-3deg); opacity: 0.96; }
-  78%        { transform: translateX(30px)  translateY(-10px) skewX(2deg);  opacity: 0.50; }
-}
-@keyframes aur-wave-c {
-  0%,  100% { transform: translateX(0)     translateY(0)     skewX(0deg);    opacity: 0.56; }
-  55%        { transform: translateX(55px)  translateY(-18px) skewX(3.5deg); opacity: 0.80; }
-}
+/* Snake animations are driven by SVG animateTransform — no CSS keyframes needed */
 
 /* ── Horizon ─────────────────────────────────────────────────────────── */
 
@@ -554,6 +504,92 @@
 }
 .login-scene[data-theme="dark"] .login-horizon--night { opacity: 1; }
 .login-scene[data-role="pharmacy"] .login-horizon     { opacity: 0 !important; }
+
+/* ── Doctor floral scene ─────────────────────────────────────────────── */
+
+@keyframes dr-sway-sunflower {
+  0%, 100% { transform: rotate(-1.8deg); }
+  45%      { transform: rotate(2.5deg);  }
+}
+@keyframes dr-sway-daisy {
+  0%, 100% { transform: rotate(-3deg);   }
+  50%      { transform: rotate(3.5deg);  }
+}
+@keyframes dr-sway-wild {
+  0%, 100% { transform: rotate(-4deg);   }
+  40%      { transform: rotate(5deg);    }
+  70%      { transform: rotate(-1.5deg); }
+}
+@keyframes dr-sway-night {
+  0%, 100% { transform: rotate(-2deg);   }
+  50%      { transform: rotate(2.5deg);  }
+}
+
+.dr-sunflower {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: dr-sway-sunflower 4.5s ease-in-out infinite;
+}
+.dr-daisy {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: dr-sway-daisy 3.2s ease-in-out infinite;
+}
+.dr-wildflower {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: dr-sway-wild 2.8s ease-in-out infinite;
+}
+.dr-moonflower {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: dr-sway-night 5.5s ease-in-out infinite;
+}
+.dr-primrose {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: dr-sway-night 4.2s ease-in-out infinite;
+}
+.dr-closeddaisy {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: dr-sway-daisy 3.8s ease-in-out infinite;
+}
+
+.login-scene[data-theme="dark"] .dr-moonflower {
+  filter: drop-shadow(0 0 5px rgba(210,228,255,0.75)) drop-shadow(0 0 14px rgba(180,205,255,0.35));
+}
+.login-scene[data-theme="dark"] .dr-primrose {
+  filter: drop-shadow(0 0 4px rgba(253,224,71,0.50)) drop-shadow(0 0 10px rgba(250,200,40,0.22));
+}
+
+/* ── Doctor petal drift ──────────────────────────────────────────────── */
+
+.login-dr-petals {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 2;
+  opacity: 0; transition: opacity 0.5s;
+}
+.login-scene[data-role="doctor"] .login-dr-petals { opacity: 1; }
+
+@keyframes dr-petal-drift {
+  0%   { transform: translateY(0) translateX(0) rotate(0deg);           opacity: 0;   }
+  8%   { opacity: 0.70; }
+  88%  { opacity: 0.50; }
+  100% { transform: translateY(-190px) translateX(45px) rotate(210deg); opacity: 0;   }
+}
+
+.dr-petal {
+  position: absolute;
+  border-radius: 50% 0 50% 0;
+  background: rgba(251,191,36,0.55);
+  animation: dr-petal-drift linear infinite;
+  opacity: 0;
+}
+.login-scene[data-theme="dark"] .dr-petal {
+  background: rgba(226,232,240,0.45);
+  border-radius: 50%;
+}
 
 /* ── Aurora gradient top border on card ─────────────────────────────── */
 
@@ -593,6 +629,19 @@
   transform-box: fill-box;
   transform-origin: center;
   animation: hb-ring-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Pharmacy cross glow ring ────────────────────────────────────────── */
+
+@keyframes ph-ring-pulse {
+  0%, 35%, 100% { opacity: 0;    transform: scale(0.82); }
+  48%           { opacity: 0.62; transform: scale(1);    }
+  72%           { opacity: 0;    transform: scale(1.90); }
+}
+.ph-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ph-ring-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 /* ── Typewriter cursor ───────────────────────────────────────────────── */
@@ -636,6 +685,21 @@
 }
 .login-scene[data-theme="dark"] .form-alert.warning .form-alert-body { color: #fbbf24; }
 
+/* ── Danger / error alert ────────────────────────────────────────────── */
+.form-alert.danger {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.form-alert.danger .form-alert-body {
+  color: #991b1b; margin: 0; font-size: 0.85rem; line-height: 1.45;
+}
+.login-scene[data-theme="dark"] .form-alert.danger {
+  background: #1c0a0a; border-color: #dc2626;
+}
+.login-scene[data-theme="dark"] .form-alert.danger .form-alert-body { color: #fca5a5; }
+
 /* ══════════════════════════════════════════════════════════════════════
    LOGIN CARD — GLASS
    ══════════════════════════════════════════════════════════════════════ */
@@ -659,12 +723,19 @@
   border: 1px solid rgba(255,255,255,0.52);
 
   opacity: 0;
-  transform: translateY(32px) scale(0.985);
-  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.4s ease;
+  /* translate3d keeps the card on a single GPU compositing layer at all times —
+     prevents the promote/demote cycle that causes vibration when backdrop-filter
+     and will-change fight each other on cursor entry */
+  transform: translate3d(0, 32px, 0) scale(0.985);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s ease;
 }
 
-.login-scene--mounted .login-card { opacity: 1; transform: translateY(0) scale(1); }
+.login-scene--mounted .login-card {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
 
 /* Doctor card glow */
 .login-scene[data-role="doctor"] .login-card {
@@ -782,7 +853,10 @@
   margin-bottom: 22px;
   background: linear-gradient(145deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08));
   flex-shrink: 0;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  will-change: transform;
+  /* spring curve — matches card, so hover feels connected to the page */
+  transition: box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              transform   0.28s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow:
     0 0 0 1.5px rgba(255,255,255,0.42),
     0 0 0 4px  rgba(255,255,255,0.09),
@@ -791,11 +865,11 @@
 }
 .login-logo-wrap:hover {
   box-shadow:
-    0 0 0 1.5px rgba(255,255,255,0.60),
-    0 0 0 6px  rgba(255,255,255,0.14),
-    0 12px 36px rgba(0,0,0,0.34),
-    inset 0 1px 0 rgba(255,255,255,0.45);
-  transform: scale(1.04);
+    0 0 0 2px   rgba(255,255,255,0.65),
+    0 0 0 7px   rgba(255,255,255,0.13),
+    0 14px 38px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255,255,255,0.50);
+  transform: scale(1.06);
 }
 .login-logo-img {
   width: 100%;
@@ -1021,42 +1095,6 @@
     transparent 100%);
 }
 
-/* Fields */
-.login-form .field {
-  height: 44px !important;
-  border-radius: 11px !important;
-  font-size: 0.9rem !important;
-  background: rgba(255,255,255,0.88) !important;
-  border: 1.5px solid #cbd5e1 !important;
-  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s !important;
-}
-.login-scene[data-theme="dark"] .login-form .field {
-  background: rgba(22,32,54,0.80) !important;
-  border-color: rgba(71,85,105,0.95) !important;
-}
-
-.login-form .field:focus {
-  border-color: var(--clr-primary) !important;
-  background: rgba(255,255,255,0.92) !important;
-  box-shadow:
-    inset 3px 0 0 var(--clr-primary),
-    0 0 0 3px rgba(37,99,235,0.10) !important;
-  outline: none !important;
-}
-
-.login-scene[data-theme="dark"] .login-form .field:focus {
-  background: rgba(30,41,59,0.9) !important;
-  box-shadow:
-    inset 3px 0 0 var(--clr-primary),
-    0 0 0 3px rgba(59,130,246,0.14) !important;
-}
-
-.login-field-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
 .login-field-icon {
   position: absolute;
   left: 13px;
@@ -1068,15 +1106,6 @@
   pointer-events: none;
   z-index: 1;
   transition: color 0.18s;
-}
-.login-field-wrap:focus-within .login-field-icon { color: var(--clr-primary); }
-
-.login-field-padded { padding-left: 38px !important; }
-
-.login-form .field-label {
-  font-size: 0.8rem !important;
-  font-weight: 600 !important;
-  color: var(--clr-text) !important;
 }
 
 /* ── Floating label fields ───────────────────────────────────────────── */
@@ -1180,7 +1209,7 @@
 .login-pwd-dots {
   position: absolute;
   left: 40px;
-  top: 20px; bottom: 6px; /* match input padding — sit in text region, not full field height */
+  top: 20px; bottom: 6px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1191,19 +1220,28 @@
 }
 
 @keyframes dot-pop {
-  from { opacity: 0; transform: scale(0.1); }
-  to   { opacity: 1; transform: scale(1);   }
+  from { opacity: 0; transform: scale(0); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes dot-pop-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0); }
 }
 
 .login-pwd-dot {
   display: inline-block;
-  font-size: 0.82rem;
-  line-height: 1;
-  color: #1e293b;
-  animation: dot-pop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1e293b;
+  flex-shrink: 0;
+  animation: dot-pop 0.16s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .login-scene[data-theme="dark"] .login-pwd-dot {
-  color: #e2e8f0;
+  background: #e2e8f0;
+}
+.login-pwd-dot--out {
+  animation: dot-pop-out 0.14s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 /* Eye toggle button */
@@ -1252,7 +1290,11 @@
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  /* explicit props only — avoids layout-property jank from `transition: all` */
+  transition: background  0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              color        0.18s ease,
+              box-shadow   0.22s ease,
+              transform    0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .login-role-btn:hover:not(.login-role-btn--active) {
   color: var(--clr-text);
@@ -1260,6 +1302,11 @@
 }
 .login-scene[data-theme="dark"] .login-role-btn:hover:not(.login-role-btn--active) {
   background: rgba(255,255,255,0.06);
+}
+.login-role-btn:focus-visible {
+  outline: 2px solid var(--clr-primary);
+  outline-offset: 2px;
+  border-radius: 9px;
 }
 
 .login-role-btn--doctor.login-role-btn--active {

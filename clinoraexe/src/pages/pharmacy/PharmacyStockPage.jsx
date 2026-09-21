@@ -9,6 +9,7 @@ import { getStockItems, createStockItem, updateStockItem, deleteStockItem } from
 import { getStockAuditLog } from '../../services/stockAuditService'
 import Spinner from '../../components/ui/Spinner'
 import MedicineImportModal from '../../components/medicines/MedicineImportModal'
+import EmptyState from '../../components/ui/EmptyState'
 
 const UNIT_OPTIONS = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Drops', 'Cream', 'Gel', 'Powder', 'Sachet', 'Inhaler', 'Patch']
 const FALLBACK_CATS = ['Analgesic', 'Antibiotic', 'Antacid', 'Antifungal', 'Antihistamine', 'Antiseptic', 'Vitamin', 'Syrup', 'Tablet', 'Injection']
@@ -431,7 +432,16 @@ function AuditLogModal({ item, onClose }) {
 }
 
 /* ── Medicine tab ─────────────────────────────────────────────────────── */
-function MedicineTab({ preFilter }) {
+const STOCK_FILTERS = [
+  { key: '',              label: 'All' },
+  { key: 'out_of_stock',  label: 'Out of Stock',  color: '#ef4444' },
+  { key: 'low_stock',     label: 'Low Stock',     color: '#f59e0b' },
+  { key: 'expiring_soon', label: 'Expiring Soon', color: '#d97706' },
+  { key: 'expired',       label: 'Expired',       color: '#dc2626' },
+]
+
+function MedicineTab({ preFilter: initialFilter }) {
+  const [stockFilter,  setStockFilter]  = useState(initialFilter ?? '')
   const [medicines,    setMedicines]    = useState([])
   const [total,        setTotal]        = useState(0)
   const [status,       setStatus]       = useState('loading')
@@ -484,18 +494,18 @@ function MedicineTab({ preFilter }) {
   const filtered = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
     let list = medicines
-    if (preFilter === 'out_of_stock') {
+    if (stockFilter === 'out_of_stock') {
       list = list.filter(m => (m.quantity ?? 0) === 0)
-    } else if (preFilter === 'low_stock') {
+    } else if (stockFilter === 'low_stock') {
       list = list.filter(m => (m.quantity ?? 0) > 0 && (m.quantity ?? 0) <= (m.reorder_level ?? 10))
-    } else if (preFilter === 'expiring_soon') {
+    } else if (stockFilter === 'expiring_soon') {
       list = list.filter(m => {
         if (!m.expiry_date) return false
         const exp = new Date(m.expiry_date)
         const days = Math.round((exp - today) / 86400000)
         return days >= 0 && days <= 30
       })
-    } else if (preFilter === 'expired') {
+    } else if (stockFilter === 'expired') {
       list = list.filter(m => {
         if (!m.expiry_date) return false
         return new Date(m.expiry_date) < today
@@ -511,16 +521,26 @@ function MedicineTab({ preFilter }) {
       )
     }
     return list
-  }, [medicines, search, activeCat, preFilter])
+  }, [medicines, search, activeCat, stockFilter])
 
-  const stats = useMemo(() => ({
-    total:    medicines.length,
-    outStock: medicines.filter(m => (m.quantity ?? 0) === 0).length,
-    value:    medicines.reduce((s, m) => {
-      if (m.price != null && m.quantity > 0) return s + (parseFloat(m.price) * m.quantity)
-      return s
-    }, 0),
-  }), [medicines])
+  const stats = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    return {
+      total:        medicines.length,
+      outStock:     medicines.filter(m => (m.quantity ?? 0) === 0).length,
+      lowStock:     medicines.filter(m => (m.quantity ?? 0) > 0 && (m.quantity ?? 0) <= (m.reorder_level ?? 10)).length,
+      expiringSoon: medicines.filter(m => {
+        if (!m.expiry_date) return false
+        const days = Math.round((new Date(m.expiry_date) - today) / 86400000)
+        return days >= 0 && days <= 30
+      }).length,
+      expired:      medicines.filter(m => m.expiry_date && new Date(m.expiry_date) < today).length,
+      value:        medicines.reduce((s, m) => {
+        if (m.price != null && m.quantity > 0) return s + (parseFloat(m.price) * m.quantity)
+        return s
+      }, 0),
+    }
+  }, [medicines])
 
   /* ── Inline save ─────────────────────────────────────────────────────── */
   async function saveField(med, field, rawValue) {
@@ -601,36 +621,18 @@ function MedicineTab({ preFilter }) {
     } finally { setDeletingId(null); setConfirmDelId(null) }
   }
 
-  const PRE_FILTER_LABELS = {
-    out_of_stock:   { label: 'Out of Stock', color: '#ef4444', bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.25)' },
-    low_stock:      { label: 'Low Stock',    color: '#f59e0b', bg: 'rgba(245,158,11,.08)', border: 'rgba(245,158,11,.25)' },
-    expiring_soon:  { label: 'Expiring in 30 days', color: '#d97706', bg: 'rgba(217,119,6,.08)', border: 'rgba(217,119,6,.25)' },
-    expired:        { label: 'Expired',      color: '#dc2626', bg: 'rgba(220,38,38,.08)', border: 'rgba(220,38,38,.25)' },
-  }
-
   if (status === 'error') return <div className="card state-panel">Could not load medicine stock.</div>
+
+  const filterCountMap = {
+    '':              stats.total,
+    'out_of_stock':  stats.outStock,
+    'low_stock':     stats.lowStock,
+    'expiring_soon': stats.expiringSoon,
+    'expired':       stats.expired,
+  }
 
   return (
     <>
-      {/* ── Pre-filter banner ─────────────────────────────────────────── */}
-      {preFilter && PRE_FILTER_LABELS[preFilter] && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '7px 14px', marginBottom: 10, borderRadius: 8,
-          background: PRE_FILTER_LABELS[preFilter].bg,
-          border: `1px solid ${PRE_FILTER_LABELS[preFilter].border}`,
-        }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={PRE_FILTER_LABELS[preFilter].color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-          </svg>
-          <span style={{ fontSize: 12, fontWeight: 600, color: PRE_FILTER_LABELS[preFilter].color }}>
-            Filtered: {PRE_FILTER_LABELS[preFilter].label}
-          </span>
-          <span style={{ fontSize: 11, color: PRE_FILTER_LABELS[preFilter].color, opacity: .7 }}>
-            — {filtered.length} item{filtered.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-      )}
       {/* ── Stats bar ─────────────────────────────────────────────────── */}
       <div className="phs-stats">
         <div className="phs-stat">
@@ -647,6 +649,29 @@ function MedicineTab({ preFilter }) {
           </span>
           <span className="phs-stat-lbl">Stock Value</span>
         </div>
+      </div>
+
+      {/* ── Stock filter pills ────────────────────────────────────────── */}
+      <div className="phs-filter-pills">
+        {STOCK_FILTERS.map(f => {
+          const count = filterCountMap[f.key] ?? 0
+          const isActive = stockFilter === f.key
+          return (
+            <button
+              key={f.key}
+              className={`phs-filter-pill${isActive ? ' phs-filter-pill--on' : ''}`}
+              style={isActive && f.color ? { background: f.color, borderColor: f.color, color: '#fff' }
+                : f.color && count > 0 ? { borderColor: f.color + '66', color: f.color } : {}}
+              onClick={() => { setStockFilter(f.key); setActiveCat('All') }}
+            >
+              {f.label}
+              <span className={`phs-filter-pill-count${isActive ? ' phs-filter-pill-count--on' : ''}`}
+                style={isActive ? { background: 'rgba(255,255,255,0.25)' } : {}}>
+                {count}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* ── Toolbar ───────────────────────────────────────────────────── */}
@@ -759,13 +784,11 @@ function MedicineTab({ preFilter }) {
             <Spinner size={26} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="ml-empty">
-            {medicines.length === 0
-              ? 'No medicines yet. Add or import to get started.'
-              : activeCat !== 'All'
-                ? `No medicines in "${activeCat}".`
-                : 'No medicines match your search.'}
-          </div>
+          <EmptyState
+            icon="💊"
+            title={medicines.length === 0 ? 'No medicines yet' : activeCat !== 'All' ? `No medicines in "${activeCat}"` : 'No medicines match your search'}
+            description={medicines.length === 0 ? 'Add a medicine or import from a CSV file.' : 'Try a different search or category.'}
+          />
         ) : (
           <div className="ml-table-wrap">
             <table className="ml-table">
@@ -1112,7 +1135,7 @@ function StockItemsTab() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><Spinner size={26} /></div>
       ) : items.length === 0 ? (
         <div className="card" style={{ marginTop: 'var(--space-sm)' }}>
-          <div className="ml-empty">No other items yet. Add water bottles, stationery, etc. above.</div>
+          <EmptyState icon="📦" title="No other items yet" description="Add water bottles, stationery, or other clinic supplies above." />
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden', marginTop: 'var(--space-sm)' }}>

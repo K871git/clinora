@@ -131,6 +131,8 @@ html[data-theme="light"] {
   --clr-bg: #f8fafc;
   --clr-surface: #ffffff;
   --clr-surface-hover: #f1f5f9;
+  --clr-surface-raised: #f8fafc;
+  --clr-bg-subtle: #f1f5f9;
   --clr-border: #e2e8f0;
   --clr-border-subtle: #f1f5f9;
   --clr-text: #0f172a;
@@ -162,6 +164,8 @@ html[data-role="pharmacy"][data-theme="light"] {
   --clr-bg: #edf2f8;          /* cool blue-gray — clinical, not mint-white */
   --clr-surface: #ffffff;
   --clr-surface-hover: #f3f6fa;
+  --clr-surface-raised: #f3f6fa;
+  --clr-bg-subtle: #e5eaf2;
   --clr-border: #d1d9e6;      /* slightly blue-tinted, more defined */
   --clr-border-subtle: #e8edf5;
   --clr-primary: #0d9488;
@@ -183,6 +187,8 @@ html[data-role="pharmacy"][data-theme="dark"] {
   --clr-bg: #0d1117;          /* near-black — neutral, not green */
   --clr-surface: #161b27;     /* dark navy-blue cards, clear contrast from bg */
   --clr-surface-hover: #1e2636;
+  --clr-surface-raised: #1e2636;
+  --clr-bg-subtle: rgba(255,255,255,0.04);
   --clr-border: #2d3a52;      /* slate-blue borders */
   --clr-border-subtle: #161b27;
   --clr-primary: #2dd4bf;     /* bright teal — accent only */

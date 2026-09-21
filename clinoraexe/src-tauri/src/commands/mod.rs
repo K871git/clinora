@@ -1,4 +1,5 @@
 pub mod utils;
+pub mod audit;
 pub mod downloads;
 pub mod license;
 pub mod setup;
@@ -24,3 +25,4 @@ pub mod rx_templates;
 pub mod stock_audit;
 pub mod fee_templates;
 pub mod certificates;
+pub mod pharmacy_returns;

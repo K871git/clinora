@@ -177,6 +177,51 @@ pub async fn get_revenue(state: State<'_, AppState>) -> AppResult<Value> {
 }
 
 #[tauri::command]
+pub async fn get_visit_stats_by_doctor(
+    period: Option<String>,
+    state: State<'_, AppState>,
+) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let cid = session.clinic_id;
+    let db = &state.db;
+
+    let period = period.unwrap_or_else(|| "this_month".to_string());
+    let date_filter = match period.as_str() {
+        "today"     => "AND DATE(v.visited_at) = CURDATE()",
+        "this_week" => "AND YEARWEEK(v.visited_at) = YEARWEEK(CURDATE())",
+        "all_time"  => "",
+        _           => "AND MONTH(v.visited_at) = MONTH(CURDATE()) AND YEAR(v.visited_at) = YEAR(CURDATE())",
+    };
+
+    let sql = format!(
+        "SELECT u.id as doctor_id, u.name as doctor_name,
+                COUNT(v.id) as total_visits,
+                COUNT(CASE WHEN v.status = 'completed' THEN 1 END) as completed,
+                COUNT(CASE WHEN v.payment_status = 'paid' THEN 1 END) as paid_visits,
+                COALESCE(SUM(CASE WHEN v.payment_status = 'paid' THEN v.amount_paid ELSE 0 END), 0) * 1e0 as revenue_collected
+         FROM visits v
+         JOIN users u ON u.id = v.doctor_id
+         WHERE v.clinic_id = ? AND v.deleted_at IS NULL {}
+         GROUP BY u.id, u.name
+         ORDER BY total_visits DESC",
+        date_filter
+    );
+
+    let rows = sqlx::query(&sql).bind(cid).fetch_all(db).await?;
+
+    let data: Vec<Value> = rows.iter().map(|r| json!({
+        "doctor_id":         r.get::<u64, _>("doctor_id"),
+        "doctor_name":       r.get::<String, _>("doctor_name"),
+        "total_visits":      r.get::<i64, _>("total_visits"),
+        "completed":         r.get::<i64, _>("completed"),
+        "paid_visits":       r.get::<i64, _>("paid_visits"),
+        "revenue_collected": r.get::<Option<f64>, _>("revenue_collected").unwrap_or(0.0),
+    })).collect();
+
+    Ok(json!({ "data": data }))
+}
+
+#[tauri::command]
 pub async fn get_revenue_transactions(
     period: Option<String>,
     filter: Option<String>,
@@ -198,7 +243,7 @@ pub async fn get_revenue_transactions(
     };
 
     let sql = format!(
-        "SELECT v.id, DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
+        "SELECT v.id, v.patient_id, DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
                 DATE_FORMAT(COALESCE(v.invoiced_at, v.updated_at), '%Y-%m-%dT%H:%i:%s') as invoiced_at,
                 v.consultation_fee * 1e0 as consultation_fee,
                 v.amount_paid * 1e0 as amount_paid,
@@ -216,6 +261,7 @@ pub async fn get_revenue_transactions(
 
     let data: Vec<Value> = rows.iter().map(|r| json!({
         "id": r.get::<u64, _>("id"),
+        "patient_id": r.get::<u64, _>("patient_id"),
         "visited_at": r.get::<Option<String>, _>("visited_at").unwrap_or_default(),
         "invoiced_at": r.get::<Option<String>, _>("invoiced_at").unwrap_or_default(),
         "consultation_fee": r.get::<Option<f64>, _>("consultation_fee").unwrap_or(0.0),

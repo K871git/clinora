@@ -46,24 +46,27 @@ const DATE_RANGES = [
   { key: 'month', label: 'This Month' },
 ]
 
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 function computeDateRange(key) {
-  const now   = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const end   = new Date(today.getTime() + 864e5)
+  const now = new Date()
+  const todayStr = localDateStr(now)
   switch (key) {
-    case 'today': return { start: today, end }
+    case 'today': return { startStr: todayStr, endStr: todayStr }
     case 'week': {
-      const s = new Date(today); s.setDate(s.getDate() - s.getDay())
-      return { start: s, end }
+      const s = new Date(now); s.setDate(s.getDate() - s.getDay())
+      return { startStr: localDateStr(s), endStr: todayStr }
     }
     case '30d': {
-      const s = new Date(today); s.setDate(s.getDate() - 29)
-      return { start: s, end }
+      const s = new Date(now); s.setDate(s.getDate() - 29)
+      return { startStr: localDateStr(s), endStr: todayStr }
     }
     case 'month':
-      return { start: new Date(now.getFullYear(), now.getMonth(), 1), end }
+      return { startStr: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`, endStr: todayStr }
     default:
-      return { start: null, end: null }
+      return { startStr: null, endStr: null }
   }
 }
 
@@ -103,16 +106,19 @@ function TemplatesPanel() {
       .catch(() => setTplStatus('error'))
   }, [])
 
+  const [tplError, setTplError] = useState(null)
+
   async function handleUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
     setUploading(true)
+    setTplError(null)
     try {
       const { data } = await uploadTemplate(file)
       setTemplates(prev => [...prev, data])
     } catch {
-      alert('Upload failed. Check file type (PDF/PNG/JPG/WebP) and size (max 10 MB).')
+      setTplError('Upload failed. Check file type (PDF/PNG/JPG/WebP) and size (max 10 MB).')
     } finally {
       setUploading(false)
     }
@@ -121,11 +127,12 @@ function TemplatesPanel() {
   async function handleSetActive(tpl) {
     if (tpl.is_active) return
     setSettingId(tpl.name)
+    setTplError(null)
     try {
       await setActiveTemplate(tpl.name)
       setTemplates(prev => prev.map(t => ({ ...t, is_active: t.name === tpl.name })))
     } catch {
-      alert('Could not set active template.')
+      setTplError('Could not set active template.')
     } finally {
       setSettingId(null)
     }
@@ -135,11 +142,12 @@ function TemplatesPanel() {
     const ok = await confirmDelete({ title: `Delete "${tpl.label}"?`, text: 'This template cannot be recovered.' })
     if (!ok) return
     setDeletingId(tpl.name)
+    setTplError(null)
     try {
       await deleteTemplate(tpl.name)
       setTemplates(prev => prev.filter(t => t.name !== tpl.name))
     } catch {
-      alert('Could not delete template. It may be a built-in template.')
+      setTplError('Could not delete template. It may be a built-in template.')
     } finally {
       setDeletingId(null)
     }
@@ -184,6 +192,12 @@ function TemplatesPanel() {
         />
       </div>
 
+      {tplError && (
+        <div className="form-alert danger" style={{ margin: '12px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>{tplError}</span>
+          <button onClick={() => setTplError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', lineHeight: 1, color: 'inherit' }}>✕</button>
+        </div>
+      )}
       {tplStatus === 'loading' && <PageLoader />}
 
       {tplStatus === 'error' && (
@@ -282,6 +296,7 @@ export default function PrescriptionsPage() {
   const [sortCol,        setSortCol]        = useState('prescribed_at')
   const [sortDir,        setSortDir]        = useState('desc')
   const [page,           setPage]           = useState(0)
+  const [rxError,        setRxError]        = useState(null)
 
   const filteredPrescriptions = useMemo(() => {
     let list = prescriptions
@@ -289,12 +304,12 @@ export default function PrescriptionsPage() {
       list = list.filter(p => p.status === activeTab)
     }
     if (dateRange) {
-      const { start, end } = computeDateRange(dateRange)
-      if (start) {
+      const { startStr, endStr } = computeDateRange(dateRange)
+      if (startStr) {
         list = list.filter(p => {
-          const d = new Date(p.prescribed_at)
-          if (isNaN(d.getTime())) return true
-          return d >= start && (!end || d < end)
+          if (!p.prescribed_at) return false
+          const dateStr = p.prescribed_at.slice(0, 10)
+          return dateStr >= startStr && dateStr <= endStr
         })
       }
     }
@@ -363,11 +378,12 @@ export default function PrescriptionsPage() {
     e.stopPropagation()
     const ok = await confirmDelete({ title: 'Delete prescription?', text: 'This cannot be undone.' })
     if (!ok) return
+    setRxError(null)
     try {
       await deletePrescription(rx.id)
       setPrescriptions(prev => prev.filter(p => p.id !== rx.id))
     } catch {
-      alert('Could not delete — please try again.')
+      setRxError('Could not delete prescription — please try again.')
     }
   }
 
@@ -464,6 +480,13 @@ export default function PrescriptionsPage() {
               </div>
             </div>
           </div>
+
+          {rxError && (
+            <div className="form-alert danger" style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>{rxError}</span>
+              <button onClick={() => setRxError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', lineHeight: 1, color: 'inherit' }}>✕</button>
+            </div>
+          )}
 
           {loadStatus === 'loading' && <PageLoader />}
 

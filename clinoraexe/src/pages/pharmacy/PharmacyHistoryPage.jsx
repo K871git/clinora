@@ -1,7 +1,9 @@
 import '../../styles/pharmacy-pages.css'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPharmacyHistory, getPharmacyLiveCounts } from '../../services/pharmacyService'
+import { toast } from 'sonner'
+import { getPharmacyHistory, getPharmacyLiveCounts, getPharmacyPrescription } from '../../services/pharmacyService'
+import { createPharmacyReturn } from '../../services/pharmacyReturnService'
 import Spinner from '../../components/ui/Spinner'
 import { fmtTime, fmtDateShort as fmtDate } from '../../lib/dateUtils'
 
@@ -38,6 +40,8 @@ function groupHistory(list) {
   return { today, yesterday, older }
 }
 
+/* ── Icons ──────────────────────────────────────────────────────────────── */
+
 function IconCheck() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -69,6 +73,16 @@ function IconArrowRight() {
   )
 }
 
+function IconReturn() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="1 4 1 10 7 10" />
+      <path d="M3.51 15a9 9 0 1 0 .49-3.7" />
+    </svg>
+  )
+}
+
 const PAY_LABEL = { paid: 'Paid', partial: 'Partial', unpaid: 'Unpaid' }
 
 function PayBadge({ status }) {
@@ -79,7 +93,135 @@ function PayBadge({ status }) {
   )
 }
 
-function HistoryCard({ rx, onInvoice, onDetails }) {
+/* ── Return Modal ─────────────────────────────────────────────────────────── */
+
+function ReturnModal({ rx, detail, loadingDetail, items, setItems, reason, setReason, saving, error, onClose, onConfirm }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const selectedItems = items.filter(i => i.selected && i.qty > 0)
+  const total = selectedItems.reduce((s, i) => s + i.unit_price * i.qty, 0)
+
+  function toggleItem(idx) {
+    setItems(prev => prev.map((item, j) => j === idx ? { ...item, selected: !item.selected } : item))
+  }
+
+  function changeQty(idx, delta) {
+    setItems(prev => prev.map((item, j) => {
+      if (j !== idx) return item
+      return { ...item, qty: Math.max(1, item.qty + delta) }
+    }))
+  }
+
+  return (
+    <div className="phret-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="phret-modal">
+        <div className="phret-modal-hdr">
+          <div className="phret-modal-hdr-text">
+            <div className="phret-modal-title">Process Return</div>
+            {rx && <div className="phret-modal-sub">{rx.patient?.name}</div>}
+          </div>
+          <button className="phret-close" onClick={onClose} title="Close">✕</button>
+        </div>
+
+        {loadingDetail && (
+          <div className="phret-loading">
+            <Spinner size={20} />
+            <span>Loading prescription details…</span>
+          </div>
+        )}
+
+        {!loadingDetail && error && !detail && (
+          <div className="phret-error-block">{error}</div>
+        )}
+
+        {!loadingDetail && detail && (
+          <div className="phret-body">
+            {items.length === 0 ? (
+              <div className="phret-empty">No medicine items found on this prescription.</div>
+            ) : (
+              <>
+                <div className="phret-section-label">Select items to return</div>
+                <div className="phret-items">
+                  {items.map((item, idx) => (
+                    <div key={idx} className={`phret-item${item.selected ? '' : ' phret-item--off'}`}>
+                      <input
+                        type="checkbox"
+                        className="phret-chk"
+                        checked={item.selected}
+                        onChange={() => toggleItem(idx)}
+                      />
+                      <span className="phret-item-name">{item.medicine_name}</span>
+                      <span className="phret-item-price">
+                        {item.unit_price > 0
+                          ? '₹' + item.unit_price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                          : '—'}
+                      </span>
+                      <div className={`phret-qty-ctrl${!item.selected ? ' phret-qty-ctrl--off' : ''}`}>
+                        <button type="button" className="phret-qty-btn"
+                          onClick={() => changeQty(idx, -1)} disabled={!item.selected}>−</button>
+                        <span className="phret-qty-val">{item.qty}</span>
+                        <button type="button" className="phret-qty-btn"
+                          onClick={() => changeQty(idx, 1)} disabled={!item.selected}>+</button>
+                      </div>
+                      <span className="phret-item-line-total">
+                        {item.selected && item.unit_price > 0
+                          ? '₹' + (item.unit_price * item.qty).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                          : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="phret-reason-wrap">
+                  <label className="phret-section-label">
+                    Reason <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <textarea
+                    className="phret-reason"
+                    placeholder="e.g. Patient allergic reaction, wrong medicine dispensed, excess stock…"
+                    value={reason}
+                    onChange={e => setReason(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+
+                {error && <div className="phret-error-block">{error}</div>}
+
+                {total > 0 && (
+                  <div className="phret-total-row">
+                    <span className="phret-total-label">Credit amount</span>
+                    <span className="phret-total-val">
+                      ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="phret-footer">
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+          <button
+            className="phret-confirm-btn"
+            onClick={onConfirm}
+            disabled={saving || loadingDetail || !detail || selectedItems.length === 0}
+          >
+            {saving ? 'Processing…' : 'Confirm Return'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── History card ────────────────────────────────────────────────────────── */
+
+function HistoryCard({ rx, onInvoice, onDetails, onReturn, hasReturn }) {
   const total = rx.total_amount ?? 0
   return (
     <div className="pharma-hcard">
@@ -97,9 +239,9 @@ function HistoryCard({ rx, onInvoice, onDetails }) {
       </div>
 
       <div className="pharma-hcard-right">
-        {/* Meta row: payment badge + pill + time + tick */}
         <div className="pharma-hcard-meta">
           <PayBadge status={rx.payment_status} />
+          {hasReturn && <span className="phret-history-badge">Returned</span>}
           {total > 0 && (
             <span className="pharma-hcard-amount">
               {'₹' + total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -112,11 +254,14 @@ function HistoryCard({ rx, onInvoice, onDetails }) {
           <span className="pharma-done-tick"><IconCheck /></span>
         </div>
 
-        {/* Action buttons */}
         <div className="pharma-hcard-actions">
           <button className="pharma-hcard-btn pharma-hcard-btn--invoice" onClick={onInvoice}>
             <IconReceipt />
             View Invoice
+          </button>
+          <button className="pharma-hcard-btn pharma-hcard-btn--return" onClick={onReturn} title="Process a return / credit note">
+            <IconReturn />
+            Return
           </button>
           <button className="pharma-hcard-btn pharma-hcard-btn--detail" onClick={onDetails}>
             View Details
@@ -128,7 +273,7 @@ function HistoryCard({ rx, onInvoice, onDetails }) {
   )
 }
 
-function HistoryGroup({ label, items, navigate, showDate }) {
+function HistoryGroup({ label, items, navigate, showDate, onReturn, returnedIds }) {
   return (
     <div className="pharma-hgroup">
       <div className="pharma-hgroup-label">{label}</div>
@@ -140,8 +285,10 @@ function HistoryGroup({ label, items, navigate, showDate }) {
             )}
             <HistoryCard
               rx={rx}
+              hasReturn={returnedIds.has(rx.id)}
               onInvoice={() => navigate(`/pharmacy/prescriptions/${rx.id}/invoice`)}
               onDetails={() => navigate(`/pharmacy/prescriptions/${rx.id}`)}
+              onReturn={() => onReturn(rx)}
             />
           </li>
         ))}
@@ -150,13 +297,14 @@ function HistoryGroup({ label, items, navigate, showDate }) {
   )
 }
 
+/* ── Page ─────────────────────────────────────────────────────────────────── */
+
 export default function PharmacyHistoryPage() {
   const navigate = useNavigate()
   const [history, setHistory] = useState([])
   const [status, setStatus]   = useState('loading')
   const [counts,  setCounts]  = useState({ dispensing: 0, pending: 0, today_done: 0 })
 
-  /* Search — debounced 400ms before hitting API */
   const [inputVal, setInputVal] = useState('')
   const [q, setQ]               = useState('')
 
@@ -165,7 +313,6 @@ export default function PharmacyHistoryPage() {
     return () => clearTimeout(t)
   }, [inputVal])
 
-  /* load is keyed on q so a new search reruns automatically */
   const load = useCallback((silent = false) => {
     if (!silent) setStatus('loading')
     getPharmacyHistory(q)
@@ -186,8 +333,86 @@ export default function PharmacyHistoryPage() {
     return () => clearInterval(t)
   }, [load])
 
+  /* ── Return modal state ──────────────────────────────────────────────── */
+  const [returnRx,       setReturnRx]       = useState(null)
+  const [returnDetail,   setReturnDetail]   = useState(null)
+  const [loadingDetail,  setLoadingDetail]  = useState(false)
+  const [returnItems,    setReturnItems]    = useState([])
+  const [returnReason,   setReturnReason]   = useState('')
+  const [returning,      setReturning]      = useState(false)
+  const [returnError,    setReturnError]    = useState(null)
+  const [returnedIds,    setReturnedIds]    = useState(new Set())
+
+  async function openReturn(rx) {
+    setReturnRx(rx)
+    setReturnDetail(null)
+    setReturnError(null)
+    setReturnReason('')
+    setReturnItems([])
+    setLoadingDetail(true)
+    try {
+      const { data } = await getPharmacyPrescription(rx.id)
+      setReturnDetail(data)
+      setReturnItems(
+        (data.items ?? []).map(item => ({
+          medicine_name: item.medicine_name,
+          unit_price: parseFloat(item.unit_price) || 0,
+          qty: 1,
+          selected: true,
+        }))
+      )
+    } catch {
+      setReturnError('Could not load prescription details — please try again.')
+    } finally {
+      setLoadingDetail(false)
+    }
+  }
+
+  function closeReturn() {
+    setReturnRx(null)
+    setReturnDetail(null)
+    setReturnItems([])
+    setReturnReason('')
+    setReturnError(null)
+    setReturning(false)
+  }
+
+  async function handleConfirmReturn() {
+    const selected = returnItems.filter(i => i.selected && i.qty > 0)
+    if (!selected.length) {
+      setReturnError('Select at least one item to return.')
+      return
+    }
+    if (!returnReason.trim()) {
+      setReturnError('Please enter a reason for the return.')
+      return
+    }
+    setReturning(true)
+    setReturnError(null)
+    try {
+      await createPharmacyReturn(
+        returnRx.id,
+        selected.map(i => ({ medicine_name: i.medicine_name, quantity: i.qty, unit_price: i.unit_price })),
+        returnReason.trim(),
+        null,
+      )
+      const credit = selected.reduce((s, i) => s + i.unit_price * i.qty, 0)
+      toast.success(
+        credit > 0
+          ? `Return processed — ₹${credit.toLocaleString('en-IN', { minimumFractionDigits: 2 })} credit note`
+          : 'Return processed successfully'
+      )
+      setReturnedIds(prev => new Set([...prev, returnRx.id]))
+      closeReturn()
+    } catch (err) {
+      setReturnError(typeof err === 'string' ? err : 'Return failed — please try again.')
+    } finally {
+      setReturning(false)
+    }
+  }
+
   const { today, yesterday, older } = groupHistory(history)
-  const isSearching = inputVal !== q   // debounce in-flight
+  const isSearching = inputVal !== q
 
   return (
     <div className="pharma-page">
@@ -257,14 +482,12 @@ export default function PharmacyHistoryPage() {
         )}
       </div>
 
-      {/* Loading */}
       {status === 'loading' && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <Spinner size={26} />
         </div>
       )}
 
-      {/* Error */}
       {status === 'error' && (
         <div className="card state-panel">
           <p>Could not load history — check your connection.</p>
@@ -274,7 +497,6 @@ export default function PharmacyHistoryPage() {
         </div>
       )}
 
-      {/* Empty */}
       {status === 'done' && history.length === 0 && (
         <div className="pharma-empty">
           {q ? (
@@ -298,16 +520,16 @@ export default function PharmacyHistoryPage() {
         </div>
       )}
 
-      {/* History groups */}
       {status === 'done' && history.length > 0 && (
         <div className="pharma-history-body">
-          {/* When searching, skip date groups — just show a flat result list */}
           {q ? (
             <HistoryGroup
               label={`${history.length} result${history.length !== 1 ? 's' : ''}`}
               items={history}
               navigate={navigate}
               showDate
+              onReturn={openReturn}
+              returnedIds={returnedIds}
             />
           ) : (
             <>
@@ -316,6 +538,8 @@ export default function PharmacyHistoryPage() {
                   label={`Today — ${today.length} dispensed`}
                   items={today}
                   navigate={navigate}
+                  onReturn={openReturn}
+                  returnedIds={returnedIds}
                 />
               )}
               {yesterday.length > 0 && (
@@ -323,6 +547,8 @@ export default function PharmacyHistoryPage() {
                   label={`Yesterday — ${yesterday.length}`}
                   items={yesterday}
                   navigate={navigate}
+                  onReturn={openReturn}
+                  returnedIds={returnedIds}
                 />
               )}
               {older.length > 0 && (
@@ -331,11 +557,30 @@ export default function PharmacyHistoryPage() {
                   items={older}
                   navigate={navigate}
                   showDate
+                  onReturn={openReturn}
+                  returnedIds={returnedIds}
                 />
               )}
             </>
           )}
         </div>
+      )}
+
+      {/* ── Return modal ────────────────────────────────────────────────── */}
+      {returnRx && (
+        <ReturnModal
+          rx={returnRx}
+          detail={returnDetail}
+          loadingDetail={loadingDetail}
+          items={returnItems}
+          setItems={setReturnItems}
+          reason={returnReason}
+          setReason={setReturnReason}
+          saving={returning}
+          error={returnError}
+          onClose={closeReturn}
+          onConfirm={handleConfirmReturn}
+        />
       )}
     </div>
   )

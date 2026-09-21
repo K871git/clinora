@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { listMedicalHistory, createMedicalHistory, updateMedicalHistory, deleteMedicalHistory } from '../../services/medicalHistoryService'
+import EmptyState from '../ui/EmptyState'
 
 const TYPES = ['allergy','chronic','surgery','medication','family','other']
 const SEVERITIES = ['mild','moderate','severe']
@@ -78,7 +79,9 @@ export default function MedicalHistoryTab({ patientId }) {
       </div>
 
       {loading && <div className="emr-empty">Loading…</div>}
-      {!loading && items.length === 0 && <div className="emr-empty">No medical history recorded.</div>}
+      {!loading && items.length === 0 && (
+        <EmptyState compact icon="📋" title="No medical history" description="Add diagnoses, allergies, or chronic conditions using the button above." />
+      )}
       {!loading && items.length > 0 && (
         <div className="medh-list">
           {items.map(item => (
