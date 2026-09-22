@@ -294,12 +294,12 @@ html[data-theme="dark"] .vst-billing-actions { background: rgba(255,255,255,0.02
   transition: all 0.14s;
   color: var(--clr-text-muted);
 }
-.vst-payment-pill--on.vst-payment-pill--unpaid  { border-color: #ef4444; background: #fef2f2; color: #dc2626; }
-.vst-payment-pill--on.vst-payment-pill--partial { border-color: #f59e0b; background: #fffbeb; color: #d97706; }
-.vst-payment-pill--on.vst-payment-pill--paid    { border-color: #10b981; background: #ecfdf5; color: #059669; }
-[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--unpaid  { background: rgba(239,68,68,.15); }
-[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--partial { background: rgba(245,158,11,.15); }
-[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--paid    { background: rgba(16,185,129,.15); }
+.vst-payment-pill--on.vst-payment-pill--unpaid  { border-color: #ef4444; background: color-mix(in srgb, #ef4444 10%, var(--clr-surface)); color: #dc2626; }
+.vst-payment-pill--on.vst-payment-pill--partial { border-color: #f59e0b; background: color-mix(in srgb, #f59e0b 10%, var(--clr-surface)); color: #d97706; }
+.vst-payment-pill--on.vst-payment-pill--paid    { border-color: #10b981; background: color-mix(in srgb, #10b981 10%, var(--clr-surface)); color: #059669; }
+[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--unpaid  { color: #f87171; }
+[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--partial { color: #fbbf24; }
+[data-theme="dark"] .vst-payment-pill--on.vst-payment-pill--paid    { color: #34d399; }
 .vst-payment-partial-row { display: flex; align-items: center; gap: 10px; }
 .vst-payment-partial-label { font-size: 13px; color: var(--clr-text-muted); white-space: nowrap; }
 .vst-payment-notes-input { min-height: 36px; resize: none; font-size: 13px; }
