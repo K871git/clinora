@@ -2,14 +2,23 @@
 .rv-page { max-width: 920px; }
 .rv-period-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
 .rv-period-tab {
-  padding: 7px 16px; border-radius: 20px;
+  padding: 7px 18px; border-radius: 20px;
   border: 1.5px solid var(--clr-border);
   background: var(--clr-surface);
   font-size: 13px; font-weight: 500;
-  color: var(--clr-text-muted); cursor: pointer; transition: all 0.14s;
+  color: var(--clr-text-muted); cursor: pointer;
+  transition: border-color 0.14s, color 0.14s, background 0.14s, box-shadow 0.14s, transform 0.14s;
 }
-.rv-period-tab:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
-.rv-period-tab--on { border-color: var(--clr-primary); background: var(--clr-primary); color: #fff; font-weight: 600; }
+.rv-period-tab:hover {
+  border-color: var(--clr-primary); color: var(--clr-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  transform: translateY(-1px);
+}
+.rv-period-tab--on {
+  border-color: var(--clr-primary); background: var(--clr-primary);
+  color: #fff; font-weight: 600;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--clr-primary) 30%, transparent);
+}
 [data-role="pharmacy"] .rv-period-tab--on { background: #0d9488; border-color: #0d9488; }
 
 .rv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 4px; }

@@ -1,3 +1,51 @@
+/* ─── Visit Detail — enhanced visual hierarchy ────────────────────────── */
+
+/* Card elevation */
+.vst-billing-card {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+
+/* Colored section accent — left bar on billing head */
+.vst-billing-head {
+  border-left: 3px solid var(--clr-primary);
+  padding-left: 17px;
+}
+
+/* Subtle hover on billing rows */
+.vst-billing-row:hover {
+  background: color-mix(in srgb, var(--clr-primary) 3%, transparent);
+}
+
+/* Payment section accent */
+.vst-payment-section {
+  border-left: 3px solid #f59e0b;
+}
+
+/* Charges section accent */
+.vst-charges-section {
+  border-left: 3px solid #8b5cf6;
+}
+
+/* Colored section head labels */
+.vst-payment-label { color: #d97706; }
+[data-theme="dark"] .vst-payment-label { color: #fbbf24; }
+
+.vst-charges-head  { color: #7c3aed; }
+[data-theme="dark"] .vst-charges-head  { color: #a78bfa; }
+
+/* Grand total — teal accent */
+.vst-billing-total-row {
+  background: color-mix(in srgb, var(--clr-primary) 4%, transparent);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding-left: 8px;
+  padding-right: 8px;
+  margin: 4px -20px 0;
+}
+.vst-billing-total-amount {
+  color: var(--clr-primary);
+}
+
 /* ─── Visit status badge ──────────────────────────────────────────────── */
 .vst-status-badge {
   display: inline-flex;

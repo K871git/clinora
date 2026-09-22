@@ -71,16 +71,17 @@
 }
 .login-scene[data-role="doctor"][data-theme="dark"] {
   background:
-    radial-gradient(ellipse at 76% 6%,   rgba(110,85,205,0.24) 0%, transparent 36%),
-    radial-gradient(ellipse at 16% 12%,  rgba(28,48,150,0.20) 0%, transparent 30%),
-    radial-gradient(ellipse at 50% 108%, rgba(55,80,210,0.24) 0%, transparent 42%),
-    radial-gradient(ellipse at 50% 50%,  transparent 42%, rgba(0,0,0,0.52) 100%),
+    radial-gradient(ellipse at 72% 5%,   rgba(20,100,200,0.26) 0%, transparent 38%),
+    radial-gradient(ellipse at 14% 10%,  rgba(30,90,190,0.20) 0%, transparent 32%),
+    radial-gradient(ellipse at 90% 44%,  rgba(15,80,185,0.13) 0%, transparent 28%),
+    radial-gradient(ellipse at 50% 100%, rgba(255,165,50,0.09) 0%, transparent 38%),
+    radial-gradient(ellipse at 50% 50%,  transparent 42%, rgba(0,0,0,0.28) 100%),
     linear-gradient(180deg,
-      #01020d 0%,
-      #02061a 22%,
-      #040b24 50%,
-      #070f2e 75%,
-      #0d1742 100%
+      #020c18 0%,
+      #030f20 22%,
+      #041428 50%,
+      #061a34 75%,
+      #0a2040 100%
     );
 }
 
@@ -633,6 +634,33 @@
 
 /* Snake animations are driven by SVG animateTransform — no CSS keyframes needed */
 
+/* ── Doctor nebula — deep cosmic atmosphere (doctor dark only) ───────── */
+
+.login-dr-nebula {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 58%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 2s ease;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+  mask-image:         linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+}
+.login-scene[data-theme="dark"][data-role="doctor"] .login-dr-nebula { opacity: 1; }
+
+.dr-nebula-blob {
+  position: absolute;
+  border-radius: 50%;
+  animation: dr-nebula-pulse ease-in-out infinite alternate;
+}
+
+@keyframes dr-nebula-pulse {
+  0%   { opacity: 0.50; transform: scale(0.93) translateY(0px);   }
+  100% { opacity: 1.00; transform: scale(1.16) translateY(-12px); }
+}
+
 /* ── Horizon ─────────────────────────────────────────────────────────── */
 
 .login-horizon {
@@ -678,7 +706,7 @@
 .night-mist-wisp {
   position: absolute;
   border-radius: 50%;
-  background: rgba(105,130,240,0.88);
+  background: rgba(180,220,240,0.13);
   animation: night-mist-drift ease-in-out infinite;
 }
 
@@ -733,12 +761,6 @@
   animation: dr-sway-daisy 3.8s ease-in-out infinite;
 }
 
-.login-scene[data-theme="dark"] .dr-moonflower {
-  filter: drop-shadow(0 0 6px rgba(210,228,255,0.82)) drop-shadow(0 0 18px rgba(180,205,255,0.40));
-}
-.login-scene[data-theme="dark"] .dr-primrose {
-  filter: drop-shadow(0 0 5px rgba(253,224,71,0.58)) drop-shadow(0 0 12px rgba(250,200,40,0.26));
-}
 .login-scene[data-theme="dark"] .dr-closeddaisy {
   filter: drop-shadow(0 0 3px rgba(148,163,184,0.55)) drop-shadow(0 0 8px rgba(100,120,180,0.22));
 }
@@ -767,8 +789,9 @@
   opacity: 0;
 }
 .login-scene[data-theme="dark"] .dr-petal {
-  background: rgba(226,232,240,0.45);
+  background: rgba(180,210,255,0.60);
   border-radius: 50%;
+  box-shadow: 0 0 5px rgba(140,185,255,0.54), 0 0 10px rgba(100,155,255,0.22);
 }
 
 /* ── Aurora gradient top border on card ─────────────────────────────── */
@@ -1014,11 +1037,11 @@
   background: linear-gradient(155deg, #055e44, #0f766e, #0369a1, #059669, #055e44);
   background-size: 280% 280%;
   animation: brand-gradient-shift 11s ease infinite;
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path 0.65s cubic-bezier(0.7, 0, 0.3, 1);
+  clip-path: inset(0 0 0 100%);
+  transition: clip-path 0.62s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .login-brand--pharmacy .login-brand-morph {
-  clip-path: inset(0 0% 0 0);
+  clip-path: inset(0 0 0 0%);
 }
 
 /* Logo */
@@ -1080,7 +1103,7 @@
   flex: 1;
   position: relative;
   width: 100%;
-  min-height: 90px;
+  min-height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1094,22 +1117,30 @@
   justify-content: center;
   opacity: 0;
   transform: scale(0.76) translateY(16px);
-  transition: opacity 0.44s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.44s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
+  will-change: opacity, transform;
 }
 .login-illo--visible {
   opacity: 1;
   transform: scale(1) translateY(0);
 }
-.login-illo--visible svg {
-  animation: illo-float 3.8s ease-in-out infinite;
+
+/* Float lives on its own layer — separate from the fade/scale transition above */
+.login-illo-float {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   filter: drop-shadow(0 8px 24px rgba(0,0,0,0.22));
+}
+.login-illo--visible .login-illo-float {
+  animation: illo-float 3.8s ease-in-out infinite;
 }
 
 @keyframes illo-float {
   0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-10px); }
+  50%       { transform: translateY(-8px); }
 }
 
 /* Quote in brand panel */
@@ -1185,11 +1216,11 @@
   letter-spacing: -0.6px;
   line-height: 1.05;
   margin: 4px 0 0;
-  animation: welcome-role-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: welcome-role-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes welcome-role-in {
-  from { opacity: 0; transform: translateY(12px) scale(0.94); }
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
@@ -1608,9 +1639,21 @@
 }
 
 .login-submit-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+}
+/* Light mode: opacity desaturates blue into lavender — use explicit muted colors instead */
+.login-scene[data-theme="light"] .login-submit-btn--doctor:disabled {
+  background: linear-gradient(135deg, #93c5fd 0%, #a5b4fc 100%);
+  opacity: 1;
+  box-shadow: none;
+}
+.login-scene[data-theme="light"] .login-submit-btn--pharmacy:disabled {
+  background: linear-gradient(135deg, #6ee7b7 0%, #67e8f9 100%);
+  opacity: 1;
+  box-shadow: none;
 }
 
 /* Alert */

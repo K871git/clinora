@@ -83,6 +83,7 @@
 
 .appt-wday--today .appt-wday-hdr {
   background: color-mix(in srgb, var(--clr-primary) 7%, var(--clr-bg));
+  border-top: 2.5px solid var(--clr-primary);
 }
 
 .appt-wday-name {
@@ -143,8 +144,13 @@
   transition: opacity 0.12s, transform 0.12s;
 }
 
-.appt-wcard:hover { opacity: 0.85; transform: translateY(-1px); }
+.appt-wcard:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
 
+.appt-wcard { border-left-width: 3px; }
 .appt-wcard--scheduled { background: #dbeafe; border-left-color: #3b82f6; }
 .appt-wcard--confirmed { background: #d1fae5; border-left-color: #10b981; }
 .appt-wcard--completed { background: #ede9fe; border-left-color: #8b5cf6; opacity: 0.72; }
