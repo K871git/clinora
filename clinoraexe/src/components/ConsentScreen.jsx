@@ -117,7 +117,7 @@ export default function ConsentScreen({ onAccepted }) {
 
             <p className="cs-legal-text">
               <strong>Grievance Officer</strong><br />
-              For any data-related concerns, contact: <strong>support@clinora.in</strong>. We will respond within 30 days as required by the DPDP Act 2023.
+              For any data-related concerns, contact: <strong>gangardekishor87@gmail.com</strong>. We will respond within 30 days as required by the DPDP Act 2023.
             </p>
 
             <p className="cs-legal-text">

@@ -187,16 +187,6 @@
   padding-bottom: 9pt;
   margin-bottom: 10pt;
   border-bottom: 2.5px solid #2563eb;
-  position: relative;
-}
-
-.print-standalone-header::before {
-  content: '';
-  position: absolute;
-  left: 0; top: -3mm;
-  width: 38pt; height: 3px;
-  background: #2563eb;
-  border-radius: 0 0 2px 2px;
 }
 
 .print-clinic-col {}

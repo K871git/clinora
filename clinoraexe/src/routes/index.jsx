@@ -37,6 +37,7 @@ import FlappyGame from '../pages/games/FlappyGame'
 import NotesPage from '../pages/notes/NotesPage'
 import PrivacyPolicyPage from '../pages/legal/PrivacyPolicyPage'
 import TermsPage from '../pages/legal/TermsPage'
+import AboutPage from '../pages/about/AboutPage'
 import CertificatePrintPage from '../pages/visits/CertificatePrintPage'
 
 /* Forces PatientDetailPage to fully remount when :id changes, resetting all state */
@@ -71,6 +72,7 @@ export default function AppRoutes() {
           <Route path="/profile"         element={<ProfilePage />} />
           <Route path="/privacy-policy"  element={<PrivacyPolicyPage />} />
           <Route path="/terms"           element={<TermsPage />} />
+          <Route path="/about"           element={<AboutPage />} />
 
           {/* Doctor */}
           <Route element={<ProtectedRoute role="doctor" />}>

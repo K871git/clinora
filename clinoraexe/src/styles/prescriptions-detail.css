@@ -7,7 +7,7 @@
   color: var(--clr-primary);
   margin-bottom: var(--space-md);
   padding-bottom: 8px;
-  border-bottom: 1.5px solid color-mix(in srgb, var(--clr-primary) 20%, transparent);
+  border-bottom: 1px solid var(--clr-border);
   padding-left: 8px;
   border-left: 2.5px solid var(--clr-primary);
 }

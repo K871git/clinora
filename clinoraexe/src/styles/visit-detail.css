@@ -35,13 +35,6 @@
 [data-theme="dark"] .vst-charges-head  { color: #a78bfa; }
 
 /* Grand total — teal accent */
-.vst-billing-total-row {
-  background: color-mix(in srgb, var(--clr-primary) 4%, transparent);
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  padding-left: 8px;
-  padding-right: 8px;
-  margin: 4px -20px 0;
-}
 .vst-billing-total-amount {
   color: var(--clr-primary);
 }

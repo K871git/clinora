@@ -141,7 +141,7 @@ export default function TermsPage() {
         <div className="legal-contact-box">
           <p>
             <strong>Clinora Support</strong><br />
-            Email: <strong>support@clinora.in</strong><br />
+            Email: <strong>gangardekishor87@gmail.com</strong><br />
             Grievance response time: Within 30 days as required by the DPDP Act 2023.
           </p>
         </div>
