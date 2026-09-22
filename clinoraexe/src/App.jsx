@@ -38,14 +38,15 @@ export default function App() {
 
   if (!consented) return <ConsentScreen onAccepted={() => setConsented(true)} />
 
-  /* DEV MODE — re-wrap with <LicenseGate> before production build */
   return (
-    <NetworkGuard>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </NetworkGuard>
+    <LicenseGate>
+      <NetworkGuard>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </NetworkGuard>
+    </LicenseGate>
   )
 }

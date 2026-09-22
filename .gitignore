@@ -1,0 +1,26 @@
+# Build artifacts
+target/
+**/target/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Tauri
+clinoraexe/src-tauri/target/
+
+# Large files / zip archives
+*.zip
+*.exe
+*.msi
+*.dmg
+
+# Logs & temp
+*.log
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local

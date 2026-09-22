@@ -130,7 +130,7 @@ pub async fn get_license_status(_state: State<'_, AppState>) -> AppResult<Value>
     }
 
     let days = days_remaining(&info);
-    let expiring_soon = days.map(|d| d <= 7).unwrap_or(false);
+    let expiring_soon = days.map(|d| d <= 2).unwrap_or(false);
 
     Ok(json!({
         "licensed": true,

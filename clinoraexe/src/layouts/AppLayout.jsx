@@ -428,7 +428,7 @@ export default function AppLayout() {
 
           {/* Search trigger */}
           <button
-            className="icon-btn gs-trigger-btn"
+            className="gs-trigger-btn"
             onClick={() => setSearchOpen(true)}
             aria-label="Global search (Ctrl+K)"
             title="Search (Ctrl+K)"
@@ -443,6 +443,7 @@ export default function AppLayout() {
             className="icon-btn"
             onClick={() => setIsDark(d => !d)}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Light mode' : 'Dark mode'}
           >
             {isDark ? <IconSun /> : <IconMoon />}
           </button>

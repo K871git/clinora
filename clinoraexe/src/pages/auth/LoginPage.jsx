@@ -1376,6 +1376,7 @@ export default function LoginPage() {
             <TimeIcon hour={hour} />
             {greeting}
           </p>
+          {clinicName && <p className="login-welcome-clinic">{clinicName}</p>}
           <h2 className={`login-welcome-role login-welcome-role--${role}`}>
             {displayedRole}
             {displayedRole.length < ROLE_NAMES[role].length && (
@@ -1399,6 +1400,7 @@ export default function LoginPage() {
           )}
 
           <div className="login-role-bar">
+            <div className={`login-role-pill${isPharmacy ? ' login-role-pill--right' : ''}`} aria-hidden="true" />
             <button type="button"
               className={`login-role-btn login-role-btn--doctor${!isPharmacy ? ' login-role-btn--active' : ''}`}
               onClick={() => setRole('doctor')}>
@@ -1475,8 +1477,7 @@ export default function LoginPage() {
 
       <p className="login-footer">
         <span className="login-footer-clinic">{clinicName}</span>
-        {' '}· Offline Medical Records ·{' '}
-        <a className="login-footer-link" href="https://k871git.github.io/thaelon" target="_blank" rel="noopener noreferrer">Thaelon</a>
+        {' '}· Clinora v1.2.0 · © 2026
       </p>
 
       {welcomeUser && welcomeUser.role === 'pharmacy' && (

@@ -4,18 +4,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f1f5f9;
+  background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #fff5f5 100%);
   z-index: 9999;
 }
 
 .lg-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
-  padding: 48px 40px 36px;
+  border: 1px solid #e8edf5;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 16px 48px rgba(0,0,0,0.10);
+  padding: 44px 40px 32px;
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
   text-align: center;
   font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
 }
@@ -36,17 +36,18 @@
 }
 
 .lg-title {
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: #0f172a;
-  margin: 0 0 6px;
-  letter-spacing: -0.5px;
+  margin: 0 0 8px;
+  letter-spacing: -0.6px;
 }
 
 .lg-subtitle {
   font-size: 14px;
   color: #64748b;
-  margin: 0 0 28px;
+  margin: 0 0 24px;
+  line-height: 1.6;
 }
 
 .lg-form {
@@ -57,9 +58,9 @@
 
 .lg-input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 13px 16px;
   border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 13px;
   font-family: 'Consolas', 'Courier New', monospace;
   letter-spacing: 0;
@@ -67,13 +68,14 @@
   background: #f8fafc;
   text-align: left;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
 }
 
 .lg-input:focus {
   border-color: #2563eb;
   background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
 }
 
 .lg-input--error {
@@ -88,24 +90,29 @@
 }
 
 .lg-btn {
-  padding: 12px;
+  padding: 13px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #2563eb;
   color: #fff;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
+  letter-spacing: -0.2px;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.30);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.12s, opacity 0.15s;
 }
 
 .lg-btn:hover:not(:disabled) {
   background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37,99,235,0.36);
 }
 
 .lg-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .lg-success {
@@ -135,8 +142,95 @@
   flex-shrink: 0;
 }
 
+/* ── Card-level contact block ────────────────────────────────────────────────── */
+.lg-contact-block {
+  margin: 24px 0 4px;
+  text-align: left;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.lg-contact-block-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #94a3b8;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.lg-contact-wa-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.lg-contact-wa-wrap .lg-contact-row { flex: 1; margin-bottom: 0; }
+
+.lg-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  text-align: left;
+  margin-bottom: 6px;
+}
+.lg-contact-row:last-child { margin-bottom: 0; }
+.lg-contact-row:hover { transform: translateY(-1px); }
+.lg-contact-wa:hover    { border-color: #25d366; background: #f0fdf4; }
+.lg-contact-email:hover { border-color: #2563eb; background: #eff6ff; }
+
+.lg-contact-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lg-contact-icon--wa    { background: #25d366; color: #fff; }
+.lg-contact-icon--email { background: #2563eb; color: #fff; }
+
+.lg-contact-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lg-contact-main { font-size: 12px; font-weight: 600; color: #0f172a; }
+.lg-contact-sub  { font-size: 11px; color: #64748b; }
+.lg-contact-arrow { color: #cbd5e1; flex-shrink: 0; }
+
+.lg-contact-call-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.lg-contact-call-btn:hover {
+  border-color: #25d366;
+  background: #f0fdf4;
+  transform: translateY(-1px);
+}
+
 .lg-footer {
-  margin: 20px 0 0;
+  margin: 14px 0 0;
   font-size: 12px;
   color: #94a3b8;
 }
@@ -148,19 +242,265 @@
 
 .lg-subtitle--expired {
   color: #ef4444;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 8px;
 }
 
-/* Expiry warning banner — shown inside the app when subscription is expiring */
-.lg-expiry-banner {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 9000;
-  background: #fef3c7;
-  border-bottom: 1px solid #f59e0b;
-  color: #92400e;
-  text-align: center;
-  padding: 8px 16px;
+.lg-clinic-id {
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: 'Consolas', monospace;
+}
+
+.lg-renew-hint {
   font-size: 13px;
+  color: #64748b;
+  margin: 0 0 24px;
+}
+
+/* Expired card accent */
+.lg-card--expired {
+  border-color: #fecaca;
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.10);
+}
+
+.lg-expired-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 4px 12px rgba(239,68,68,0.28));
+}
+
+/* Renew button — red accent */
+.lg-btn--renew {
+  background: #dc2626 !important;
+  box-shadow: 0 4px 14px rgba(220,38,38,0.35) !important;
+}
+.lg-btn--renew:hover:not(:disabled) {
+  background: #b91c1c !important;
+  box-shadow: 0 6px 20px rgba(220,38,38,0.42) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Expiry popup (dismissable) ─────────────────────────────────────────────── */
+.lg-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  animation: lg-fade-in 0.2s ease;
+}
+
+@keyframes lg-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lg-popup-card {
+  position: relative;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0,0,0,0.04);
+  padding: 44px 40px 36px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  animation: lg-popup-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes lg-popup-in {
+  from { transform: scale(0.86) translateY(16px); opacity: 0; }
+  to   { transform: scale(1) translateY(0);        opacity: 1; }
+}
+
+/* Close X button */
+.lg-popup-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.lg-popup-close:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Bell icon circle */
+.lg-popup-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2.5px solid #fcd34d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: #b45309;
+  box-shadow: 0 4px 16px rgba(245,158,11,0.22);
+}
+
+.lg-popup-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+  letter-spacing: -0.4px;
+}
+
+/* Big countdown number */
+.lg-popup-days {
+  font-size: 36px;
+  font-weight: 800;
+  color: #f59e0b;
+  margin: 0 0 12px;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.lg-popup-body {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.7;
+  margin: 0 0 22px;
+}
+
+/* Contact block */
+.lg-popup-contact-block {
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.lg-popup-contact-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #94a3b8;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.lg-popup-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  margin-bottom: 8px;
+  text-align: left;
+}
+.lg-popup-contact-row:last-child { margin-bottom: 0; }
+.lg-popup-contact-row:hover { transform: translateY(-1px); }
+
+.lg-popup-contact-wa-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.lg-popup-contact-wa-wrap .lg-popup-contact-row {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.lg-popup-call-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.lg-popup-call-btn:hover {
+  border-color: #25d366;
+  background: #f0fdf4;
+  transform: translateY(-1px);
+}
+
+.lg-popup-contact-wa:hover  { border-color: #25d366; background: #f0fdf4; }
+.lg-popup-contact-email:hover { border-color: #2563eb; background: #eff6ff; }
+
+.lg-popup-contact-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lg-popup-contact-icon--wa    { background: #25d366; color: #fff; }
+.lg-popup-contact-icon--email { background: #2563eb; color: #fff; }
+
+.lg-popup-contact-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lg-popup-contact-main {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.lg-popup-contact-sub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.lg-popup-contact-arrow {
+  color: #cbd5e1;
+  flex-shrink: 0;
+}
+
+.lg-popup-dismiss {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: #f59e0b !important;
+  background-image: none !important;
+  color: #fff !important;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  letter-spacing: -0.2px;
+  box-shadow: 0 4px 14px rgba(245,158,11,0.35);
+}
+.lg-popup-dismiss:hover {
+  background: #d97706 !important;
+  transform: translateY(-1px);
 }
 
 .lg-spinner {
