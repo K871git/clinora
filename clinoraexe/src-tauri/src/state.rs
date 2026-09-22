@@ -57,3 +57,11 @@ pub fn get_session(state: &AppState) -> crate::error::AppResult<SessionUser> {
         .clone()
         .ok_or("Not authenticated.".into())
 }
+
+pub fn require_role(state: &AppState, allowed: &[&str]) -> crate::error::AppResult<SessionUser> {
+    let session = get_session(state)?;
+    if !allowed.contains(&session.role.as_str()) {
+        return Err("Access denied.".into());
+    }
+    Ok(session)
+}

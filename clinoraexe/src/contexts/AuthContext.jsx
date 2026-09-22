@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
         const msg = typeof err === 'string' ? err : ''
         if (msg.includes('Not authenticated')) expireSession()
       })
-    }, 5 * 60 * 1000)
+    }, 2 * 60 * 1000)
     return () => clearInterval(pingRef.current)
   }, [user])
 

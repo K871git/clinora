@@ -31,11 +31,31 @@ function randomQuote() {
 /* ── Scene decorations ───────────────────────────────────────────────── */
 
 function SunDeco() {
+  const RAYS = Array.from({ length: 12 }, (_, i) => i)
   return (
-    <svg className="login-deco login-deco-sun" width="260" height="260" viewBox="0 0 260 260" aria-hidden="true">
-      <circle cx="130" cy="130" r="124" fill="#fef08a" opacity="0.18" />
-      <circle cx="130" cy="130" r="90" fill="#fde68a" opacity="0.45" />
-      <circle cx="130" cy="130" r="62" fill="#fcd34d" opacity="0.80" />
+    <svg className="login-deco login-deco-sun" width="280" height="280" viewBox="0 0 280 280" aria-hidden="true">
+      <defs>
+        <radialGradient id="drsun" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="#fffde0" stopOpacity="1"/>
+          <stop offset="42%"  stopColor="#fde68a" stopOpacity="0.95"/>
+          <stop offset="100%" stopColor="#fcd34d" stopOpacity="0.88"/>
+        </radialGradient>
+      </defs>
+      {/* Atmosphere halos */}
+      <circle cx="140" cy="140" r="136" fill="#fef08a" opacity="0.13"/>
+      <circle cx="140" cy="140" r="106" fill="#fde68a" opacity="0.28"/>
+      {/* Spinning rays */}
+      <g className="dr-sun-rays" style={{ transformOrigin: '140px 140px' }}>
+        {RAYS.map(i => (
+          <rect key={i} x="137" y="10" width="6" height="28" rx="3"
+            fill={`rgba(255,215,55,${i % 2 === 0 ? 0.44 : 0.26})`}
+            transform={`rotate(${(360 / 12) * i} 140 140)`}/>
+        ))}
+      </g>
+      {/* Sun body */}
+      <circle cx="140" cy="140" r="70" fill="url(#drsun)"/>
+      {/* Inner hot-spot */}
+      <circle cx="132" cy="132" r="22" fill="#fffde7" opacity="0.42"/>
     </svg>
   )
 }
@@ -43,18 +63,38 @@ function SunDeco() {
 function CloudsDeco() {
   return (
     <svg className="login-deco login-deco-clouds" viewBox="0 0 1200 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <radialGradient id="cl-sh1" cx="50%" cy="90%" r="50%">
+          <stop offset="0%" stopColor="rgba(140,160,200,0.28)"/>
+          <stop offset="100%" stopColor="rgba(140,160,200,0)"/>
+        </radialGradient>
+        <radialGradient id="cl-sh2" cx="50%" cy="90%" r="50%">
+          <stop offset="0%" stopColor="rgba(140,160,200,0.22)"/>
+          <stop offset="100%" stopColor="rgba(140,160,200,0)"/>
+        </radialGradient>
+        <radialGradient id="cl-sh3" cx="50%" cy="90%" r="50%">
+          <stop offset="0%" stopColor="rgba(140,160,200,0.16)"/>
+          <stop offset="100%" stopColor="rgba(140,160,200,0)"/>
+        </radialGradient>
+      </defs>
       {/* Each <g> gets its own slow drift animation */}
       <g className="cloud-grp-1">
+        {/* Volume shadow base */}
+        <ellipse cx="160" cy="118" rx="108" ry="16" fill="url(#cl-sh1)"/>
         <ellipse cx="160" cy="80" rx="100" ry="40" fill="white" opacity="0.82" />
         <ellipse cx="96" cy="100" rx="64" ry="32" fill="white" opacity="0.82" />
         <ellipse cx="224" cy="100" rx="68" ry="30" fill="white" opacity="0.82" />
       </g>
       <g className="cloud-grp-2">
+        {/* Volume shadow base */}
+        <ellipse cx="820" cy="98" rx="88" ry="13" fill="url(#cl-sh2)"/>
         <ellipse cx="820" cy="62" rx="82" ry="34" fill="white" opacity="0.72" />
         <ellipse cx="756" cy="78" rx="54" ry="26" fill="white" opacity="0.72" />
         <ellipse cx="884" cy="78" rx="56" ry="24" fill="white" opacity="0.72" />
       </g>
       <g className="cloud-grp-3">
+        {/* Volume shadow base */}
+        <ellipse cx="520" cy="67" rx="62" ry="10" fill="url(#cl-sh3)"/>
         <ellipse cx="520" cy="40" rx="56" ry="22" fill="white" opacity="0.55" />
         <ellipse cx="472" cy="54" rx="36" ry="18" fill="white" opacity="0.55" />
         <ellipse cx="568" cy="54" rx="38" ry="17" fill="white" opacity="0.55" />
@@ -320,28 +360,151 @@ function DoctorHorizonDeco() {
       </svg>
 
       <svg className="login-horizon login-horizon--night" viewBox="0 0 1440 130" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
-        <path d="M0,130 L0,88 C200,38 400,78 600,52 C800,26 1000,66 1200,44 C1300,33 1370,50 1440,46 L1440,130 Z" fill="rgba(15,23,42,0.35)" />
-        <path d="M0,130 L0,108 C180,88 360,104 540,96 C720,88 900,104 1080,96 C1260,88 1360,100 1440,98 L1440,130 Z" fill="rgba(10,16,35,0.55)" />
-        <path d="M0,130 L0,120 L1440,120 L1440,130 Z" fill="rgba(6,10,22,0.75)" />
-        {/* Night flowers — sparse, atmospheric, only moonflowers + evening primrose */}
+        <defs>
+          <radialGradient id="nmt-moon-glow" cx="73%" cy="0%" r="55%">
+            <stop offset="0%" stopColor="rgba(180,205,255,0.14)"/>
+            <stop offset="100%" stopColor="rgba(80,110,220,0)"/>
+          </radialGradient>
+          <radialGradient id="nmt-valley-mist" cx="50%" cy="100%" r="70%">
+            <stop offset="0%" stopColor="rgba(90,115,230,0.16)"/>
+            <stop offset="100%" stopColor="rgba(60,80,180,0)"/>
+          </radialGradient>
+          <radialGradient id="nmt-peak-halo" cx="66%" cy="22%" r="30%">
+            <stop offset="0%" stopColor="rgba(200,218,255,0.12)"/>
+            <stop offset="100%" stopColor="rgba(140,160,240,0)"/>
+          </radialGradient>
+          <linearGradient id="nmt-ground" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(4,7,20,0)"/>
+            <stop offset="100%" stopColor="rgba(2,4,12,1)"/>
+          </linearGradient>
+        </defs>
+
+        {/* Atmospheric moon-glow wash over far sky */}
+        <rect width="1440" height="130" fill="url(#nmt-moon-glow)"/>
+
+        {/* Layer 1 — Distant mountains (faintest deep-indigo silhouette) */}
+        <path d="M0,130 L0,86
+          C55,82 110,74 160,64 C200,56 240,48 280,42
+          C310,38 345,46 380,40 C420,32 465,24 515,20
+          C555,16 590,20 625,26 C658,22 698,16 748,12
+          C792,8 832,14 872,20 C912,14 954,8 1005,16
+          C1048,24 1086,34 1124,30 C1164,26 1204,20 1252,26
+          C1296,32 1340,40 1390,46 C1412,49 1428,51 1440,50
+          L1440,130 Z"
+          fill="rgba(24,32,92,0.58)"/>
+
+        {/* Moonlit ridge line — brightest peaks catch the high moon */}
+        <path d="M515,20 C555,16 590,20 625,26 C658,22 698,16 748,12 C792,8 832,14 872,20 C912,14 954,8 1005,16"
+          stroke="rgba(195,212,255,0.28)" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+
+        {/* Radial peak halo at center-right moon zone */}
+        <rect width="1440" height="130" fill="url(#nmt-peak-halo)"/>
+
+        {/* Layer 2 — Mid mountains (deeper navy) */}
+        <path d="M0,130 L0,100
+          C48,97 96,90 145,84 C188,79 228,76 276,82
+          C326,88 366,77 416,68 C458,60 500,56 542,62
+          C582,68 622,64 664,58 C706,52 752,60 800,66
+          C844,60 884,54 932,60 C974,66 1014,72 1062,68
+          C1104,64 1146,56 1204,62 C1256,68 1308,76 1362,78
+          C1394,80 1420,78 1440,76
+          L1440,130 Z"
+          fill="rgba(11,16,56,0.88)"/>
+
+        {/* Mid-ridge moonlit accents */}
+        <path d="M416,68 C458,60 500,56 542,62 C582,68 622,62 664,56"
+          stroke="rgba(185,205,255,0.18)" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
+        <path d="M884,54 C932,50 974,56 1014,62"
+          stroke="rgba(185,205,255,0.15)" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
+
+        {/* Valley mist — glows softly between the ridges */}
+        <rect width="1440" height="130" fill="url(#nmt-valley-mist)" opacity="0.75"/>
+
+        {/* Layer 3 — Foreground mountains (near-black, deepest shadow) */}
+        <path d="M0,130 L0,112
+          C38,110 80,106 118,102 C156,99 196,97 238,101
+          C280,105 320,101 362,97 C402,93 444,89 490,87
+          C530,86 570,90 618,94 C652,96 690,94 730,90
+          C770,86 812,87 860,93 C902,97 942,99 990,101
+          C1038,103 1090,100 1148,97 C1200,94 1260,98 1322,103
+          C1360,105 1402,107 1440,105
+          L1440,130 Z"
+          fill="rgba(5,8,22,0.98)"/>
+
+        {/* Pine tree silhouettes growing on the near ridge */}
+        <g fill="rgba(3,5,14,1.0)">
+          {[
+            [92,102,7,14],[104,100,8,15],[116,101,6,12],[128,102,7,13],
+            [182,97,8,15],[194,95,9,17],[206,96,7,13],[218,97,6,11],
+            [364,97,8,15],[376,95,10,18],[388,96,7,13],[400,97,6,11],
+            [454,87,9,17],[466,85,11,19],[478,86,8,16],[490,87,7,13],
+            [622,94,8,15],[634,92,9,17],[646,93,7,13],
+            [782,90,8,15],[794,88,10,17],[806,89,7,12],
+            [934,99,7,13],[946,97,8,15],[958,98,6,12],
+            [1086,98,8,15],[1098,96,9,16],[1110,97,7,13],
+            [1226,99,6,12],[1238,97,7,14],[1250,98,8,15],[1262,99,6,11],
+            [1368,103,7,14],[1380,102,8,15],[1392,103,6,11],
+          ].map(([x,by,w,h],i) => (
+            <polygon key={`pine${i}`} points={`${x},${by-h} ${x-w},${by} ${x+w},${by}`}/>
+          ))}
+        </g>
+
+        {/* Ground fill gradient */}
+        <rect x="0" y="118" width="1440" height="12" fill="url(#nmt-ground)"/>
+
+        {/* Night plants — moonflowers + evening primrose + closed daisies */}
         <g transform="translate(64,120)  scale(0.86)"><g {...MF('5.5s', '0.0s')}><MoonflowerPlant /></g></g>
         <g transform="translate(79,120)  scale(1.02)"><g {...MF('6.0s', '0.9s')}><MoonflowerPlant /></g></g>
         <g transform="translate(144,120) scale(0.58)"><g {...EP('5.2s', '2.2s')}><EveningPrimrose /></g></g>
+        <g transform="translate(162,120) scale(0.52)"><g {...CD('4.8s', '1.1s')}><ClosedDaisy /></g></g>
+        <g transform="translate(176,120) scale(0.60)"><g {...CD('5.2s', '3.0s')}><ClosedDaisy /></g></g>
+        <g transform="translate(220,120) scale(0.50)"><g {...CD('4.5s', '0.5s')}><ClosedDaisy /></g></g>
+        <g transform="translate(234,120) scale(0.56)"><g {...CD('5.6s', '2.4s')}><ClosedDaisy /></g></g>
         <g transform="translate(256,120) scale(0.56)"><g {...EP('5.5s', '0.3s')}><EveningPrimrose /></g></g>
+        <g transform="translate(310,120) scale(0.54)"><g {...CD('4.9s', '1.8s')}><ClosedDaisy /></g></g>
+        <g transform="translate(324,120) scale(0.60)"><g {...CD('5.3s', '4.2s')}><ClosedDaisy /></g></g>
+        <g transform="translate(338,120) scale(0.50)"><g {...CD('4.6s', '0.8s')}><ClosedDaisy /></g></g>
+        <g transform="translate(380,120) scale(0.64)"><g {...EP('5.0s', '2.8s')}><EveningPrimrose /></g></g>
         <g transform="translate(418,120) scale(0.98)"><g {...MF('5.8s', '0.5s')}><MoonflowerPlant /></g></g>
         <g transform="translate(435,120) scale(0.80)"><g {...MF('6.4s', '1.8s')}><MoonflowerPlant /></g></g>
         <g transform="translate(486,120) scale(0.68)"><g {...EP('5.0s', '1.9s')}><EveningPrimrose /></g></g>
+        <g transform="translate(510,120) scale(0.54)"><g {...CD('4.7s', '0.6s')}><ClosedDaisy /></g></g>
+        <g transform="translate(524,120) scale(0.60)"><g {...CD('5.4s', '3.5s')}><ClosedDaisy /></g></g>
+        <g transform="translate(562,120) scale(0.52)"><g {...CD('4.4s', '1.6s')}><ClosedDaisy /></g></g>
+        <g transform="translate(576,120) scale(0.58)"><g {...CD('5.8s', '4.8s')}><ClosedDaisy /></g></g>
         <g transform="translate(610,120) scale(0.66)"><g {...EP('5.3s', '1.4s')}><EveningPrimrose /></g></g>
+        <g transform="translate(654,120) scale(0.54)"><g {...CD('4.6s', '2.2s')}><ClosedDaisy /></g></g>
+        <g transform="translate(668,120) scale(0.60)"><g {...CD('5.1s', '0.3s')}><ClosedDaisy /></g></g>
+        <g transform="translate(682,120) scale(0.50)"><g {...EP('5.6s', '3.8s')}><EveningPrimrose /></g></g>
         <g transform="translate(714,120) scale(1.08)"><g {...MF('5.2s', '0.0s')}><MoonflowerPlant /></g></g>
         <g transform="translate(730,120) scale(0.92)"><g {...MF('5.8s', '1.3s')}><MoonflowerPlant /></g></g>
         <g transform="translate(746,120) scale(0.76)"><g {...MF('6.5s', '2.6s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(788,120) scale(0.54)"><g {...CD('4.8s', '1.0s')}><ClosedDaisy /></g></g>
+        <g transform="translate(802,120) scale(0.60)"><g {...CD('5.2s', '3.2s')}><ClosedDaisy /></g></g>
+        <g transform="translate(840,120) scale(0.56)"><g {...EP('5.4s', '0.7s')}><EveningPrimrose /></g></g>
+        <g transform="translate(856,120) scale(0.50)"><g {...CD('4.5s', '2.8s')}><ClosedDaisy /></g></g>
+        <g transform="translate(870,120) scale(0.58)"><g {...CD('5.7s', '4.5s')}><ClosedDaisy /></g></g>
         <g transform="translate(916,120) scale(0.68)"><g {...EP('5.1s', '1.6s')}><EveningPrimrose /></g></g>
+        <g transform="translate(960,120) scale(0.54)"><g {...CD('4.9s', '0.4s')}><ClosedDaisy /></g></g>
+        <g transform="translate(974,120) scale(0.60)"><g {...CD('5.3s', '2.6s')}><ClosedDaisy /></g></g>
+        <g transform="translate(988,120) scale(0.52)"><g {...CD('4.6s', '5.0s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1022,120) scale(0.58)"><g {...EP('5.5s', '1.2s')}><EveningPrimrose /></g></g>
         <g transform="translate(1046,120) scale(0.90)"><g {...MF('5.6s', '0.8s')}><MoonflowerPlant /></g></g>
         <g transform="translate(1062,120) scale(1.04)"><g {...MF('6.2s', '2.0s')}><MoonflowerPlant /></g></g>
         <g transform="translate(1110,120) scale(0.66)"><g {...EP('5.2s', '1.5s')}><EveningPrimrose /></g></g>
+        <g transform="translate(1134,120) scale(0.52)"><g {...CD('4.7s', '3.1s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1148,120) scale(0.58)"><g {...CD('5.0s', '0.6s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1186,120) scale(0.54)"><g {...CD('4.8s', '2.4s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1200,120) scale(0.60)"><g {...EP('5.4s', '4.0s')}><EveningPrimrose /></g></g>
         <g transform="translate(1222,120) scale(0.70)"><g {...EP('5.5s', '0.6s')}><EveningPrimrose /></g></g>
+        <g transform="translate(1266,120) scale(0.54)"><g {...CD('4.5s', '1.9s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1280,120) scale(0.60)"><g {...CD('5.6s', '3.4s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1294,120) scale(0.52)"><g {...CD('4.9s', '0.2s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1318,120) scale(0.58)"><g {...EP('5.1s', '2.0s')}><EveningPrimrose /></g></g>
         <g transform="translate(1350,120) scale(0.84)"><g {...MF('5.4s', '1.2s')}><MoonflowerPlant /></g></g>
         <g transform="translate(1366,120) scale(0.94)"><g {...MF('6.0s', '0.4s')}><MoonflowerPlant /></g></g>
+        <g transform="translate(1398,120) scale(0.56)"><g {...CD('4.8s', '3.6s')}><ClosedDaisy /></g></g>
+        <g transform="translate(1412,120) scale(0.62)"><g {...EP('5.2s', '1.0s')}><EveningPrimrose /></g></g>
       </svg>
     </>
   )
@@ -495,10 +658,123 @@ const LavSprig = () => (
   </>
 )
 
+const ChamomileFlower = () => {
+  const A = [0,30,60,90,120,150,180,210,240,270,300,330]
+  return (
+    <>
+      <rect x="-1" y="-34" width="2" height="34" rx="1" fill="rgba(22,101,52,0.82)"/>
+      <ellipse cx="-5" cy="-15" rx="5" ry="2" transform="rotate(-20,-5,-15)" fill="rgba(22,101,52,0.58)"/>
+      <ellipse cx="5" cy="-23" rx="5" ry="2" transform="rotate(20,5,-23)" fill="rgba(22,101,52,0.58)"/>
+      <g transform="translate(0,-34)">
+        {A.map((a, i) => (
+          <g key={i} transform={`rotate(${a})`}>
+            <ellipse cx="0" cy="-8" rx="2.2" ry="5.5" fill="rgba(255,255,255,0.93)"/>
+          </g>
+        ))}
+        <circle cx="0" cy="0" r="4.5" fill="rgba(253,224,71,0.96)"/>
+        <circle cx="0" cy="0" r="2.6" fill="rgba(245,158,11,0.70)"/>
+      </g>
+    </>
+  )
+}
+
+const RosemarySprig = () => (
+  <>
+    <rect x="-1" y="-46" width="2" height="46" rx="1"/>
+    {[-42,-36,-30,-24,-18,-12,-6].map((y, i) => (
+      <g key={i}>
+        <ellipse cx="-5.5" cy={y} rx="6" ry="1.6" transform={`rotate(${i%2===0?-28:28},-5.5,${y})`}/>
+        <ellipse cx="5.5" cy={y-5} rx="6" ry="1.6" transform={`rotate(${i%2===0?28:-28},5.5,${y-5})`}/>
+      </g>
+    ))}
+  </>
+)
+
+/* ── Pharmacy morning sun ────────────────────────────────────────────── */
+
+function PharmacySunDeco() {
+  const RAYS = Array.from({ length: 14 }, (_, i) => i)
+  return (
+    <svg className="login-ph-sun" width="240" height="240" viewBox="0 0 240 240" aria-hidden="true">
+      <defs>
+        <radialGradient id="phsb" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="#fff9e0" stopOpacity="1"/>
+          <stop offset="45%"  stopColor="#fde68a" stopOpacity="0.95"/>
+          <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.85"/>
+        </radialGradient>
+        <radialGradient id="phsh" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="#fef3c7" stopOpacity="0.38"/>
+          <stop offset="55%"  stopColor="#fde68a" stopOpacity="0.14"/>
+          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0"/>
+        </radialGradient>
+        <radialGradient id="phso" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="#fffbeb" stopOpacity="0.16"/>
+          <stop offset="100%" stopColor="#fcd34d" stopOpacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="120" cy="120" r="118" fill="url(#phso)"/>
+      <circle cx="120" cy="120" r="88"  fill="url(#phsh)"/>
+      <g className="ph-sun-rays" style={{ transformOrigin: '120px 120px' }}>
+        {RAYS.map(i => (
+          <rect key={i} x="117" y="8" width="6" height="26" rx="3"
+            fill={`rgba(255,210,55,${i % 2 === 0 ? 0.40 : 0.26})`}
+            transform={`rotate(${(360 / 14) * i} 120 120)`}/>
+        ))}
+      </g>
+      <circle cx="120" cy="120" r="62" fill="url(#phsb)"/>
+      <circle cx="112" cy="112" r="20" fill="#fffde7" opacity="0.42"/>
+    </svg>
+  )
+}
+
+/* ── Pharmacy butterflies ────────────────────────────────────────────── */
+
+function PharmacyButterflyDeco() {
+  const Wings = ({ c1, c2, c3 }) => (
+    <>
+      <path d="M0,0 C-10,-16 -28,-17 -21,-5 C-16,4 -7,6 0,0 Z" fill={c1}/>
+      <path d="M0,0 C10,-16 28,-17 21,-5 C16,4 7,6 0,0 Z" fill={c1}/>
+      <path d="M0,0 C-13,5 -22,17 -14,18 C-7,19 -3,12 0,0 Z" fill={c2}/>
+      <path d="M0,0 C13,5 22,17 14,18 C7,19 3,12 0,0 Z" fill={c2}/>
+      <circle cx="-15" cy="-4" r="2.8" fill={c3} opacity="0.52"/>
+      <circle cx="15" cy="-4" r="2.8" fill={c3} opacity="0.52"/>
+      <ellipse cx="0" cy="5" rx="1.8" ry="9" fill="rgba(55,30,8,0.58)"/>
+      <line x1="0" y1="-3" x2="-7" y2="-15" stroke="rgba(55,30,8,0.48)" strokeWidth="0.8"/>
+      <line x1="0" y1="-3" x2="7" y2="-15" stroke="rgba(55,30,8,0.48)" strokeWidth="0.8"/>
+      <circle cx="-7" cy="-15" r="1.3" fill="rgba(55,30,8,0.42)"/>
+      <circle cx="7" cy="-15" r="1.3" fill="rgba(55,30,8,0.42)"/>
+    </>
+  )
+  return (
+    <>
+      <svg className="login-ph-butterfly login-ph-butterfly-1"
+        width="46" height="40" viewBox="-23 -20 46 34" aria-hidden="true">
+        <g className="ph-bfly-wings ph-bfly-wings-1">
+          <Wings c1="rgba(255,214,70,0.88)" c2="rgba(240,162,22,0.74)" c3="rgba(180,85,10,0.58)"/>
+        </g>
+      </svg>
+      <svg className="login-ph-butterfly login-ph-butterfly-2"
+        width="34" height="29" viewBox="-17 -15 34 27" aria-hidden="true">
+        <g className="ph-bfly-wings ph-bfly-wings-2">
+          <Wings c1="rgba(120,210,148,0.86)" c2="rgba(62,180,100,0.72)" c3="rgba(16,110,52,0.52)"/>
+        </g>
+      </svg>
+      <svg className="login-ph-butterfly login-ph-butterfly-3"
+        width="25" height="21" viewBox="-12 -11 25 23" aria-hidden="true">
+        <g className="ph-bfly-wings ph-bfly-wings-3">
+          <Wings c1="rgba(196,155,255,0.84)" c2="rgba(158,105,240,0.70)" c3="rgba(98,55,180,0.48)"/>
+        </g>
+      </svg>
+    </>
+  )
+}
+
 /* Outer <g> = position+scale. Inner <g className> = wind animation rotating from base */
 function PharmacyHorizonDeco() {
   const G = (dur, del) => ({ className: 'ph-grass', style: { animationDuration: dur, animationDelay: del } })
-  const L = (dur, del) => ({ className: 'ph-lav', style: { animationDuration: dur, animationDelay: del } })
+  const L = (dur, del) => ({ className: 'ph-lav',   style: { animationDuration: dur, animationDelay: del } })
+  const C = (dur, del) => ({ className: 'ph-lav',   style: { animationDuration: dur, animationDelay: del } })
+  const R = (dur, del) => ({ className: 'ph-grass', style: { animationDuration: dur, animationDelay: del } })
 
   const scene = (c1, c2, c3) => (
     <>
@@ -526,6 +802,23 @@ function PharmacyHorizonDeco() {
 
         <g transform="translate(1328,182) scale(0.54)"><g {...G('3.5s', '3.2s')}><GrassTuft /></g></g>
         <g transform="translate(1340,183) scale(0.48)"><g {...G('3.8s', '0.4s')}><GrassTuft /></g></g>
+
+        {/* Chamomile clusters on mid hill */}
+        <g transform="translate(220,191) scale(0.62)"><g {...C('4.8s', '0.6s')}><ChamomileFlower /></g></g>
+        <g transform="translate(234,190) scale(0.70)"><g {...C('5.3s', '1.8s')}><ChamomileFlower /></g></g>
+        <g transform="translate(248,191) scale(0.58)"><g {...C('4.5s', '3.0s')}><ChamomileFlower /></g></g>
+
+        <g transform="translate(570,185) scale(0.66)"><g {...C('5.0s', '0.2s')}><ChamomileFlower /></g></g>
+        <g transform="translate(584,184) scale(0.74)"><g {...C('5.5s', '2.2s')}><ChamomileFlower /></g></g>
+
+        <g transform="translate(960,181) scale(0.68)"><g {...C('4.7s', '1.0s')}><ChamomileFlower /></g></g>
+        <g transform="translate(974,180) scale(0.76)"><g {...C('5.2s', '3.5s')}><ChamomileFlower /></g></g>
+
+        {/* Rosemary on mid hill */}
+        <g transform="translate(458,188) scale(0.64)"><g {...R('5.1s', '0.8s')}><RosemarySprig /></g></g>
+        <g transform="translate(472,187) scale(0.72)"><g {...R('4.6s', '2.0s')}><RosemarySprig /></g></g>
+        <g transform="translate(1180,182) scale(0.60)"><g {...R('5.4s', '1.4s')}><RosemarySprig /></g></g>
+        <g transform="translate(1194,181) scale(0.68)"><g {...R('4.8s', '3.8s')}><RosemarySprig /></g></g>
       </g>
 
       {/* Front hill */}
@@ -562,6 +855,27 @@ function PharmacyHorizonDeco() {
 
         <g transform="translate(1396,190) scale(0.78)"><g {...G('3.4s', '5.0s')}><GrassTuft /></g></g>
         <g transform="translate(1408,191) scale(0.70)"><g {...G('2.9s', '2.4s')}><GrassTuft /></g></g>
+
+        {/* Chamomile + rosemary on front hill */}
+        <g transform="translate(164,200) scale(0.76)"><g {...C('4.9s', '0.4s')}><ChamomileFlower /></g></g>
+        <g transform="translate(178,199) scale(0.84)"><g {...C('5.4s', '2.0s')}><ChamomileFlower /></g></g>
+        <g transform="translate(192,200) scale(0.70)"><g {...C('4.6s', '4.0s')}><ChamomileFlower /></g></g>
+
+        <g transform="translate(436,195) scale(0.80)"><g {...R('5.2s', '0.9s')}><RosemarySprig /></g></g>
+        <g transform="translate(450,194) scale(0.92)"><g {...R('4.7s', '2.5s')}><RosemarySprig /></g></g>
+        <g transform="translate(464,195) scale(0.84)"><g {...R('5.6s', '1.6s')}><RosemarySprig /></g></g>
+
+        <g transform="translate(650,190) scale(0.78)"><g {...C('5.0s', '0.1s')}><ChamomileFlower /></g></g>
+        <g transform="translate(664,189) scale(0.88)"><g {...C('5.5s', '2.8s')}><ChamomileFlower /></g></g>
+
+        <g transform="translate(878,188) scale(0.82)"><g {...R('4.8s', '1.2s')}><RosemarySprig /></g></g>
+        <g transform="translate(892,187) scale(0.94)"><g {...R('5.3s', '3.4s')}><RosemarySprig /></g></g>
+
+        <g transform="translate(1110,190) scale(0.74)"><g {...C('4.5s', '0.5s')}><ChamomileFlower /></g></g>
+        <g transform="translate(1124,189) scale(0.82)"><g {...C('5.1s', '2.2s')}><ChamomileFlower /></g></g>
+
+        <g transform="translate(1320,190) scale(0.78)"><g {...R('5.0s', '1.8s')}><RosemarySprig /></g></g>
+        <g transform="translate(1334,189) scale(0.86)"><g {...R('4.6s', '3.6s')}><RosemarySprig /></g></g>
       </g>
     </>
   )
@@ -570,7 +884,7 @@ function PharmacyHorizonDeco() {
     <>
       <svg className="login-ph-horizon--day" viewBox="0 0 1440 220"
         preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-        {scene('rgba(5,150,105,0.16)', 'rgba(4,122,88,0.40)', 'rgba(3,98,70,0.62)')}
+        {scene('rgba(34,197,94,0.22)', 'rgba(22,163,74,0.52)', 'rgba(15,130,58,0.72)')}
       </svg>
       <svg className="login-ph-horizon--night" viewBox="0 0 1440 220"
         preserveAspectRatio="xMidYMax slice" aria-hidden="true">
@@ -661,6 +975,35 @@ function PharmacyWispsDeco() {
           background: w.color,
           animationDuration: w.dur,
           animationDelay: w.del
+        }} />
+      ))}
+    </div>
+  )
+}
+
+/* ── Night mountain mist — atmospheric fog wisps over the ridgeline ─── */
+
+function NightMistDeco() {
+  const wisps = [
+    { l: '4%',  b: '18%', w: 200, h: 28, blur: 26, dur: '18s', del: '0.0s' },
+    { l: '20%', b: '15%', w: 155, h: 22, blur: 20, dur: '14s', del: '3.5s' },
+    { l: '38%', b: '19%', w: 240, h: 32, blur: 30, dur: '22s', del: '1.2s' },
+    { l: '60%', b: '16%', w: 170, h: 25, blur: 22, dur: '16s', del: '5.0s' },
+    { l: '78%', b: '18%', w: 130, h: 20, blur: 18, dur: '12s', del: '2.4s' },
+    { l: '50%', b: '22%', w: 280, h: 38, blur: 34, dur: '26s', del: '7.5s' },
+    { l: '12%', b: '22%', w: 120, h: 18, blur: 16, dur: '11s', del: '4.8s' },
+    { l: '68%', b: '21%', w: 190, h: 26, blur: 24, dur: '19s', del: '0.8s' },
+    { l: '86%', b: '16%', w: 110, h: 17, blur: 15, dur: '10s', del: '6.2s' },
+  ]
+  return (
+    <div className="login-night-mist" aria-hidden="true">
+      {wisps.map((w, i) => (
+        <span key={i} className="night-mist-wisp" style={{
+          left: w.l, bottom: w.b,
+          width: w.w + 'px', height: w.h + 'px',
+          filter: `blur(${w.blur}px)`,
+          animationDuration: w.dur,
+          animationDelay: w.del,
         }} />
       ))}
     </div>
@@ -974,21 +1317,29 @@ export default function LoginPage() {
 
       {/* Doctor scene */}
       <SunDeco />
+      <div className="login-dr-sun-wash" aria-hidden="true" />
+      <div className="login-dr-horizon-glow" aria-hidden="true" />
       <CloudsDeco />
       <BirdsDeco />
       <StarsDeco />
       <MoonDeco />
       <NorthernLightsDeco />
 
-      {/* Pharmacy botanical horizon + healing wisps + pollen + drifting leaves */}
+      {/* Pharmacy day — morning sun + sun-ray wash */}
+      <PharmacySunDeco />
+      <div className="login-ph-sun-wash" aria-hidden="true" />
+
+      {/* Pharmacy botanical horizon + healing wisps + pollen + drifting leaves + butterflies */}
       <PharmacyHorizonDeco />
       <PharmacyWispsDeco />
       <PharmacyPollenDeco />
       <PharmacyLeavesDeco />
+      <PharmacyButterflyDeco />
 
-      {/* Doctor floral horizon + petal drift */}
+      {/* Doctor floral/mountain horizon + petal drift + night mountain mist */}
       <DoctorHorizonDeco />
       <DoctorPetalDeco />
+      <NightMistDeco />
 
       {/* Card */}
       <div className="login-card" ref={cardRef} onMouseMove={handleCardMouseMove} onMouseLeave={handleCardMouseLeave}>
@@ -1025,6 +1376,7 @@ export default function LoginPage() {
             <TimeIcon hour={hour} />
             {greeting}
           </p>
+          {clinicName && <p className="login-welcome-clinic">{clinicName}</p>}
           <h2 className={`login-welcome-role login-welcome-role--${role}`}>
             {displayedRole}
             {displayedRole.length < ROLE_NAMES[role].length && (
@@ -1048,6 +1400,7 @@ export default function LoginPage() {
           )}
 
           <div className="login-role-bar">
+            <div className={`login-role-pill${isPharmacy ? ' login-role-pill--right' : ''}`} aria-hidden="true" />
             <button type="button"
               className={`login-role-btn login-role-btn--doctor${!isPharmacy ? ' login-role-btn--active' : ''}`}
               onClick={() => setRole('doctor')}>
@@ -1124,8 +1477,7 @@ export default function LoginPage() {
 
       <p className="login-footer">
         <span className="login-footer-clinic">{clinicName}</span>
-        {' '}· Offline Medical Records ·{' '}
-        <a className="login-footer-link" href="https://k871git.github.io/thaelon" target="_blank" rel="noopener noreferrer">Thaelon</a>
+        {' '}· Clinora v1.2.0 · © 2026
       </p>
 
       {welcomeUser && welcomeUser.role === 'pharmacy' && (
