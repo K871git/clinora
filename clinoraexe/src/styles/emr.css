@@ -46,19 +46,27 @@
 .pd-tab {
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 8px 16px;
+  border-bottom: 2.5px solid transparent;
+  padding: 9px 18px;
   font-size: 13px;
   font-weight: 500;
   color: var(--clr-text-muted);
   cursor: pointer;
   margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
-.pd-tab:hover { color: var(--clr-text); }
+.pd-tab:hover {
+  color: var(--clr-text);
+  border-bottom-color: var(--clr-border);
+  background: color-mix(in srgb, var(--clr-primary) 4%, transparent);
+}
 .pd-tab--active {
   color: var(--clr-primary);
   border-bottom-color: var(--clr-primary);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--clr-primary) 6%, transparent);
 }
 
 /* ── Vital Signs ────────────────────────────────────────────────────── */
@@ -69,11 +77,18 @@
   margin-bottom: var(--space-md);
 }
 .vital-card {
-  background: var(--clr-bg);
+  background: var(--clr-surface);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 12px 14px;
   text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  border-top: 2px solid color-mix(in srgb, var(--clr-primary) 35%, transparent);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.vital-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
 }
 .vital-card-label {
   font-size: 10px;
@@ -83,9 +98,10 @@
   margin-bottom: 4px;
 }
 .vital-card-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--clr-text);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--clr-primary);
+  letter-spacing: -0.5px;
 }
 .vital-card-unit {
   font-size: 11px;
@@ -124,14 +140,19 @@
 /* ── Medical History ────────────────────────────────────────────────── */
 .medh-list { display: flex; flex-direction: column; gap: 8px; }
 .medh-item {
-  background: var(--clr-bg);
+  background: var(--clr-surface);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);
-  padding: 10px 14px;
+  padding: 11px 14px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.medh-item:hover {
+  border-color: color-mix(in srgb, var(--clr-primary) 45%, transparent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 .medh-item--inactive { opacity: 0.55; }
 .medh-type-badge {
@@ -397,11 +418,13 @@
   border-radius: var(--radius-lg);
   padding: 14px 16px;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .meds-rx-card:hover {
   border-color: var(--clr-primary);
-  box-shadow: 0 0 0 3px rgba(var(--clr-primary-rgb, 99,102,241), 0.08);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--clr-primary) 14%, transparent);
+  transform: translateY(-1px);
 }
 
 .meds-rx-header {
@@ -484,8 +507,23 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 0;
+  padding: 52px 0;
   color: var(--clr-text-muted);
   font-size: 13px;
   text-align: center;
+  gap: 8px;
+}
+
+/* empty state icon wrapper (used in some tabs) */
+.emr-empty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  color: var(--clr-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  opacity: 0.75;
 }

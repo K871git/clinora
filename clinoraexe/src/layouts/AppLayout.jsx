@@ -88,6 +88,7 @@ const PAGE_TITLES = {
   '/pharmacy/games/snake':'Snake',
   '/pharmacy/games/tetris':'Tetris',
   '/pharmacy/games/flappy':'Flappy Bird',
+  '/about':               'About',
 }
 
 export default function AppLayout() {
@@ -376,6 +377,9 @@ export default function AppLayout() {
               </button>
               <button className="profile-menu-item" onClick={() => { setProfileOpen(false); navigate('/terms') }}>
                 <IconDoc /> Terms &amp; Conditions
+              </button>
+              <button className="profile-menu-item" onClick={() => { setProfileOpen(false); navigate('/about') }}>
+                <IconInfo /> About Clinora
               </button>
 
               <div className="profile-menu-sep" />
@@ -950,6 +954,17 @@ function IconNotes() {
       <line x1="16" y1="13" x2="8" y2="13"/>
       <line x1="16" y1="17" x2="8" y2="17"/>
       <line x1="10" y1="9" x2="8" y2="9"/>
+    </svg>
+  )
+}
+
+function IconInfo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="8" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="12" y2="17" />
     </svg>
   )
 }

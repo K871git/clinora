@@ -123,7 +123,7 @@ export default function PrivacyPolicyPage() {
         <div className="legal-contact-box">
           <p>
             <strong>Grievance Officer — Clinora</strong><br />
-            Email: <strong>support@clinora.in</strong><br />
+            Email: <strong>gangardekishor87@gmail.com</strong><br />
             Response time: Within 30 days of receiving a written complaint, as required by the DPDP Act 2023.
           </p>
         </div>

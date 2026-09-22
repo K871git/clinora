@@ -13,6 +13,10 @@
 .stg-card-head {
   padding: 22px 26px 18px;
   border-bottom: 1px solid var(--clr-border);
+  background: color-mix(in srgb, var(--clr-primary) 3%, var(--clr-surface));
+}
+[data-theme="dark"] .stg-card-head {
+  background: color-mix(in srgb, var(--clr-primary) 6%, var(--clr-surface));
 }
 
 .stg-card-title {
@@ -248,13 +252,13 @@
   height: 34px;
   min-width: 34px;
   border-radius: 8px;
-  background: rgba(13, 148, 136, 0.1);
+  background: color-mix(in srgb, var(--clr-primary) 12%, transparent);
   color: var(--clr-primary);
   margin-top: 1px;
 }
 
 [data-theme="dark"] .stg-card-icon {
-  background: rgba(13, 148, 136, 0.15);
+  background: color-mix(in srgb, var(--clr-primary) 18%, transparent);
 }
 
 /* Section separator within card body */
@@ -269,9 +273,12 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--clr-text-muted);
+  color: var(--clr-primary);
   margin-bottom: -4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--clr-primary);
 }
+[data-theme="dark"] .stg-section-label { color: var(--clr-primary); }
 
 /* Toggle list */
 .stg-toggle-list {

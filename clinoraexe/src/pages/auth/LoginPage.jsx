@@ -24,8 +24,9 @@ function getDayStr() {
   return `${day} · ${date} ${month} ${now.getFullYear()}`
 }
 
-function randomQuote() {
-  return quotes[Math.floor(Math.random() * quotes.length)]
+function randomQuote(role) {
+  const pool = quotes.filter(q => !q.role || q.role === role || q.role === 'all')
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 /* ── Scene decorations ───────────────────────────────────────────────── */
@@ -33,7 +34,7 @@ function randomQuote() {
 function SunDeco() {
   const RAYS = Array.from({ length: 12 }, (_, i) => i)
   return (
-    <svg className="login-deco login-deco-sun" width="280" height="280" viewBox="0 0 280 280" aria-hidden="true">
+    <svg className="login-deco login-deco-sun" width="200" height="200" viewBox="0 0 280 280" aria-hidden="true">
       <defs>
         <radialGradient id="drsun" cx="50%" cy="50%" r="50%">
           <stop offset="0%"   stopColor="#fffde0" stopOpacity="1"/>
@@ -106,29 +107,15 @@ function CloudsDeco() {
 function StarsDeco() {
   // [x, y, r, opacity, dur_s, delay_s] — viewBox 0 0 100 85
   const stars = [
-    // Bright feature stars
+    // Bright — upper sky only
     [10,8,0.42,0.92,3.5,1.2],[45,5,0.40,0.90,4.2,2.8],[78,12,0.44,0.95,3.8,0.4],
     [23,18,0.38,0.88,5.0,3.5],[62,22,0.40,0.92,4.5,1.8],[88,7,0.42,0.90,3.2,0.8],
-    [5,35,0.38,0.88,4.8,2.2],[93,28,0.40,0.92,5.2,4.0],[36,48,0.42,0.95,3.6,0.6],
-    [71,42,0.38,0.90,4.0,3.2],[16,62,0.40,0.88,5.5,1.5],[55,58,0.44,0.92,3.4,4.5],
-    [84,55,0.38,0.90,4.8,2.0],[98,72,0.40,0.88,3.8,0.2],
-    // Medium
-    [18,4,0.28,0.76,6.2,2.5],[33,14,0.24,0.72,4.5,1.8],[58,9,0.26,0.74,7.0,3.0],
-    [76,18,0.28,0.76,5.8,0.6],[92,14,0.24,0.72,4.2,4.2],[8,25,0.26,0.74,6.5,1.2],
-    [41,28,0.28,0.76,5.2,3.8],[70,30,0.24,0.72,3.9,2.2],[97,38,0.26,0.74,7.3,0.9],
-    [28,42,0.28,0.76,4.6,4.5],[48,50,0.24,0.72,6.0,1.5],[78,48,0.26,0.74,5.4,3.2],
-    [14,68,0.28,0.76,4.8,2.0],[38,65,0.24,0.72,6.8,1.0],[65,62,0.26,0.74,5.0,3.6],
-    [88,78,0.28,0.76,3.7,0.4],[2,75,0.24,0.72,7.0,4.8],[52,78,0.26,0.74,4.3,2.6],
-    // Small
-    [6,14,0.16,0.58,5.5,1.5],[26,8,0.14,0.55,6.2,3.2],[50,16,0.16,0.58,4.8,2.8],
-    [68,4,0.14,0.55,7.5,0.6],[85,22,0.16,0.58,5.0,4.1],[3,52,0.14,0.55,6.8,1.8],
-    [20,55,0.16,0.58,4.2,3.5],[35,60,0.14,0.55,7.2,0.2],[72,65,0.16,0.58,4.5,4.8],
-    [80,72,0.14,0.55,6.5,1.2],[96,62,0.16,0.58,5.2,3.8],[12,78,0.14,0.55,7.8,0.8],
-    [32,82,0.16,0.58,4.0,2.2],[60,80,0.14,0.55,6.2,4.5],[75,82,0.16,0.58,5.5,1.0],
-    [90,68,0.14,0.55,7.0,3.2],[44,72,0.16,0.58,4.8,0.4],[18,38,0.14,0.55,6.5,2.8],
-    [62,38,0.16,0.58,5.0,4.2],[8,44,0.14,0.55,7.2,1.8],[30,48,0.16,0.58,4.5,3.5],
-    [82,35,0.14,0.55,6.8,0.5],[95,50,0.16,0.58,5.5,2.2],[46,35,0.14,0.55,7.5,4.8],
-    [60,48,0.16,0.58,4.2,1.2],[55,70,0.14,0.55,6.0,3.8],[72,55,0.16,0.58,5.8,0.8],
+    [5,35,0.38,0.88,4.8,2.2],[93,28,0.40,0.92,5.2,4.0],[36,30,0.42,0.95,3.6,0.6],
+    [71,20,0.38,0.90,4.0,3.2],[52,15,0.40,0.88,5.5,1.5],[17,10,0.44,0.92,3.4,4.5],
+    // Medium — spread naturally, staying above midline
+    [18,4,0.28,0.76,6.2,2.5],[58,9,0.26,0.74,7.0,3.0],[76,18,0.28,0.76,5.8,0.6],
+    [92,14,0.24,0.72,4.2,4.2],[8,25,0.26,0.74,6.5,1.2],[41,28,0.28,0.76,5.2,3.8],
+    [70,30,0.24,0.72,3.9,2.2],[97,22,0.26,0.74,7.3,0.9],
   ]
   return (
     <svg className="login-deco login-deco-stars" viewBox="0 0 100 85"
@@ -213,23 +200,49 @@ function MoonDeco() {
   )
 }
 
+/* ── Doctor nebula — deep cosmic glow in the night sky ──────────────── */
+
+function DoctorNebulaDeco() {
+  const blobs = [
+    { x: '4%',   y: '2%',  w: 340, h: 200, color: 'rgba(20,80,190,0.20)',  blur: 68, dur: '14s', del: '0s'  },
+    { x: '50%',  y: '-5%', w: 305, h: 178, color: 'rgba(30,105,210,0.17)', blur: 62, dur: '18s', del: '4s'  },
+    { x: '68%',  y: '7%',  w: 255, h: 158, color: 'rgba(18,90,200,0.18)',  blur: 56, dur: '16s', del: '9s'  },
+    { x: '26%',  y: '16%', w: 390, h: 130, color: 'rgba(25,80,185,0.12)',  blur: 75, dur: '22s', del: '6s'  },
+    { x: '-7%',  y: '4%',  w: 275, h: 162, color: 'rgba(15,65,175,0.16)',  blur: 62, dur: '20s', del: '2s'  },
+  ]
+  return (
+    <div className="login-dr-nebula" aria-hidden="true">
+      {blobs.map((b, i) => (
+        <span key={i} className="dr-nebula-blob" style={{
+          left: b.x, top: b.y,
+          width: b.w + 'px', height: b.h + 'px',
+          background: b.color,
+          filter: `blur(${b.blur}px)`,
+          animationDuration: b.dur,
+          animationDelay: b.del,
+        }} />
+      ))}
+    </div>
+  )
+}
+
 /* ── Doctor floral horizon ───────────────────────────────────────────── */
 
 const SunflowerPlant = () => {
   const A = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]
   return (
     <>
-      <rect x="-1.5" y="-44" width="3" height="44" rx="1.5" fill="rgba(21,128,61,0.88)" />
-      <ellipse cx="-6" cy="-20" rx="6.5" ry="2.5" transform="rotate(-22,-6,-20)" fill="rgba(21,128,61,0.66)" />
-      <ellipse cx="6" cy="-31" rx="6.5" ry="2.5" transform="rotate(22,6,-31)" fill="rgba(21,128,61,0.66)" />
-      <g transform="translate(0,-44)">
+      <rect x="-1.5" y="-34" width="3" height="34" rx="1.5" fill="rgba(21,128,61,0.88)" />
+      <ellipse cx="-6" cy="-15" rx="6.0" ry="2.2" transform="rotate(-22,-6,-15)" fill="rgba(21,128,61,0.66)" />
+      <ellipse cx="6" cy="-24" rx="6.0" ry="2.2" transform="rotate(22,6,-24)" fill="rgba(21,128,61,0.66)" />
+      <g transform="translate(0,-34)">
         {A.map((a, i) => (
           <g key={i} transform={`rotate(${a})`}>
-            <ellipse cx="0" cy="-9" rx="2.8" ry="5.5" fill="rgba(251,191,36,0.92)" />
+            <ellipse cx="0" cy="-7" rx="2.2" ry="4.2" fill="rgba(251,191,36,0.92)" />
           </g>
         ))}
-        <circle cx="0" cy="0" r="5.5" fill="rgba(120,53,15,0.95)" />
-        <circle cx="0" cy="0" r="3.5" fill="rgba(92,40,10,0.55)" />
+        <circle cx="0" cy="0" r="4.5" fill="rgba(120,53,15,0.95)" />
+        <circle cx="0" cy="0" r="2.8" fill="rgba(92,40,10,0.55)" />
       </g>
     </>
   )
@@ -265,25 +278,22 @@ const WildStem = () => (
 
 const MoonflowerPlant = () => (
   <>
-    <rect x="-1" y="-44" width="2" height="44" rx="1" fill="rgba(30,41,59,0.82)" />
-    <g transform="translate(0,-44)">
-      <path d="M-2,0 C-5,-8 -10,-16 -11,-22 L11,-22 C10,-16 5,-8 2,0 Z" fill="rgba(226,232,240,0.90)" />
-      <ellipse cx="0" cy="-22" rx="10" ry="3" fill="rgba(241,245,249,0.75)" />
-      <ellipse cx="0" cy="-13" rx="4" ry="6" fill="rgba(241,245,249,0.40)" />
-    </g>
+    <rect x="-0.9" y="-56" width="1.8" height="56" rx="0.9" fill="rgba(10,16,36,0.94)" />
+    <ellipse cx="0" cy="-60" rx="2.8" ry="6.2" fill="rgba(14,20,44,0.88)" />
+    <ellipse cx="-4.5" cy="-44" rx="5.2" ry="1.5" transform="rotate(-34,-4.5,-44)" fill="rgba(10,16,36,0.78)" />
+    <ellipse cx="4.5" cy="-33" rx="5.2" ry="1.5" transform="rotate(34,4.5,-33)" fill="rgba(10,16,36,0.78)" />
   </>
 )
 
 const EveningPrimrose = () => (
   <>
-    <rect x="-1" y="-36" width="2" height="36" rx="1" fill="rgba(30,41,59,0.78)" />
-    <g transform="translate(0,-36)">
-      <ellipse cx="0" cy="-8" rx="4" ry="7.5" fill="rgba(253,224,71,0.75)" />
-      <ellipse cx="0" cy="8" rx="4" ry="7.5" fill="rgba(253,224,71,0.75)" />
-      <ellipse cx="-8" cy="0" rx="7.5" ry="4" fill="rgba(253,224,71,0.75)" />
-      <ellipse cx="8" cy="0" rx="7.5" ry="4" fill="rgba(253,224,71,0.75)" />
-      <circle cx="0" cy="0" r="3.5" fill="rgba(180,130,18,0.88)" />
-    </g>
+    <ellipse cx="0" cy="-26" rx="1.1" ry="26" fill="rgba(8,14,30,0.90)" />
+    <ellipse cx="0" cy="-24" rx="1.1" ry="24" transform="rotate(-18)" fill="rgba(8,14,30,0.82)" />
+    <ellipse cx="0" cy="-22" rx="1.0" ry="22" transform="rotate(18)" fill="rgba(8,14,30,0.82)" />
+    <ellipse cx="0" cy="-20" rx="1.0" ry="20" transform="rotate(-34)" fill="rgba(8,14,30,0.72)" />
+    <ellipse cx="0" cy="-18" rx="0.9" ry="18" transform="rotate(34)" fill="rgba(8,14,30,0.72)" />
+    <ellipse cx="0" cy="-15" rx="0.8" ry="15" transform="rotate(-52)" fill="rgba(8,14,30,0.60)" />
+    <ellipse cx="0" cy="-14" rx="0.8" ry="14" transform="rotate(52)" fill="rgba(8,14,30,0.60)" />
   </>
 )
 
@@ -985,15 +995,11 @@ function PharmacyWispsDeco() {
 
 function NightMistDeco() {
   const wisps = [
-    { l: '4%',  b: '18%', w: 200, h: 28, blur: 26, dur: '18s', del: '0.0s' },
-    { l: '20%', b: '15%', w: 155, h: 22, blur: 20, dur: '14s', del: '3.5s' },
-    { l: '38%', b: '19%', w: 240, h: 32, blur: 30, dur: '22s', del: '1.2s' },
-    { l: '60%', b: '16%', w: 170, h: 25, blur: 22, dur: '16s', del: '5.0s' },
-    { l: '78%', b: '18%', w: 130, h: 20, blur: 18, dur: '12s', del: '2.4s' },
-    { l: '50%', b: '22%', w: 280, h: 38, blur: 34, dur: '26s', del: '7.5s' },
-    { l: '12%', b: '22%', w: 120, h: 18, blur: 16, dur: '11s', del: '4.8s' },
-    { l: '68%', b: '21%', w: 190, h: 26, blur: 24, dur: '19s', del: '0.8s' },
-    { l: '86%', b: '16%', w: 110, h: 17, blur: 15, dur: '10s', del: '6.2s' },
+    { l: '3%',  b: '17%', w: 240, h: 34, blur: 36, dur: '18s', del: '0.0s' },
+    { l: '28%', b: '15%', w: 285, h: 40, blur: 42, dur: '22s', del: '1.2s' },
+    { l: '55%', b: '16%', w: 205, h: 32, blur: 30, dur: '16s', del: '5.0s' },
+    { l: '76%', b: '17%', w: 170, h: 28, blur: 26, dur: '14s', del: '2.4s' },
+    { l: '44%', b: '20%', w: 310, h: 46, blur: 48, dur: '26s', del: '7.5s' },
   ]
   return (
     <div className="login-night-mist" aria-hidden="true">
@@ -1014,7 +1020,7 @@ function NightMistDeco() {
 
 function IlloDoctor() {
   return (
-    <svg width="120" height="130" viewBox="0 0 120 130" fill="none" aria-hidden="true">
+    <svg width="128" height="138" viewBox="0 0 120 130" fill="none" aria-hidden="true">
       <circle cx="28" cy="22" r="8" fill="rgba(255,255,255,0.90)" />
       <circle cx="92" cy="22" r="8" fill="rgba(255,255,255,0.90)" />
       <path d="M28 30 C28 52 28 62 60 64 C92 62 92 52 92 30"
@@ -1039,7 +1045,7 @@ function IlloDoctor() {
 
 function IlloPharmacy() {
   return (
-    <svg width="120" height="130" viewBox="0 0 120 130" fill="none" aria-hidden="true">
+    <svg width="128" height="138" viewBox="0 0 120 130" fill="none" aria-hidden="true">
       {/* Pharmacy cross */}
       <rect x="48" y="6" width="24" height="58" rx="12"
         fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.60)" strokeWidth="2.5" />
@@ -1189,7 +1195,7 @@ export default function LoginPage() {
   const [greeting] = useState(() => getGreeting())
   const [hour] = useState(() => new Date().getHours())
   const [dayStr] = useState(() => getDayStr())
-  const [quote, setQuote] = useState(randomQuote)
+  const [quote, setQuote] = useState(() => randomQuote('doctor'))
   const [clinicName, setClinicName] = useState('Clinora')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -1256,7 +1262,7 @@ export default function LoginPage() {
   }, [password, showPassword])
 
   useEffect(() => {
-    setQuote(randomQuote())
+    setQuote(randomQuote(role))
     setQuoteKey(k => k + 1)
     setError('')
     const target = ROLE_NAMES[role]
@@ -1266,7 +1272,7 @@ export default function LoginPage() {
       i++
       setDisplayedRole(target.slice(0, i))
       if (i >= target.length) clearInterval(iv)
-    }, 60)
+    }, 42)
     return () => clearInterval(iv)
   }, [role])
 
@@ -1323,6 +1329,7 @@ export default function LoginPage() {
       <BirdsDeco />
       <StarsDeco />
       <MoonDeco />
+      <DoctorNebulaDeco />
       <NorthernLightsDeco />
 
       {/* Pharmacy day — morning sun + sun-ray wash */}
@@ -1357,10 +1364,10 @@ export default function LoginPage() {
 
           <div className="login-brand-illo">
             <div className={`login-illo${!isPharmacy ? ' login-illo--visible' : ''}`}>
-              <IlloDoctor />
+              <div className="login-illo-float"><IlloDoctor /></div>
             </div>
             <div className={`login-illo${isPharmacy ? ' login-illo--visible' : ''}`}>
-              <IlloPharmacy />
+              <div className="login-illo-float"><IlloPharmacy /></div>
             </div>
           </div>
 
@@ -1377,7 +1384,7 @@ export default function LoginPage() {
             {greeting}
           </p>
           {clinicName && <p className="login-welcome-clinic">{clinicName}</p>}
-          <h2 className={`login-welcome-role login-welcome-role--${role}`}>
+          <h2 key={role} className={`login-welcome-role login-welcome-role--${role}`}>
             {displayedRole}
             {displayedRole.length < ROLE_NAMES[role].length && (
               <span className="login-cursor" aria-hidden="true">|</span>
