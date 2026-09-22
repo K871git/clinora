@@ -237,7 +237,6 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 36px 32px 80px;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 /* Back button */
@@ -247,24 +246,24 @@
   gap: 5px;
   font-size: 13px;
   font-weight: 500;
-  color: #6366f1;
+  color: var(--clr-primary);
   background: none;
   border: none;
   cursor: pointer;
   padding: 5px 0;
   margin-bottom: 24px;
   border-radius: 4px;
-  transition: color .15s;
+  transition: opacity .15s;
 }
-.legal-back-btn:hover { color: #4f46e5; text-decoration: underline; }
+.legal-back-btn:hover { opacity: 0.7; text-decoration: underline; }
 
 /* Page header */
 .legal-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #eff6ff;
-  color: #3b82f6;
+  background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  color: var(--clr-primary);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 11px;
@@ -272,13 +271,13 @@
   letter-spacing: .4px;
   text-transform: uppercase;
   margin-bottom: 14px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid color-mix(in srgb, var(--clr-primary) 28%, transparent);
 }
 
 .legal-title {
   font-size: 30px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--clr-text);
   letter-spacing: -.5px;
   margin: 0 0 8px;
   line-height: 1.2;
@@ -286,10 +285,10 @@
 
 .legal-meta {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--clr-text-muted);
   margin: 0 0 40px;
   padding-bottom: 24px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--clr-border);
 }
 
 /* Section block */
@@ -301,13 +300,13 @@
 .legal-section h2 {
   font-size: 13px;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--clr-primary);
   text-transform: uppercase;
   letter-spacing: .6px;
   margin: 0 0 14px;
   padding: 8px 14px;
-  background: #f5f3ff;
-  border-left: 3px solid #6366f1;
+  background: color-mix(in srgb, var(--clr-primary) 8%, transparent);
+  border-left: 3px solid var(--clr-primary);
   border-radius: 0 6px 6px 0;
   display: flex;
   align-items: center;
@@ -317,7 +316,7 @@
 /* Body text */
 .legal-section p {
   font-size: 14.5px;
-  color: #374151;
+  color: var(--clr-text);
   line-height: 1.8;
   margin: 0 0 12px;
 }
@@ -336,20 +335,20 @@
 .legal-section ul li,
 .legal-section ol li {
   font-size: 14px;
-  color: #374151;
+  color: var(--clr-text);
   line-height: 1.7;
   padding: 8px 14px 8px 38px;
-  background: #f8fafc;
+  background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface));
   border-radius: 7px;
   position: relative;
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--clr-border);
 }
 
 .legal-section ul li::before {
   content: '✦';
   position: absolute;
   left: 14px;
-  color: #a5b4fc;
+  color: color-mix(in srgb, var(--clr-primary) 55%, transparent);
   font-size: 9px;
   top: 12px;
 }
@@ -369,8 +368,8 @@
   top: 8px;
   width: 18px;
   height: 18px;
-  background: #e0e7ff;
-  color: #4f46e5;
+  background: color-mix(in srgb, var(--clr-primary) 15%, transparent);
+  color: var(--clr-primary);
   font-size: 10px;
   font-weight: 700;
   border-radius: 50%;
@@ -386,16 +385,17 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
+  background: color-mix(in srgb, #22c55e 8%, var(--clr-surface));
+  border: 1px solid color-mix(in srgb, #22c55e 35%, transparent);
   border-radius: 10px;
   padding: 14px 16px;
   margin: 16px 0;
   font-size: 13.5px;
-  color: #166534;
+  color: var(--clr-text);
   font-weight: 500;
   line-height: 1.6;
 }
+[data-theme="dark"] .legal-highlight { color: #86efac; }
 
 .legal-highlight::before {
   content: '🔒';
@@ -407,16 +407,16 @@
 /* Bold terms inside body */
 .legal-section p strong,
 .legal-section li strong {
-  color: #111827;
+  color: var(--clr-text);
   font-weight: 650;
 }
 
 /* em — subtle emphasis */
 .legal-section p em {
-  color: #6366f1;
+  color: var(--clr-primary);
   font-style: normal;
   font-weight: 600;
-  background: #ede9fe;
+  background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 13px;
@@ -424,8 +424,8 @@
 
 /* Contact box */
 .legal-contact-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: color-mix(in srgb, var(--clr-primary) 5%, var(--clr-surface));
+  border: 1px solid var(--clr-border);
   border-radius: 12px;
   padding: 18px 22px;
   margin-top: 10px;
@@ -434,6 +434,6 @@
 .legal-contact-box p {
   margin: 0 !important;
   font-size: 14px !important;
-  color: #374151 !important;
+  color: var(--clr-text) !important;
   line-height: 1.75 !important;
 }

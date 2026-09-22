@@ -63,14 +63,14 @@
   flex-shrink: 0;
   border-radius: 8px;
   border: 1px solid var(--clr-border);
-  background: #fff;
+  background: var(--clr-surface);
   color: var(--clr-text);
   cursor: pointer;
   transition: background .15s, box-shadow .15s;
   box-shadow: 0 1px 2px rgba(0,0,0,.05);
 }
 .dhlp-back-btn:hover {
-  background: #f8fafc;
+  background: color-mix(in srgb, var(--clr-primary) 5%, var(--clr-surface));
   box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 
@@ -87,7 +87,7 @@
 /* ── Section card ────────────────────────────────────────────────────── */
 
 .dhlp-section {
-  background: #fff;
+  background: var(--clr-surface);
   border-radius: 14px;
   border: 1px solid var(--clr-border);
   overflow: hidden;
@@ -168,7 +168,7 @@
   background: transparent;
   transition: background .15s;
 }
-.dhlp-step:hover { background: #f8fafc; }
+.dhlp-step:hover { background: color-mix(in srgb, var(--clr-primary) 5%, var(--clr-surface)); }
 
 .dhlp-step-num {
   min-width: 24px;
@@ -211,14 +211,15 @@
   gap: 8px;
   font-size: 12.5px;
   color: #0f766e;
-  background: #f0fdfa;
-  border: 1px solid #99f6e4;
+  background: color-mix(in srgb, #14b8a6 8%, var(--clr-surface));
+  border: 1px solid color-mix(in srgb, #14b8a6 30%, transparent);
   padding: 10px 12px;
   border-radius: 8px;
   margin-top: auto;
   line-height: 1.55;
   font-weight: 450;
 }
+[data-theme="dark"] .dhlp-tip { color: #2dd4bf; }
 
 .dhlp-tip-icon {
   flex-shrink: 0;
@@ -240,9 +241,9 @@
   align-items: flex-start;
   gap: 10px;
   padding: 9px 12px;
-  background: #f8fafc;
+  background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface));
   border-radius: 8px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--clr-border);
 }
 
 .dhlp-info-dot {

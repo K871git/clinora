@@ -332,7 +332,7 @@ This section is for the person who distributes Clinora — not for the clinic cl
 clinora-keygen\target\release\clinora-keygen.exe
 ```
 
-This tool only runs on the authorized developer PC. If you copy it to any other machine it will exit immediately without doing anything.
+This tool only runs on **authorized machines**. If you copy it to any other machine it will exit immediately with an error. See the section below if you need to run it on a different laptop.
 
 ---
 
@@ -364,43 +364,62 @@ Type exactly:
 ClinoraKeygen@2025!
 ```
 
-**Step 4 — Enter the Clinic ID**
+**Step 4 — Choose the license tier**
 
 ```
-Enter Clinic ID (e.g. CLINIC-001 or clinic name):
+─── Select License Tier ───────────────────
+  1. Monthly      (30 days)   ₹1,199/mo
+  2. Annual       (365 days)  ₹9,999/yr
+  3. Lifetime     (no expiry) ₹27,999
+  4. Custom       (enter days manually)
+───────────────────────────────────────────
+Choose tier (1-4):
+```
+
+Enter `1`, `2`, `3`, or `4`. If you choose `4`, it will ask how many days.
+
+**Step 5 — Enter the Clinic ID**
+
+```
+Enter Clinic ID (e.g. CLINIC-DR-SHARMA-001):
 ```
 
 Type any name that identifies the clinic, for example:
 
 ```
-DrSmithClinic
+CLINIC-DR-SHARMA-001
 ```
 
 or
 
 ```
-CLINIC-001
+DrSmithClinic
 ```
 
-**Step 5 — Copy the output key**
+> Do not use `|` or `:` in the clinic name.
 
-The tool prints the license key:
+**Step 6 — Copy the output key**
+
+The tool prints the license details and key:
 
 ```
-══════════════════════════════════════════════════
-  Clinic  : DrSmithClinic
-  License Key:
-  DrSmithClinic:AbCdXxYyZz...base64...==
-══════════════════════════════════════════════════
+╔══════════════════════════════════════════════════════════════╗
+  Clinic  : CLINIC-DR-SHARMA-001
+  Tier    : MONTHLY
+  Expiry  : 2026-10-24  (32 days from now)
+
+  LICENSE KEY:
+  CLINIC-DR-SHARMA-001|monthly|1761321600:AbCdXxYyZz...base64...==
+╚══════════════════════════════════════════════════════════════╝
 ```
 
-Copy the entire line starting from the clinic name — everything including the long base64 part at the end.
+Copy the entire **LICENSE KEY** line — everything on that line including the long base64 part at the end.
 
-**Step 6 — Send the key to the client**
+**Step 7 — Send the key to the client**
 
-Send it via WhatsApp, email, or any way you prefer. The client pastes this key into the Clinora license screen.
+Send it via WhatsApp, email, or any way you prefer. The client pastes this key into the Clinora license activation screen.
 
-**Step 7 — Generate another or exit**
+**Step 8 — Generate another or exit**
 
 ```
 Generate another key? (y/n):
@@ -410,12 +429,74 @@ Type `y` to generate another key for a different clinic, or `n` to exit.
 
 ---
 
+### Running the keygen on a different machine (home laptop etc.)
+
+The keygen checks your machine's Windows GUID before running. By default only the dev PC is whitelisted. To authorize a new machine:
+
+**Step 1 — Get the new machine's GUID**
+
+On the machine you want to authorize, open PowerShell and run:
+
+```powershell
+(Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Cryptography").MachineGuid
+```
+
+You will get something like:
+```
+7f3a1c2b-9e4d-4a11-bf02-1234abcd5678
+```
+
+Copy it.
+
+**Step 2 — Add the GUID to the source (do this on your dev PC)**
+
+Open `clinora-keygen\src\main.rs` and find this block near the top:
+
+```rust
+const ALLOWED_MACHINE_GUIDS: &[&str] = &[
+    "ab0c747a-0e3d-4323-bfe4-6f3240846a9e", // Developer PC (Kishor)
+];
+```
+
+Add your new machine on a new line:
+
+```rust
+const ALLOWED_MACHINE_GUIDS: &[&str] = &[
+    "ab0c747a-0e3d-4323-bfe4-6f3240846a9e", // Developer PC (Kishor)
+    "7f3a1c2b-9e4d-4a11-bf02-1234abcd5678", // Home Laptop
+];
+```
+
+**Step 3 — Rebuild the exe**
+
+Open PowerShell in the keygen folder and run:
+
+```powershell
+cd "d:\new_live\clinora\clinora-keygen"
+cargo build --release
+```
+
+Wait for it to finish. The new exe will be at:
+
+```
+clinora-keygen\target\release\clinora-keygen.exe
+```
+
+**Step 4 — Copy the new exe to the other machine**
+
+Transfer `clinora-keygen.exe` to your home laptop (USB drive, shared folder, etc.) and run it from there. It will work on that machine now.
+
+> The exe is self-contained — no Rust installation needed on the target machine.
+
+---
+
 ### Important rules
 
 - **One key per clinic** — generate one key and use it on both Doctor's PC and Pharmacist's PC at the same clinic.
-- **Same key forever** — if the client reinstalls Clinora, give them the same key again. No need to generate a new one.
+- **Monthly/Annual keys expire** — when a client's key expires, generate a new one with the same Clinic ID and send it. They paste it in the license screen again.
+- **Lifetime keys never expire** — generate once, valid forever on that clinic's machines.
 - **Keep the keygen exe private** — never share this exe or its password with anyone.
-- **Keygen only runs on your PC** — if your PC changes, add the new machine GUID to the whitelist in source and rebuild the keygen.
+- **Keygen only runs on authorized machines** — if your machine changes, add the new GUID to the whitelist in source and rebuild as shown above.
 
 ---
 
