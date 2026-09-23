@@ -66,7 +66,7 @@ function RxCard({ rx, onClick }) {
       ].join(' ')}
       onClick={onClick}
     >
-      <div className="pharma-qcard-avatar">{rx.patient.name[0].toUpperCase()}</div>
+      <div className="pharma-qcard-avatar">{(rx.patient.name?.[0] ?? '?').toUpperCase()}</div>
 
       <div className="pharma-qcard-body">
         <div className="pharma-qcard-name">{rx.patient.name}</div>

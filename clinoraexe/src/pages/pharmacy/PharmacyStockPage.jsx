@@ -583,6 +583,7 @@ function MedicineTab({ preFilter: initialFilter }) {
   async function handleAdd(e) {
     e.preventDefault()
     if (!addForm.name.trim()) { toast.error('Name is required.'); return }
+    if (addForm.price !== '' && parseFloat(addForm.price) < 0) { toast.error('Price cannot be negative.'); return }
     setAdding(true)
     try {
       const { data } = await createMedicine({
@@ -998,6 +999,7 @@ function StockItemsTab() {
     e.preventDefault()
     const validRows = addRows.filter(r => r.name.trim())
     if (!validRows.length) { toast.error('At least one item name is required.'); return }
+    if (validRows.some(r => r.selling_price !== '' && parseFloat(r.selling_price) < 0)) { toast.error('Price cannot be negative.'); return }
     setAdding(true)
     try {
       const results = await Promise.all(validRows.map(row => createStockItem({
@@ -1028,6 +1030,7 @@ function StockItemsTab() {
   }
 
   async function handleSaveEdit(item) {
+    if (editForm.selling_price !== '' && parseFloat(editForm.selling_price) < 0) { toast.error('Price cannot be negative.'); return }
     setSaving(true)
     try {
       const { data } = await updateStockItem(item.id, {

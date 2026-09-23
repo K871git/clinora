@@ -119,7 +119,7 @@ const PatientSearchBox = forwardRef(function PatientSearchBox({ onRegister }, in
               role="option"
               onClick={() => handleSelect(patient)}
             >
-              <div className="search-result-avatar">{patient.name[0].toUpperCase()}</div>
+              <div className="search-result-avatar">{(patient.name?.[0] ?? '?').toUpperCase()}</div>
               <div className="search-result-body">
                 <div className="search-result-name">{patient.name}</div>
                 <div className="search-result-sub">{patient.mobile ?? 'No contact on file'}</div>

@@ -195,7 +195,7 @@ export default function PatientDetailPage() {
           style={{ backgroundColor: avatarColor(patient.name) }}
           aria-hidden="true"
         >
-          {patient.name[0].toUpperCase()}
+          {(patient.name?.[0] ?? '?').toUpperCase()}
         </div>
 
         <div className="pd-hero-info">
