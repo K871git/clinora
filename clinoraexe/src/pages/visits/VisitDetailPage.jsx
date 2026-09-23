@@ -407,7 +407,7 @@ export default function VisitDetailPage() {
           className="detail-avatar"
           style={{ background: avatarColor(visit.patient.name), color: '#fff' }}
         >
-          {visit.patient.name[0].toUpperCase()}
+          {(visit.patient.name?.[0] ?? '?').toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 className="detail-name">{visit.patient.name}</h2>

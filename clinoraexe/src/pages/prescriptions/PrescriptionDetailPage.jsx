@@ -280,7 +280,7 @@ export default function PrescriptionDetailPage() {
 
         {/* Patient identity row */}
         <div className="rx-hcard-patient">
-          <div className="rx-hcard-avatar">{p.name[0].toUpperCase()}</div>
+          <div className="rx-hcard-avatar">{(p.name?.[0] ?? '?').toUpperCase()}</div>
           <div className="rx-hcard-info">
             <div className="rx-hcard-name">{p.name}</div>
             <div className="rx-hcard-meta">

@@ -344,6 +344,7 @@ function AddMedicineModal({ onClose, onDone, categories = [], existingNames = []
     e.preventDefault()
     const valid = rows.filter(r => r.name.trim())
     if (valid.length === 0) return
+    if (valid.some(r => r.price !== '' && parseFloat(r.price) < 0)) { toast.error('Price cannot be negative.'); return }
     setSaving(true)
     try {
       const results = await Promise.all(valid.map(r =>
@@ -805,6 +806,7 @@ export default function MedicinesPage() {
   async function handleSave(e) {
     e.preventDefault()
     if (!form.name.trim()) return
+    if (form.price !== '' && parseFloat(form.price) < 0) { toast.error('Price cannot be negative.'); return }
     setSaving(true)
     const payload = {
       name:         form.name.trim(),

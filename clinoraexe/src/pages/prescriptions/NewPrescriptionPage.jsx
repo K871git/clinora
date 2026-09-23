@@ -167,7 +167,7 @@ export default function NewPrescriptionPage() {
       if (itemErrs.some(Boolean)) errs.itemErrors = itemErrs
 
       // Duplicate medicine check
-      const names = items.map(i => i.medicine_name.trim().toLowerCase()).filter(Boolean)
+      const names = items.map(i => i.medicine_name.trim().replace(/\s+/g, ' ').toLowerCase()).filter(Boolean)
       const dupes = names.filter((n, i) => names.indexOf(n) !== i)
       if (dupes.length > 0) {
         errs.items = `Duplicate medicine: "${items.find(i => dupes.includes(i.medicine_name.trim().toLowerCase()))?.medicine_name}" is added more than once.`

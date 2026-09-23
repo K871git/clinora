@@ -225,7 +225,7 @@ function HistoryCard({ rx, onInvoice, onDetails, onReturn, hasReturn }) {
   const total = rx.total_amount ?? 0
   return (
     <div className="pharma-hcard">
-      <div className="pharma-hcard-avatar">{rx.patient.name[0].toUpperCase()}</div>
+      <div className="pharma-hcard-avatar">{(rx.patient.name?.[0] ?? '?').toUpperCase()}</div>
 
       <div className="pharma-hcard-body">
         <div className="pharma-hcard-name">{rx.patient.name}</div>

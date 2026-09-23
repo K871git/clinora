@@ -157,7 +157,7 @@ export default function NewVisitPage() {
 
         {/* Patient context strip */}
         <div className="nvp-patient-strip">
-          <div className="nvp-patient-avatar">{patient.name[0].toUpperCase()}</div>
+          <div className="nvp-patient-avatar">{(patient.name?.[0] ?? '?').toUpperCase()}</div>
           <div className="nvp-patient-info">
             <div className="nvp-patient-name">{patient.name}</div>
             {patientMeta && <div className="nvp-patient-meta">{patientMeta}</div>}

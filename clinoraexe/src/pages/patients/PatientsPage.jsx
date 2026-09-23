@@ -231,7 +231,7 @@ export default function PatientsPage() {
                       >
                         <td className="pt-td-patient">
                           <div className="pt-avatar" style={{ background: avatarColor(p.name) }}>
-                            {p.name[0].toUpperCase()}
+                            {(p.name?.[0] ?? '?').toUpperCase()}
                           </div>
                           <span className="pt-patient-name">{p.name}</span>
                           {isNew(p.created_at) && <span className="pt-new-badge">New</span>}

@@ -143,6 +143,7 @@ export default function PharmacyPrescriptionPage() {
   function addExtraItem() {
     if (!newItemName.trim()) return
     const price = parseFloat(newItemPrice || '0') || 0
+    if (price < 0) { toast.error('Price cannot be negative.'); return }
     setExtraItems(prev => [...prev, { uid: Date.now(), name: newItemName.trim(), price }])
     setNewItemName('')
     setNewItemPrice('')
@@ -173,6 +174,7 @@ export default function PharmacyPrescriptionPage() {
   }
 
   async function handleSavePayment() {
+    if (paymentStatus === 'partial' && parseFloat(amountPaid || '0') < 0) { toast.error('Amount paid cannot be negative.'); return }
     setSavingPayment(true)
     try {
       const { data } = await recordPrescriptionPayment(prescriptionId, {
@@ -195,6 +197,8 @@ export default function PharmacyPrescriptionPage() {
   }
 
   async function handleComplete() {
+    const hasNegativePrice = Object.values(prices).some(v => v !== '' && parseFloat(v) < 0)
+    if (hasNegativePrice) { toast.error('Medicine prices cannot be negative.'); return }
     setCompleting(true); setConfirmComplete(false)
     try {
       const itemPrices = (prescription.items ?? []).map(item => ({
@@ -312,7 +316,7 @@ export default function PharmacyPrescriptionPage() {
 
         {/* Patient row */}
         <div className="rx-hcard-patient">
-          <div className="rx-hcard-avatar">{p.name[0].toUpperCase()}</div>
+          <div className="rx-hcard-avatar">{(p.name?.[0] ?? '?').toUpperCase()}</div>
 
           <div className="rx-hcard-info">
             <div className="rx-hcard-name">{p.name}</div>
