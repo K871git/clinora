@@ -2,15 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import '../styles/network-guard.css'
 
-const POLL_INTERVAL   = 5000  // check every 5s while offline
+const POLL_INTERVAL = 5000  // check every 5s while offline
 const RETRY_COUNTDOWN = 5     // countdown seconds shown on screen
 
 export default function NetworkGuard({ children }) {
-  const [offline, setOffline]       = useState(false)
-  const [countdown, setCountdown]   = useState(RETRY_COUNTDOWN)
-  const [checking, setChecking]     = useState(false)
-  const pollRef    = useRef(null)
-  const countRef   = useRef(null)
+  const [offline, setOffline] = useState(false)
+  const [countdown, setCountdown] = useState(RETRY_COUNTDOWN)
+  const [checking, setChecking] = useState(false)
+  const pollRef = useRef(null)
+  const countRef = useRef(null)
 
   // Ping the DB — returns true if reachable
   const ping = useCallback(async () => {

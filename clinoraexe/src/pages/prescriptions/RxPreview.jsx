@@ -46,19 +46,6 @@ export default function RxPreview({
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  function medLine(m) {
-    const dose = Number(m.dosePerIntake) || 1
-    const t = [
-      m.morning   && (dose > 1 ? `${L.morning}×${dose}` : L.morning),
-      m.afternoon && (dose > 1 ? `${L.afternoon}×${dose}` : L.afternoon),
-      m.evening   && (dose > 1 ? `${L.evening}×${dose}` : L.evening),
-    ].filter(Boolean).join(' - ')
-    const meal = m.beforeMeal ? L.beforeMeal : m.afterMeal ? L.afterMeal : ''
-    const days = m.days ? `${m.days} ${L.days}` : ''
-    const qty  = m.quantity ? `${L.quantity}: ${m.quantity}` : ''
-    return [t, meal, days, qty].filter(Boolean).join('  |  ')
-  }
-
   return (
     <div className="rxp-overlay" onClick={onClose}>
       <div className="rxp-sheet" onClick={e => e.stopPropagation()}>
@@ -134,7 +121,7 @@ export default function RxPreview({
 
                 {/* Medicines in the Rx area */}
                 <div style={{ position: 'absolute', top: py(layout.meds_start_y), left: px(layout.meds_x), width: pw(layout.meds_w ?? 130) }}>
-                  <RxMedList filled={filled} medLine={medLine} />
+                  <RxMedList filled={filled} L={L} />
                   {doctorNotes?.trim() && (
                     <div className="rxp-tpl-notes">{doctorNotes}</div>
                   )}
@@ -151,7 +138,7 @@ export default function RxPreview({
                   <span className="rxp-tpl-val">{dd}  {mm}  {yyyy}</span>
                 </div>
 
-                <RxMedList filled={filled} medLine={medLine} />
+                <RxMedList filled={filled} L={L} />
 
                 {doctorNotes?.trim() && (
                   <div className="rxp-tpl-notes">{doctorNotes}</div>
@@ -167,17 +154,40 @@ export default function RxPreview({
   )
 }
 
-function RxMedList({ filled, medLine }) {
+function RxMedList({ filled, L }) {
   if (!filled.length) return <p className="rxp-empty-meds">No medicines added.</p>
   return (
-    <ol className="rxp-med-list">
-      {filled.map((m, i) => (
-        <li key={m.id} className="rxp-med-item">
-          <span className="rxp-med-name">{m.name}</span>
-          {medLine(m) && <span className="rxp-med-meta">  —  {medLine(m)}</span>}
-          {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
-        </li>
-      ))}
-    </ol>
+    <table className="rxp-med-table">
+      <tbody>
+        {filled.map((m) => {
+          const timingParts = [
+            m.morning   && L.morning,
+            m.afternoon && L.afternoon,
+            m.evening   && L.evening,
+          ].filter(Boolean)
+          const meal = m.beforeMeal ? L.beforeMeal : m.afterMeal ? L.afterMeal : '—'
+          const dose = Number(m.dosePerIntake) || 1
+          const qty  = m.quantity || (timingParts.length > 0 && m.days
+            ? String(timingParts.length * dose * Number(m.days)) : '')
+          const calcNote = timingParts.length > 0 && m.days && qty
+            ? `${timingParts.join(' + ')} × ${m.days} ${L.days} = ${qty} tab`
+            : ''
+          return (
+            <tr key={m.id} className="rxp-med-tr">
+              <td className="rxp-td rxp-td--name">
+                <span className="rxp-med-name">{m.name}</span>
+                {calcNote && <div className="rxp-med-calc">{calcNote}</div>}
+                {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
+              </td>
+              <td className="rxp-td rxp-td--timing">
+                {timingParts.length > 0 ? timingParts.join(' + ') : '—'}
+              </td>
+              <td className="rxp-td rxp-td--meal">{meal}</td>
+              <td className="rxp-td rxp-td--days">{m.days || '—'}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }
