@@ -123,12 +123,13 @@
 /* ── Values written onto the template ────────────────────────── */
 .rxp-tpl-val {
   position: absolute;
-  font-family: Arial, sans-serif;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #111;
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #1a1a6e;        /* ink blue — looks handwritten/stamped */
   white-space: nowrap;
   line-height: 1;
+  letter-spacing: 0.3px;
 }
 
 /* Patient row for padded fallback */
@@ -154,24 +155,25 @@
 }
 
 .rxp-med-item {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
   font-size: 12px;
-  color: #111;
-  line-height: 1.4;
+  color: #1a1a6e;
+  line-height: 1.5;
 }
 
 .rxp-med-name {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .rxp-med-meta {
   font-weight: 400;
-  color: #333;
+  color: #2a2a7e;
+  font-size: 11.5px;
 }
 
 .rxp-med-note {
   font-size: 11px;
-  color: #555;
+  color: #444499;
   font-style: italic;
   margin-top: 1px;
 }

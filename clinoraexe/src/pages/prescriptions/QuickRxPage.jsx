@@ -28,14 +28,16 @@ function newMedRow() {
     id: Math.random().toString(36).slice(2),
     name: '', morning: false, afternoon: false, evening: false,
     beforeMeal: false, afterMeal: false,
+    dosePerIntake: 1,
     days: '', quantity: '', notes: '',
   }
 }
 
 function buildDosage(row) {
   const hasAnyTiming = row.morning || row.afternoon || row.evening
+  const dose = Number(row.dosePerIntake) || 1
   const timing = hasAnyTiming
-    ? [row.morning ? '1' : '0', row.afternoon ? '1' : '0', row.evening ? '1' : '0'].join('-')
+    ? [row.morning ? dose : '0', row.afternoon ? dose : '0', row.evening ? dose : '0'].join('-')
     : null
   const meal = [row.beforeMeal && 'Before meal', row.afterMeal && 'After meal'].filter(Boolean).join(' & ') || null
   const qty  = row.quantity?.trim() || null
@@ -195,19 +197,36 @@ export default function QuickRxPage() {
 
   /* ── Medicine handlers ── */
   function updateMed(id, field, value) {
-    setMedicines(ms => ms.map(m => m.id === id ? { ...m, [field]: value } : m))
+    setMedicines(ms => ms.map(m => {
+      if (m.id !== id) return m
+      const next = { ...m, [field]: value }
+      if (['morning', 'afternoon', 'evening', 'dosePerIntake', 'days'].includes(field)) {
+        const dose = Number(next.dosePerIntake) || 1
+        const timings = [next.morning, next.afternoon, next.evening].filter(Boolean).length
+        const days = Number(next.days) || 0
+        next.quantity = timings > 0 && days > 0 ? String(timings * dose * days) : ''
+      }
+      return next
+    }))
   }
   function applyTemplate(medId, tpl) {
-    setMedicines(ms => ms.map(m => m.id !== medId ? m : {
-      ...m,
-      morning:    tpl.morning,
-      afternoon:  tpl.afternoon,
-      evening:    tpl.evening,
-      beforeMeal: tpl.meal === 'before' || tpl.meal === 'both',
-      afterMeal:  tpl.meal === 'after'  || tpl.meal === 'both',
-      days:       tpl.days    ? String(tpl.days) : m.days,
-      quantity:   tpl.quantity || m.quantity,
-      notes:      tpl.notes   || m.notes,
+    setMedicines(ms => ms.map(m => {
+      if (m.id !== medId) return m
+      const next = {
+        ...m,
+        morning:    tpl.morning,
+        afternoon:  tpl.afternoon,
+        evening:    tpl.evening,
+        beforeMeal: tpl.meal === 'before' || tpl.meal === 'both',
+        afterMeal:  tpl.meal === 'after'  || tpl.meal === 'both',
+        days:       tpl.days ? String(tpl.days) : m.days,
+        notes:      tpl.notes || m.notes,
+      }
+      const dose = Number(next.dosePerIntake) || 1
+      const timings = [next.morning, next.afternoon, next.evening].filter(Boolean).length
+      const days = Number(next.days) || 0
+      next.quantity = timings > 0 && days > 0 ? String(timings * dose * days) : ''
+      return next
     }))
   }
   function addMed() {
@@ -425,6 +444,7 @@ export default function QuickRxPage() {
         <div className="qrx-med-table">
           <div className="qrx-med-header">
             <span className="qrx-col-name">Medicine</span>
+            <span className="qrx-col-dose">Dose</span>
             <span className="qrx-col-timing">Timing</span>
             <span className="qrx-col-meal">Meal</span>
             <span className="qrx-col-days">Days</span>
@@ -602,6 +622,15 @@ function MedRow({ row, idx, autoFocusName, onChange, onApplyTemplate, onRemove, 
         )}
       </div>
 
+      {/* Dose per intake */}
+      <input
+        className="field qrx-dose-input"
+        type="number" min="0.5" step="0.5"
+        title="Dose per intake (how many tablets/units at once)"
+        value={row.dosePerIntake}
+        onChange={e => onChange(row.id, 'dosePerIntake', e.target.value)}
+      />
+
       {/* Timing: M A E */}
       <div className="qrx-timing-group">
         {[['morning', 'M'], ['afternoon', 'A'], ['evening', 'E']].map(([field, label]) => (
@@ -628,9 +657,11 @@ function MedRow({ row, idx, autoFocusName, onChange, onApplyTemplate, onRemove, 
       <input className="field qrx-days-input" type="number" min="1" placeholder="Days"
         value={row.days} onChange={e => onChange(row.id, 'days', e.target.value)} />
 
-      {/* Quantity */}
-      <input className="field qrx-qty-input" placeholder="Qty" value={row.quantity}
-        onChange={e => onChange(row.id, 'quantity', e.target.value)} />
+      {/* Quantity — auto-calculated from timings × dose × days */}
+      <input className="field qrx-qty-input qrx-qty-auto"
+        placeholder="—" readOnly
+        title={`Auto: timings × dose × days`}
+        value={row.quantity} />
 
       {/* Notes */}
       <input className="field qrx-row-notes" placeholder="Notes…" value={row.notes}

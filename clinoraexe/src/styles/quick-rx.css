@@ -279,7 +279,7 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
 
 .qrx-med-header {
   display: grid;
-  grid-template-columns: 1.6fr 110px 84px 70px 64px 1fr 28px;
+  grid-template-columns: 1.6fr 52px 110px 84px 70px 64px 1fr 28px;
   gap: 6px;
   padding: 0 6px 8px;
   border-bottom: 1px solid var(--clr-border);
@@ -294,6 +294,7 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   color: var(--clr-text-muted);
 }
 
+.qrx-col-dose   { text-align: center; }
 .qrx-col-timing { text-align: center; }
 .qrx-col-meal   { text-align: center; }
 .qrx-col-days   { text-align: center; }
@@ -302,7 +303,7 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
 /* Medicine row */
 .qrx-med-row {
   display: grid;
-  grid-template-columns: 1.6fr 110px 84px 70px 64px 1fr 28px;
+  grid-template-columns: 1.6fr 52px 110px 84px 70px 64px 1fr 28px;
   gap: 6px;
   align-items: center;
   padding: 5px 6px;
@@ -375,6 +376,14 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   white-space: nowrap;
 }
 
+.qrx-dose-input {
+  font-size: 13.5px;
+  padding: 7px 4px !important;
+  height: 36px !important;
+  text-align: center;
+  font-weight: 600;
+}
+
 .qrx-days-input {
   font-size: 13.5px;
   padding: 7px 8px !important;
@@ -387,6 +396,14 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   padding: 7px 8px !important;
   height: 36px !important;
   text-align: center;
+}
+
+.qrx-qty-auto {
+  background: var(--clr-bg-subtle, #f5f5fa) !important;
+  color: var(--clr-text-muted, #888) !important;
+  cursor: default;
+  font-weight: 600;
+  color: #2563eb !important;
 }
 
 .qrx-row-notes {
@@ -590,11 +607,12 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   .qrx-remove-btn,
   .qrx-remove-placeholder { grid-column: 2; grid-row: 1; }
 
-  .qrx-timing-group { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
-  .qrx-meal-group   { grid-column: 1 / -1; grid-row: 2; margin-left: auto; }
+  .qrx-dose-input   { grid-column: 1; grid-row: 2; width: 64px; }
+  .qrx-timing-group { grid-column: 1 / -1; grid-row: 3; justify-content: flex-start; }
+  .qrx-meal-group   { grid-column: 1 / -1; grid-row: 3; margin-left: auto; }
 
-  .qrx-days-input  { grid-column: 1; grid-row: 3; width: 90px; }
-  .qrx-qty-input   { grid-column: 1; grid-row: 3; width: 80px; margin-left: 100px; }
+  .qrx-days-input  { grid-column: 1; grid-row: 4; width: 90px; }
+  .qrx-qty-input   { grid-column: 1; grid-row: 4; width: 80px; margin-left: 100px; }
   .qrx-row-notes   { grid-column: 1 / -1; grid-row: 4; }
 
   .qrx-med-row:hover { background: none; }

@@ -305,7 +305,7 @@ pub async fn scan_template_layout(path: String, state: State<'_, AppState>) -> A
 pub fn pdf_scan_layout(path: &str) -> Value {
     const A4_H_PT: f64 = 841.89;   // A4 height in points
     const PT_MM: f64 = 25.4 / 72.0; // 1pt → mm
-    const BASELINE: f64 = 5.0;      // FPDF Cell top-to-baseline offset
+    const BASELINE: f64 = 5.0;      // FPDF Cell top-to-baseline offset in mm
     const NAME_LW: f64 = 20.0;      // label width for "Name -"
     const DATE_LW: f64 = 14.0;      // label width for "Date :"
 

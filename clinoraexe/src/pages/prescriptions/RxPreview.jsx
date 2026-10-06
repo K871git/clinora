@@ -5,6 +5,12 @@ import { invoke } from '@tauri-apps/api/core'
 
 const isPdf = name => (name ?? '').toLowerCase().endsWith('.pdf')
 
+// Horizontal: % of A4 width — corrects for iframe PDF display scaling (720px not 794px)
+// Vertical: direct mm — CSS mm at 96dpi matches PDF rendering scale (same as PrintPrescriptionPage)
+const px = mm => `${(mm / 210) * 100}%`
+const py = mm => `${mm - 5}mm`   // -5mm corrects CSS 96dpi vs PDF iframe display scale gap
+const pw = mm => `${(mm / 210) * 100}%`
+
 export default function RxPreview({
   onClose, patient, medicines, doctorNotes, fee,
   lang, langLabels: L, doctorName,
@@ -41,10 +47,15 @@ export default function RxPreview({
   }, [onClose])
 
   function medLine(m) {
-    const t = [m.morning && 'Morning', m.afternoon && 'Afternoon', m.evening && 'Evening'].filter(Boolean).join(' - ')
-    const meal = m.beforeMeal ? 'Before Meal' : m.afterMeal ? 'After Meal' : ''
-    const days = m.days ? `${m.days} Days` : ''
-    const qty  = m.quantity ? `Qty: ${m.quantity}` : ''
+    const dose = Number(m.dosePerIntake) || 1
+    const t = [
+      m.morning   && (dose > 1 ? `${L.morning}×${dose}` : L.morning),
+      m.afternoon && (dose > 1 ? `${L.afternoon}×${dose}` : L.afternoon),
+      m.evening   && (dose > 1 ? `${L.evening}×${dose}` : L.evening),
+    ].filter(Boolean).join(' - ')
+    const meal = m.beforeMeal ? L.beforeMeal : m.afterMeal ? L.afterMeal : ''
+    const days = m.days ? `${m.days} ${L.days}` : ''
+    const qty  = m.quantity ? `${L.quantity}: ${m.quantity}` : ''
     return [t, meal, days, qty].filter(Boolean).join('  |  ')
   }
 
@@ -103,7 +114,7 @@ export default function RxPreview({
               <div className="rxp-on-tpl rxp-on-tpl--abs">
 
                 {/* Patient name at Name field */}
-                <span className="rxp-tpl-val" style={{ top: `${layout.name_y}mm`, left: `${layout.name_x}mm` }}>
+                <span className="rxp-tpl-val" style={{ top: py(layout.name_y), left: px(layout.name_x) }}>
                   {patient?.name || '—'}
                 </span>
 
@@ -114,15 +125,15 @@ export default function RxPreview({
                   const SLOT = layout.date_slot_w ?? 10.5
                   return (
                     <>
-                      <span className="rxp-tpl-val" style={{ top: `${dy}mm`, left: `${dx}mm` }}>{dd}</span>
-                      <span className="rxp-tpl-val" style={{ top: `${dy}mm`, left: `${dx + SLOT}mm` }}>{mm}</span>
-                      <span className="rxp-tpl-val" style={{ top: `${dy}mm`, left: `${dx + SLOT * 2}mm` }}>{yyyy}</span>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx) }}>{dd}</span>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx + SLOT) }}>{mm}</span>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx + SLOT * 2) }}>{yyyy}</span>
                     </>
                   )
                 })()}
 
                 {/* Medicines in the Rx area */}
-                <div style={{ position: 'absolute', top: `${layout.meds_start_y}mm`, left: `${layout.meds_x}mm`, width: `${layout.meds_w ?? 130}mm` }}>
+                <div style={{ position: 'absolute', top: py(layout.meds_start_y), left: px(layout.meds_x), width: pw(layout.meds_w ?? 130) }}>
                   <RxMedList filled={filled} medLine={medLine} />
                   {doctorNotes?.trim() && (
                     <div className="rxp-tpl-notes">{doctorNotes}</div>
