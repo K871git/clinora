@@ -14,9 +14,7 @@
   animation: rxp-fade-in 0.15s ease;
 }
 
-@keyframes rxp-fade-in {
-  from { opacity: 0 } to { opacity: 1 }
-}
+@keyframes rxp-fade-in { from { opacity:0 } to { opacity:1 } }
 
 .rxp-sheet {
   width: 100%;
@@ -28,8 +26,8 @@
 }
 
 @keyframes rxp-slide-up {
-  from { transform: translateY(16px); opacity: 0 }
-  to   { transform: translateY(0);    opacity: 1 }
+  from { transform: translateY(16px); opacity:0 }
+  to   { transform: translateY(0);    opacity:1 }
 }
 
 /* Controls */
@@ -41,80 +39,53 @@
 }
 
 .rxp-close-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
+  background: rgba(255,255,255,0.08); color: #fff;
+  font-size: 13px; font-weight: 500; cursor: pointer;
   transition: background 0.12s;
 }
 .rxp-close-btn:hover { background: rgba(255,255,255,0.14); }
 
 .rxp-print-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  border-radius: 8px;
-  border: none;
-  background: var(--clr-primary, #4f46e5);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 16px; border-radius: 8px; border: none;
+  background: var(--clr-primary, #4f46e5); color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer;
   transition: opacity 0.12s;
 }
 .rxp-print-btn:hover { opacity: 0.88; }
 
 /* No template */
 .rxp-no-tpl {
-  background: #fff;
-  border-radius: 12px;
+  background: #fff; border-radius: 12px;
   padding: 56px 40px 48px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 12px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;
   font-family: Arial, sans-serif;
 }
 .rxp-no-tpl-icon  { color: #c0c0d0; margin-bottom: 4px; }
 .rxp-no-tpl-title { font-size: 18px; font-weight: 700; color: #1a1a2e; margin: 0; }
 .rxp-no-tpl-desc  { font-size: 14px; color: #666; max-width: 340px; line-height: 1.6; margin: 0; }
-
 .rxp-go-settings-btn {
-  margin-top: 8px;
-  padding: 10px 24px;
-  border-radius: 8px;
-  border: none;
-  background: var(--clr-primary, #4f46e5);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: Arial, sans-serif;
+  margin-top: 8px; padding: 10px 24px; border-radius: 8px; border: none;
+  background: var(--clr-primary, #4f46e5); color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: Arial, sans-serif;
   transition: opacity 0.12s;
 }
 .rxp-go-settings-btn:hover { opacity: 0.88; }
 
-/* ── Prescription paper ───────────────────────────────────────── */
+/* ── Paper ────────────────────────────────────────────────────── */
 .rxp-paper {
   position: relative;
-  width: 100%;
+  background: #fff;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-  background: #fff;
 }
 
-/* The template itself — fills the paper */
+/* Full-page template backgrounds */
 .rxp-tpl-bg--img {
   display: block;
   width: 100%;
@@ -124,110 +95,73 @@
 .rxp-tpl-bg--pdf {
   display: block;
   width: 100%;
-  /* A4 at 720px wide = ~1019px tall. Keep enough room for all content. */
-  height: 1020px;
+  height: 1020px;   /* A4 at 720px wide ≈ 1019px */
   border: none;
   pointer-events: none;
 }
 
-/* ── Data written ON the template ────────────────────────────── */
-/*
-  This div is absolutely positioned over the template.
-  Each field is positioned to land on the template's blank lines.
-
-  ⚠ These values are tuned for the standard Atmajot/Indian A4 prescription pad.
-     If your template's Name/Date line is at a different height, adjust
-     --rxp-name-top below (in px from top of paper).
-*/
-:root {
-  --rxp-name-top:  261px;   /* y of the Name blank line */
-  --rxp-name-left: 155px;   /* x after "Name -" text */
-  --rxp-date-right: 44px;   /* x from right edge for date */
-  --rxp-meds-top:  375px;   /* y where medicines start — below PR- vitals row */
-  --rxp-meds-left:  42px;
-  --rxp-meds-right: 42px;
-}
-
+/* ── Overlay container ────────────────────────────────────────── */
 .rxp-on-tpl {
   position: absolute;
   inset: 0;
-  pointer-events: none;     /* clicks pass through to iframe / image */
+  pointer-events: none;
 }
 
-/* Patient name — sits on the Name blank */
-.rxp-field-name {
+/* Absolute mm-positioned overlay (PDF with scan coords) */
+.rxp-on-tpl--abs {
+  /* children are absolutely positioned using mm units from top/left */
+}
+
+/* Padded fallback for image templates */
+.rxp-on-tpl--pad {
+  padding: 290px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Values written onto the template ────────────────────────── */
+.rxp-tpl-val {
   position: absolute;
-  top: var(--rxp-name-top);
-  left: var(--rxp-name-left);
   font-family: Arial, sans-serif;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #111;
   white-space: nowrap;
   line-height: 1;
 }
 
-/* Date — sits on the Date blank */
-.rxp-field-date {
-  position: absolute;
-  top: var(--rxp-name-top);
-  right: var(--rxp-date-right);
+/* Patient row for padded fallback */
+.rxp-pt-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   font-family: Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: #111;
-  white-space: nowrap;
-  line-height: 1;
+  margin-bottom: 8px;
 }
 
-/* Medicines — fills the Rx / writing area */
-.rxp-field-meds {
-  position: absolute;
-  top: var(--rxp-meds-top);
-  left: var(--rxp-meds-left);
-  right: var(--rxp-meds-right);
+/* ── Medicines list ───────────────────────────────────────────── */
+.rxp-med-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.rxp-meds-empty {
-  font-family: Arial, sans-serif;
-  font-size: 13px;
-  color: #aaa;
+  gap: 5px;
 }
 
 .rxp-med-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.rxp-med-num {
   font-family: Arial, sans-serif;
-  font-size: 12.5px;
-  color: #666;
-  flex-shrink: 0;
-  margin-top: 1px;
-  min-width: 18px;
-}
-
-.rxp-med-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.rxp-med-line {
-  display: inline;
-  font-family: Arial, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
+  color: #111;
   line-height: 1.4;
 }
 
 .rxp-med-name {
   font-weight: 700;
-  color: #111;
 }
 
 .rxp-med-meta {
@@ -236,46 +170,27 @@
 }
 
 .rxp-med-note {
+  font-size: 11px;
+  color: #555;
+  font-style: italic;
+  margin-top: 1px;
+}
+
+.rxp-empty-meds {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  color: #aaa;
+  font-style: italic;
+}
+
+/* Doctor notes below medicines */
+.rxp-tpl-notes {
+  margin-top: 10px;
   font-family: Arial, sans-serif;
   font-size: 11.5px;
-  color: #666;
-  font-style: italic;
-}
-
-/* Doctor notes */
-.rxp-field-notes {
-  position: absolute;
-  left: var(--rxp-meds-left);
-  right: var(--rxp-meds-right);
-  /* dynamic: sits after meds, but we can't know exact height — push far enough down */
-  top: calc(var(--rxp-meds-top) + 240px);
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  color: #333;
+  color: #444;
   font-style: italic;
   white-space: pre-wrap;
-}
-
-/* Signature — bottom right of the paper */
-.rxp-field-sig {
-  position: absolute;
-  bottom: 72px;
-  right: 48px;
-  text-align: center;
-  min-width: 140px;
-}
-
-.rxp-sig-line {
-  height: 1px;
-  background: #333;
-  margin-bottom: 4px;
-}
-
-.rxp-sig-name {
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: #111;
 }
 
 /* ── Print ────────────────────────────────────────────────────── */
@@ -297,6 +212,5 @@
   }
 
   .rxp-tpl-bg--pdf { height: 100vh; }
-
   .rxp-on-tpl { pointer-events: auto; }
 }

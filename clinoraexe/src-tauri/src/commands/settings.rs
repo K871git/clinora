@@ -36,6 +36,10 @@ pub struct TemplateUpload {
     pub filename: String,
 }
 
+pub fn templates_dir_pub(clinic_id: u64) -> AppResult<std::path::PathBuf> {
+    templates_dir(clinic_id)
+}
+
 fn templates_dir(clinic_id: u64) -> AppResult<std::path::PathBuf> {
     let exe_dir = std::env::current_exe()
         .map_err(|e| e.to_string())?

@@ -1,18 +1,33 @@
 import '../../styles/rx-preview.css'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { invoke } from '@tauri-apps/api/core'
 
-const isPdf = url => url?.toLowerCase().includes('.pdf')
+const isPdf = name => (name ?? '').toLowerCase().endsWith('.pdf')
 
 export default function RxPreview({
   onClose, patient, medicines, doctorNotes, fee,
-  lang, langLabels: L, doctorName, clinicName,
-  templateUrl,
+  lang, langLabels: L, doctorName,
+  templateUrl,   // asset:// URL for display
+  templatePath,  // absolute file path for scan_template_layout
 }) {
   const navigate = useNavigate()
+  const [layout, setLayout] = useState(null)
+
   const d = new Date()
-  const today = `${String(d.getDate()).padStart(2,'0')}  ${String(d.getMonth()+1).padStart(2,'0')}  ${d.getFullYear()}`
+  const dd   = String(d.getDate()).padStart(2,'0')
+  const mm   = String(d.getMonth()+1).padStart(2,'0')
+  const yyyy = d.getFullYear()
+
   const filled = medicines.filter(m => m.name.trim())
+
+  // Scan PDF layout to get field positions in mm
+  useEffect(() => {
+    if (!templatePath || !isPdf(templatePath)) { setLayout(null); return }
+    invoke('scan_template_layout', { path: templatePath })
+      .then(l => setLayout(l))
+      .catch(() => setLayout(null))
+  }, [templatePath])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -74,60 +89,84 @@ export default function RxPreview({
           </div>
 
         ) : (
-          /* ── Prescription paper ── */
           <div className="rxp-paper" id="rx-print-area">
 
-            {/* Template (PDF or image) — full page background */}
-            {isPdf(templateUrl)
+            {/* Template — full page background */}
+            {isPdf(templatePath)
               ? <iframe src={templateUrl} title="Prescription" className="rxp-tpl-bg rxp-tpl-bg--pdf" />
               : <img    src={templateUrl} alt="Prescription"   className="rxp-tpl-bg rxp-tpl-bg--img" />
             }
 
-            {/* Data written onto the template */}
-            <div className="rxp-on-tpl">
+            {/* Data overlaid at scanned mm positions (PDF) or padded fallback (image) */}
+            {layout ? (
+              /* ── Absolute mm overlay — from scan_template_layout ── */
+              <div className="rxp-on-tpl rxp-on-tpl--abs">
 
-              {/* Patient name on the Name line */}
-              <div className="rxp-field-name">
-                {patient?.name || '—'}
+                {/* Patient name at Name field */}
+                <span className="rxp-tpl-val" style={{ top: `${layout.name_y}mm`, left: `${layout.name_x}mm` }}>
+                  {patient?.name || '—'}
+                </span>
+
+                {/* Date at Date field — three parts separated by template's "/" chars */}
+                {(() => {
+                  const dy = layout.date_y
+                  const dx = layout.date_x
+                  const SLOT = layout.date_slot_w ?? 10.5
+                  return (
+                    <>
+                      <span className="rxp-tpl-val" style={{ top: `${dy}mm`, left: `${dx}mm` }}>{dd}</span>
+                      <span className="rxp-tpl-val" style={{ top: `${dy}mm`, left: `${dx + SLOT}mm` }}>{mm}</span>
+                      <span className="rxp-tpl-val" style={{ top: `${dy}mm`, left: `${dx + SLOT * 2}mm` }}>{yyyy}</span>
+                    </>
+                  )
+                })()}
+
+                {/* Medicines in the Rx area */}
+                <div style={{ position: 'absolute', top: `${layout.meds_start_y}mm`, left: `${layout.meds_x}mm`, width: `${layout.meds_w ?? 130}mm` }}>
+                  <RxMedList filled={filled} medLine={medLine} />
+                  {doctorNotes?.trim() && (
+                    <div className="rxp-tpl-notes">{doctorNotes}</div>
+                  )}
+                </div>
+
               </div>
 
-              {/* Date on the Date field */}
-              <div className="rxp-field-date">{today}</div>
+            ) : (
+              /* ── Fallback: CSS padding for image templates ── */
+              <div className="rxp-on-tpl rxp-on-tpl--pad">
 
-              {/* Medicines in the Rx area */}
-              <div className="rxp-field-meds">
-                {filled.length === 0
-                  ? <span className="rxp-meds-empty">—</span>
-                  : filled.map((m, i) => (
-                    <div key={m.id} className="rxp-med-item">
-                      <span className="rxp-med-num">{i + 1}.</span>
-                      <div className="rxp-med-detail">
-                        <span className="rxp-med-line">
-                          <strong className="rxp-med-name">{m.name}</strong>
-                          {medLine(m) && <span className="rxp-med-meta">  —  {medLine(m)}</span>}
-                        </span>
-                        {m.notes?.trim() && <span className="rxp-med-note">↳ {m.notes}</span>}
-                      </div>
-                    </div>
-                  ))
-                }
+                <div className="rxp-pt-row">
+                  <span className="rxp-tpl-val">{patient?.name || '—'}</span>
+                  <span className="rxp-tpl-val">{dd}  {mm}  {yyyy}</span>
+                </div>
+
+                <RxMedList filled={filled} medLine={medLine} />
+
+                {doctorNotes?.trim() && (
+                  <div className="rxp-tpl-notes">{doctorNotes}</div>
+                )}
+
               </div>
+            )}
 
-              {/* Doctor notes */}
-              {doctorNotes?.trim() && (
-                <div className="rxp-field-notes">{doctorNotes}</div>
-              )}
-
-              {/* Signature */}
-              <div className="rxp-field-sig">
-                <div className="rxp-sig-line" />
-                <div className="rxp-sig-name">{L.doctor} {doctorName}</div>
-              </div>
-
-            </div>
           </div>
         )}
       </div>
     </div>
+  )
+}
+
+function RxMedList({ filled, medLine }) {
+  if (!filled.length) return <p className="rxp-empty-meds">No medicines added.</p>
+  return (
+    <ol className="rxp-med-list">
+      {filled.map((m, i) => (
+        <li key={m.id} className="rxp-med-item">
+          <span className="rxp-med-name">{m.name}</span>
+          {medLine(m) && <span className="rxp-med-meta">  —  {medLine(m)}</span>}
+          {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
+        </li>
+      ))}
+    </ol>
   )
 }

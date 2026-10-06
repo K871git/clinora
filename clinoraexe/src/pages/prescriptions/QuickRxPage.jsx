@@ -94,7 +94,8 @@ export default function QuickRxPage() {
 
   /* Preview */
   const [showPreview, setShowPreview] = useState(false)
-  const [tplUrl, setTplUrl] = useState(null)
+  const [tplUrl, setTplUrl]   = useState(null)
+  const [tplPath, setTplPath] = useState(null)
 
   /* UI */
   const [errors, setErrors]       = useState({})
@@ -104,9 +105,12 @@ export default function QuickRxPage() {
   const searchTimer = useRef(null)
   const draftTimer  = useRef(null)
 
-  /* ── Load prescription template URL ── */
+  /* ── Load prescription template URL + path ── */
   useEffect(() => {
-    getSettings().then(({ data }) => setTplUrl(data.prescription_template_url ?? null)).catch(() => {})
+    getSettings().then(({ data }) => {
+      setTplUrl(data.prescription_template_url ?? null)
+      setTplPath(data.prescription_template_path ?? null)
+    }).catch(() => {})
   }, [])
 
   /* ── Visit mode: load patient ── */
@@ -505,6 +509,7 @@ export default function QuickRxPage() {
           doctorName={user?.name || 'Doctor'}
           clinicName={user?.clinic?.name || 'Clinic'}
           templateUrl={tplUrl}
+          templatePath={tplPath}
         />
       )}
     </div>

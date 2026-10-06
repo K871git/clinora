@@ -184,6 +184,8 @@ pub fn run() {
             commands::prescriptions::send_prescription,
             commands::prescriptions::delete_prescription,
             commands::prescriptions::get_patient_prescriptions_list,
+            commands::prescriptions::open_rx_pdf,
+            commands::prescriptions::regenerate_rx_pdf,
             // Pharmacy
             commands::pharmacy::get_pharmacy_stats,
             commands::pharmacy::list_pharmacy_prescriptions,
