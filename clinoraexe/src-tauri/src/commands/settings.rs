@@ -36,6 +36,10 @@ pub struct TemplateUpload {
     pub filename: String,
 }
 
+pub fn templates_dir_pub(clinic_id: u64) -> AppResult<std::path::PathBuf> {
+    templates_dir(clinic_id)
+}
+
 fn templates_dir(clinic_id: u64) -> AppResult<std::path::PathBuf> {
     let exe_dir = std::env::current_exe()
         .map_err(|e| e.to_string())?
@@ -298,10 +302,10 @@ pub async fn scan_template_layout(path: String, state: State<'_, AppState>) -> A
     Ok(pdf_scan_layout(&safe.to_string_lossy()))
 }
 
-fn pdf_scan_layout(path: &str) -> Value {
+pub fn pdf_scan_layout(path: &str) -> Value {
     const A4_H_PT: f64 = 841.89;   // A4 height in points
     const PT_MM: f64 = 25.4 / 72.0; // 1pt → mm
-    const BASELINE: f64 = 5.0;      // FPDF Cell top-to-baseline offset
+    const BASELINE: f64 = 5.0;      // FPDF Cell top-to-baseline offset in mm
     const NAME_LW: f64 = 20.0;      // label width for "Name -"
     const DATE_LW: f64 = 14.0;      // label width for "Date :"
 

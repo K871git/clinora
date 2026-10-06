@@ -1,7 +1,7 @@
 import '../../styles/settings-page.css'
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { getSettings, updateClinic, updatePrescriptionSettings } from '../../services/settingsService'
+import { getSettings, updateClinic } from '../../services/settingsService'
 import { listFeeTemplates, saveFeeTemplate, deleteFeeTemplate } from '../../services/feeTemplateService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
@@ -19,27 +19,6 @@ const CLINIC_DEFAULTS = {
   name: '', doctor_name: '', qualification: '', registration_number: '', address: '', contact: '',
 }
 
-const PRESC_DEFAULTS = {
-  prescription_header: '', prescription_footer: '',
-  show_doctor_contact: true, show_clinic_contact: true,
-  gst_percent: '',
-}
-
-/* ── Toggle switch ───────────────────────────────────────────────────────── */
-function Toggle({ on, onChange }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      className={`stg-toggle${on ? ' stg-toggle--on' : ''}`}
-      onClick={() => onChange(!on)}
-    >
-      <span className="stg-toggle-thumb" />
-    </button>
-  )
-}
-
 /* ── Icons ───────────────────────────────────────────────────────────────── */
 function IconClinic() {
   return (
@@ -51,17 +30,6 @@ function IconClinic() {
   )
 }
 
-function IconPrescription() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="9" y1="13" x2="15" y2="13"/>
-      <line x1="9" y1="17" x2="13" y2="17"/>
-    </svg>
-  )
-}
 
 function IconCheck() {
   return (
@@ -97,13 +65,6 @@ export default function SettingsPage() {
   const [restoreMsg,   setRestoreMsg]   = useState(null)
   const [restoreConfirm, setRestoreConfirm] = useState(false)
 
-  /* prescription settings form */
-  const [presc,       setPresc]       = useState(PRESC_DEFAULTS)
-  const [prescSaving, setPrescSaving] = useState(false)
-  const [prescSaved,  setPrescSaved]  = useState(false)
-  const [prescErrors, setPrescErrors] = useState({})
-  const [prescApiErr, setPrescApiErr] = useState(null)
-
   /* unified save */
   const [allSaving, setAllSaving] = useState(false)
   const [allSaved,  setAllSaved]  = useState(false)
@@ -133,13 +94,6 @@ export default function SettingsPage() {
           address:             c.address             ?? '',
           contact:             c.contact             ?? '',
         })
-        setPresc({
-          prescription_header:  ps.prescription_header  ?? '',
-          prescription_footer:  ps.prescription_footer  ?? '',
-          show_doctor_contact:  ps.show_doctor_contact  ?? true,
-          show_clinic_contact:  ps.show_clinic_contact  ?? true,
-          gst_percent:          ps.gst_percent > 0 ? String(ps.gst_percent) : '',
-        })
         setPageStatus('done')
       })
       .catch(() => { if (!cancelled) setPageStatus('error') })
@@ -157,12 +111,6 @@ export default function SettingsPage() {
     setClinic(f => ({ ...f, [field]: value }))
     setClinicSaved(false)
     if (clinicErrors[field]) setClinicErrors(e => ({ ...e, [field]: undefined }))
-  }
-
-  function setPrescField(field, value) {
-    setPresc(f => ({ ...f, [field]: value }))
-    setPrescSaved(false)
-    if (prescErrors[field]) setPrescErrors(e => ({ ...e, [field]: undefined }))
   }
 
   async function doClinicSave() {
@@ -187,29 +135,7 @@ export default function SettingsPage() {
     } finally { setClinicSaving(false) }
   }
 
-  async function doPrescSave() {
-    setPrescSaving(true)
-    setPrescErrors({})
-    setPrescApiErr(null)
-    setPrescSaved(false)
-    try {
-      await updatePrescriptionSettings({
-        prescription_header: presc.prescription_header.trim() || null,
-        prescription_footer: presc.prescription_footer.trim() || null,
-        show_doctor_contact: presc.show_doctor_contact,
-        show_clinic_contact: presc.show_clinic_contact,
-        gst_percent: presc.gst_percent !== '' ? parseFloat(presc.gst_percent) : 0,
-      })
-      setPrescSaved(true)
-    } catch (err) {
-      if (err.response?.status === 422) setPrescErrors(flattenErrors(err.response?.data?.errors))
-      else setPrescApiErr(err.response?.data?.message ?? 'Could not save — check your connection.')
-      throw err
-    } finally { setPrescSaving(false) }
-  }
-
   function handleClinicSave(e) { e.preventDefault(); doClinicSave() }
-  function handlePrescSave(e)  { e.preventDefault(); doPrescSave()  }
 
   async function handleAddTemplate(e) {
     e.preventDefault()
@@ -237,10 +163,10 @@ export default function SettingsPage() {
     setAllSaving(true)
     setAllSaved(false)
     try {
-      await Promise.all([doClinicSave(), doPrescSave()])
+      await doClinicSave()
       setAllSaved(true)
       setTimeout(() => setAllSaved(false), 3000)
-    } catch { /* individual errors shown per card */ }
+    } catch { /* errors shown in card */ }
     finally { setAllSaving(false) }
   }
 
@@ -382,107 +308,6 @@ export default function SettingsPage() {
         </div>
       </form>
 
-      {/* ── Card 2: Prescription Defaults ───────────────────────────────── */}
-      <form onSubmit={handlePrescSave} style={{ marginTop: '16px' }}>
-        <div className="card stg-card">
-
-          <div className="stg-card-head">
-            <div className="stg-card-head-row">
-              <span className="stg-card-icon"><IconPrescription /></span>
-              <div>
-                <div className="stg-card-title">Prescription Defaults</div>
-                <p className="stg-card-desc">Custom text and display settings printed on every prescription.</p>
-              </div>
-            </div>
-          </div>
-
-          {prescApiErr && <div className="stg-alert stg-alert--error">{prescApiErr}</div>}
-
-          <div className="stg-card-body">
-
-            <div className="stg-field">
-              <label className="stg-label">Prescription Header</label>
-              <textarea
-                className={`stg-input stg-textarea${prescErrors.prescription_header ? ' has-error' : ''}`}
-                value={presc.prescription_header}
-                onChange={e => setPrescField('prescription_header', e.target.value)}
-                placeholder="e.g. Registration No: MCI-12345 · Timing: Mon–Sat, 9 AM – 6 PM"
-                rows={3}
-              />
-              <span className="stg-hint">Appears in the header block above the medicine list.</span>
-              {prescErrors.prescription_header && <span className="stg-error">{prescErrors.prescription_header}</span>}
-            </div>
-
-            <div className="stg-field">
-              <label className="stg-label">Prescription Footer</label>
-              <textarea
-                className={`stg-input stg-textarea${prescErrors.prescription_footer ? ' has-error' : ''}`}
-                value={presc.prescription_footer}
-                onChange={e => setPrescField('prescription_footer', e.target.value)}
-                placeholder="e.g. This prescription is valid for 30 days. Follow dosage strictly."
-                rows={3}
-              />
-              <span className="stg-hint">Appears below the signature block at the bottom.</span>
-              {prescErrors.prescription_footer && <span className="stg-error">{prescErrors.prescription_footer}</span>}
-            </div>
-
-            {/* GST */}
-            <div className="stg-field">
-              <label className="stg-label">
-                GST on Invoices (%)
-                <span className="stg-label-opt">optional</span>
-              </label>
-              <input
-                className="stg-input"
-                style={{ maxWidth: 140 }}
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={presc.gst_percent}
-                onChange={e => setPrescField('gst_percent', e.target.value)}
-                placeholder="e.g. 18"
-              />
-              <span className="stg-hint">Applied to visit and pharmacy invoices. Set to 0 to disable GST.</span>
-            </div>
-
-            {/* Toggles */}
-            <div className="stg-section-sep" />
-            <div className="stg-section-label">Display on Prescription</div>
-
-            <div className="stg-toggle-list">
-              <div className="stg-toggle-row">
-                <div className="stg-toggle-info">
-                  <span className="stg-toggle-label">Show doctor contact number</span>
-                  <span className="stg-toggle-desc">Prints the doctor's phone on the prescription header.</span>
-                </div>
-                <Toggle
-                  on={presc.show_doctor_contact}
-                  onChange={v => setPrescField('show_doctor_contact', v)}
-                />
-              </div>
-
-              <div className="stg-toggle-row">
-                <div className="stg-toggle-info">
-                  <span className="stg-toggle-label">Show clinic address</span>
-                  <span className="stg-toggle-desc">Prints the clinic address in the prescription header.</span>
-                </div>
-                <Toggle
-                  on={presc.show_clinic_contact}
-                  onChange={v => setPrescField('show_clinic_contact', v)}
-                />
-              </div>
-            </div>
-
-          </div>
-
-          <div className="stg-card-foot stg-card-foot--minimal">
-            {prescApiErr && <span className="stg-save-err-hint">Fix errors above</span>}
-          </div>
-
-        </div>
-      </form>
-
       {/* ── Unified save bar ─────────────────────────────────────────── */}
       <div className="stg-save-all-bar">
         {allSaved && <span className="stg-saved-msg"><IconCheck /> All settings saved</span>}
@@ -491,7 +316,7 @@ export default function SettingsPage() {
           type="button"
           className="stg-save-btn"
           onClick={handleSaveAll}
-          disabled={allSaving || clinicSaving || prescSaving}
+          disabled={allSaving || clinicSaving}
         >
           {allSaving ? <Spinner size={13} /> : null}
           {allSaving ? 'Saving…' : 'Save Changes'}

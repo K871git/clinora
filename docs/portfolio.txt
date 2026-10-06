@@ -1,0 +1,83 @@
+CLINORA — Clinic Management Desktop Application
+================================================
+
+OVERVIEW
+--------
+Clinora is a full-featured offline clinic management system built as a native desktop
+application. It handles the complete workflow of a small-to-mid-size clinic — from
+patient registration and OPD visits, to prescriptions, pharmacy dispensing, appointments,
+and electronic medical records — all running locally with no internet dependency.
+
+Designed for two roles: Doctor and Pharmacist, each with a tailored interface and
+access scope.
+
+
+TECH STACK
+----------
+Frontend   : React 18 (Vite), CSS custom properties design system, React Router v6
+Desktop    : Tauri 2 (Rust) — packages the React frontend into a native Windows .exe
+Database   : MySQL (local server) accessed via Tauri Rust commands using SQLx
+State      : React hooks (useState, useEffect, useRef) — no external state library
+Styling    : Pure CSS with a token-based design system (light/dark mode via color-mix)
+Licensing  : Rust CLI keygen using ed25519 cryptographic signing (dalek library)
+Build      : Vite for frontend bundling, Cargo for Rust, Tauri bundler for final .exe
+Alerts     : SweetAlert2 (confirm dialogs), React Hot Toast (notifications)
+
+
+KEY FEATURES
+------------
+- Patient management with registration, search, and full profile view
+- OPD visit flow: consultation notes, diagnosis, fee, and visit history
+- Prescription builder with medicine editor, duplicate detection, dosage warnings,
+  allergy alerts, and reusable prescription templates
+- Pharmacy module: stock management, medicine inventory, prescription dispensing,
+  billing, and payment tracking (paid / partial / unpaid)
+- Appointments scheduler with status tracking
+- Electronic Medical Records (EMR): allergies, chronic conditions, surgeries,
+  medications, family history, and lab results per patient
+- Role-based access: Doctor sees clinical screens; Pharmacist sees dispensing screens
+- Dark mode with full theme consistency across all screens
+- License system: clinic-specific signed license keys with tier (monthly / annual /
+  lifetime) and expiry enforcement, validated entirely offline
+
+
+DEVELOPMENT WORKFLOW
+--------------------
+1. Schema design — MySQL schema planned upfront covering all entities (patients,
+   visits, prescriptions, medicines, appointments, labs, templates, licenses)
+
+2. Backend (Rust / Tauri commands) — Each feature module implemented as Tauri invoke
+   commands backed by SQLx queries. Commands are grouped by domain (visits, pharmacy,
+   EMR, etc.) and return typed JSON responses.
+
+3. Frontend (React) — Built screen by screen per role. Each page fetches data via
+   invoke() calls, manages local state, and renders with error/loading/empty states.
+   A shared CSS design system (variables + color-mix) ensures consistent theming.
+
+4. Polish pass — Dark mode audit across all screens, badge and card color conversions
+   to color-mix(), input validation (negative prices, duplicate medicines, empty names),
+   and crash-safety fixes for edge-case data.
+
+5. Licensing — A separate Rust CLI (clinora-keygen) generates signed license keys
+   using ed25519. The app validates the key on launch and blocks usage if expired or
+   invalid. Keygen binary is machine-GUID locked so only authorized devices can mint
+   new keys.
+
+6. Build & distribution — npm run tauri build produces a self-contained Windows
+   installer (.exe) that bundles the React frontend, Rust backend, and all assets.
+
+
+SCALE & COMPLEXITY
+------------------
+- 20+ screens across two roles
+- 165 frontend modules (Vite build)
+- Rust backend with 40+ Tauri commands
+- Full offline operation — zero cloud dependency
+- Single distributable installer file
+
+
+VERSION
+-------
+Current release: v1.2.0
+Platform       : Windows (x64)
+Target users   : Independent clinics, general practitioners, small pharmacy setups

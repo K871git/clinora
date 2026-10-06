@@ -9,8 +9,39 @@ import {
   deletePrescription,
 } from '../../services/prescriptionService'
 import { getSettings } from '../../services/settingsService'
-import MedicineEditor from './MedicineEditor'
-import { newMedicineItem } from './medicineUtils'
+/* ── Inline medicine helpers (replaces deleted MedicineEditor / medicineUtils) ── */
+function newMedicineItem(overrides = {}) {
+  return { id: Math.random().toString(36).slice(2), medicine_name: '', dosage: '', frequency: '', duration: '', instructions: '', ...overrides }
+}
+
+function MedicineEditor({ items, onChange, itemErrors }) {
+  function update(id, field, val) { onChange(items.map(m => m.id === id ? { ...m, [field]: val } : m)) }
+  function remove(id) { if (items.length > 1) onChange(items.filter(m => m.id !== id)) }
+  function add() { onChange([...items, newMedicineItem()]) }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {items.map((item, idx) => {
+        const err = itemErrors?.[idx] ?? {}
+        return (
+          <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '10px 12px', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-md)', background: 'var(--clr-bg-subtle)' }}>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <input className={`field${err.medicine_name ? ' has-error' : ''}`} placeholder="Medicine name *" value={item.medicine_name} onChange={e => update(item.id, 'medicine_name', e.target.value)} style={{ fontSize: 13 }} />
+                {err.medicine_name && <span className="field-error-msg">{err.medicine_name}</span>}
+              </div>
+              {items.length > 1 && <button type="button" onClick={() => remove(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-muted)', fontSize: 18, lineHeight: 1, padding: '6px 4px' }} title="Remove">×</button>}
+            </div>
+            <input className="field" placeholder="Dosage" value={item.dosage} onChange={e => update(item.id, 'dosage', e.target.value)} style={{ fontSize: 13 }} />
+            <input className="field" placeholder="Frequency" value={item.frequency} onChange={e => update(item.id, 'frequency', e.target.value)} style={{ fontSize: 13 }} />
+            <input className="field" placeholder="Duration" value={item.duration} onChange={e => update(item.id, 'duration', e.target.value)} style={{ fontSize: 13 }} />
+            <input className="field" placeholder="Instructions" value={item.instructions} onChange={e => update(item.id, 'instructions', e.target.value)} style={{ fontSize: 13 }} />
+          </div>
+        )
+      })}
+      <button type="button" onClick={add} style={{ alignSelf: 'flex-start', padding: '6px 14px', fontSize: 13, border: '1px dashed var(--clr-border)', borderRadius: 'var(--radius-md)', background: 'none', cursor: 'pointer', color: 'var(--clr-text-muted)' }}>+ Add Medicine</button>
+    </div>
+  )
+}
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import { confirmDelete, confirmDiscard } from '../../lib/swal'

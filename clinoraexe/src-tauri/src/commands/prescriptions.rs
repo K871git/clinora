@@ -6,6 +6,116 @@ use serde_json::{json, Value};
 use sqlx::Row;
 use tauri::State;
 
+fn rx_pdf_output_dir(clinic_id: u64) -> std::path::PathBuf {
+    std::env::current_exe()
+        .unwrap_or_default()
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_default()
+        .join("data")
+        .join("generated_prescriptions")
+        .join(clinic_id.to_string())
+}
+
+/// Generate a filled prescription PDF in the background (best-effort; errors are silently ignored).
+async fn maybe_generate_pdf(
+    prescription_id: u64,
+    clinic_id: u64,
+    db: &sqlx::MySqlPool,
+) {
+    // Fetch prescription + patient + doctor + items
+    let row = match sqlx::query(
+        "SELECT pr.doctor_notes, pr.prescribed_at,
+                p.name AS patient_name,
+                u.name AS doctor_name,
+                cs.prescription_template
+         FROM prescriptions pr
+         JOIN patients p ON p.id = pr.patient_id
+         JOIN users u    ON u.id = pr.doctor_id
+         LEFT JOIN clinic_settings cs ON cs.clinic_id = pr.clinic_id
+         WHERE pr.id = ? AND pr.clinic_id = ?"
+    ).bind(prescription_id).bind(clinic_id)
+     .fetch_optional(db).await
+    {
+        Ok(Some(r)) => r,
+        _ => return,
+    };
+
+    let tpl_name: Option<String> = row.get("prescription_template");
+    let tpl_name = match tpl_name { Some(n) if !n.trim().is_empty() => n, _ => return };
+
+    // Build template path
+    let tpl_dir = match super::settings::templates_dir_pub(clinic_id) {
+        Ok(d) => d,
+        Err(_) => return,
+    };
+    let tpl_path = tpl_dir.join(&tpl_name);
+    if !tpl_path.exists() { return; }
+    let tpl_str = tpl_path.to_string_lossy().to_string();
+
+    // Only PDF templates get scanned; for images use fallback layout
+    let ext = tpl_name.rsplit('.').next().unwrap_or("").to_lowercase();
+    if ext != "pdf" { return; }
+
+    // Scan layout
+    let layout_json = super::settings::pdf_scan_layout(&tpl_str);
+    let layout = super::rx_pdf::Layout::from_scan(&layout_json);
+
+    // Fetch medicines
+    let items = match sqlx::query(
+        "SELECT medicine_name, dosage, duration, instructions FROM prescription_items
+         WHERE prescription_id = ? AND deleted_at IS NULL ORDER BY sort_order"
+    ).bind(prescription_id).fetch_all(db).await {
+        Ok(rows) => rows,
+        Err(_) => return,
+    };
+
+    let medicines: Vec<super::rx_pdf::MedItem> = items.iter().enumerate().map(|(i, r)| {
+        super::rx_pdf::MedItem {
+            num: i + 1,
+            name: r.get::<String, _>("medicine_name"),
+            dosage: r.get::<Option<String>, _>("dosage"),
+            duration: r.get::<Option<String>, _>("duration"),
+            instructions: r.get::<Option<String>, _>("instructions"),
+        }
+    }).collect();
+
+    // Parse date
+    let prescribed_at: String = row.get::<Option<String>, _>("prescribed_at").unwrap_or_default();
+    let (dd, mm, yyyy) = parse_date_parts(&prescribed_at);
+
+    let rx = super::rx_pdf::RxData {
+        patient_name: row.get("patient_name"),
+        date_dd: dd, date_mm: mm, date_yyyy: yyyy,
+        medicines,
+        doctor_notes: row.get("doctor_notes"),
+        doctor_name: row.get("doctor_name"),
+    };
+
+    // Output path
+    let out_dir = rx_pdf_output_dir(clinic_id);
+    let out_path = out_dir.join(format!("rx_{}.pdf", prescription_id));
+    let out_str  = out_path.to_string_lossy().to_string();
+
+    if let Ok(()) = super::rx_pdf::generate(&tpl_str, &out_str, &layout, &rx) {
+        // Update pdf_path in DB (ignore errors)
+        let _ = sqlx::query("UPDATE prescriptions SET pdf_path=? WHERE id=?")
+            .bind(&out_str.replace('\\', "/"))
+            .bind(prescription_id)
+            .execute(db).await;
+    }
+}
+
+fn parse_date_parts(s: &str) -> (u32, u32, i32) {
+    // "2026-10-06T..." → (6, 10, 2026)
+    let date_part = s.split('T').next().unwrap_or("");
+    let parts: Vec<&str> = date_part.split('-').collect();
+    let yyyy = parts.first().and_then(|v| v.parse().ok()).unwrap_or(2026);
+    let mm   = parts.get(1).and_then(|v| v.parse().ok()).unwrap_or(1);
+    let dd   = parts.get(2).and_then(|v| v.parse().ok()).unwrap_or(1);
+    (dd, mm, yyyy)
+}
+
 #[derive(Deserialize)]
 pub struct PrescriptionItem {
     pub medicine_name: String,
@@ -162,6 +272,12 @@ pub async fn create_prescription(
     crate::commands::audit::log_audit(
         &state.db, session.clinic_id, session.id, "create", "prescription", prescription_id, None
     ).await;
+
+    // Generate PDF in background (best-effort)
+    let db2 = state.db.clone();
+    let cid = session.clinic_id;
+    tokio::spawn(async move { maybe_generate_pdf(prescription_id, cid, &db2).await });
+
     get_prescription(prescription_id, state).await
 }
 
@@ -242,6 +358,39 @@ pub async fn update_prescription(id: u64, data: PrescriptionPayload, state: Stat
     crate::commands::audit::log_audit(
         &state.db, session.clinic_id, session.id, "update", "prescription", id, None
     ).await;
+
+    // Regenerate PDF in background
+    let db2 = state.db.clone();
+    let cid = session.clinic_id;
+    tokio::spawn(async move { maybe_generate_pdf(id, cid, &db2).await });
+
+    get_prescription(id, state).await
+}
+
+/// Open the stored prescription PDF in the system viewer (for printing from list pages).
+#[tauri::command]
+pub async fn open_rx_pdf(id: u64, state: State<'_, AppState>) -> AppResult<String> {
+    let session = get_session(&state)?;
+    let row = sqlx::query("SELECT pdf_path FROM prescriptions WHERE id=? AND clinic_id=? AND deleted_at IS NULL")
+        .bind(id).bind(session.clinic_id)
+        .fetch_optional(&state.db).await?.ok_or("Prescription not found.")?;
+
+    let path: Option<String> = row.get("pdf_path");
+    let path = path.ok_or("No PDF generated for this prescription yet.")?;
+
+    // Return the path; frontend uses convertFileSrc or tauri-plugin-opener
+    Ok(path)
+}
+
+/// Re-generate the PDF for a prescription (e.g. if template changed).
+#[tauri::command]
+pub async fn regenerate_rx_pdf(id: u64, state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+    let cid = session.clinic_id;
+    let db2 = state.db.clone();
+    // Run synchronously so the frontend gets a result
+    maybe_generate_pdf(id, cid, &db2).await;
+    // Return updated prescription
     get_prescription(id, state).await
 }
 

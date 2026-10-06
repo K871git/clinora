@@ -124,36 +124,37 @@ export default function DashboardPage() {
             </p>
           )}
         </div>
-        <button className="btn-primary dash-register-btn" onClick={() => navigate('/patients?new=1')}>
-          + New Patient
+        <button className="btn-primary dash-register-btn" onClick={() => navigate('/prescriptions/new')}>
+          + New Prescription
         </button>
       </section>
 
       {/* ── Quick actions ─────────────────────────────────────────────── */}
       <div className="dash-actions">
-        <QuickTile icon={<IconPatientPlus />} label="New Patient"   onClick={() => navigate('/patients?new=1')} />
-        <QuickTile icon={<IconStethoscope />} label="Patient List"  onClick={() => navigate('/patients')} />
-        <QuickTile icon={<IconRxDoc />}       label="Prescriptions" onClick={() => navigate('/prescriptions')} />
-        <QuickTile icon={<IconSettingsIcon />} label="Settings"     onClick={() => navigate('/settings')} />
+        <QuickTile icon={<IconRxDoc />}        label="New Prescription" onClick={() => navigate('/prescriptions/new')} />
+        <QuickTile icon={<IconStethoscope />}  label="Patient List"     onClick={() => navigate('/patients')} />
+        <QuickTile icon={<IconPatientPlus />}  label="New Patient"      onClick={() => navigate('/patients?new=1')} />
+        <QuickTile icon={<IconSettingsIcon />} label="Settings"         onClick={() => navigate('/settings')} />
       </div>
 
       {/* ── Stat cards ───────────────────────────────────────────────── */}
       <div className="dash-stats">
         <StatCard
+          icon={<IconRxDoc />}
+          value={statsStatus === 'done' ? (stats?.pending_rx ?? 0) + (stats?.draft_rx ?? 0) : null}
+          label="Today's Prescriptions"
+          accent="primary"
+          status={statsStatus}
+          onClick={() => navigate('/prescriptions')}
+        />
+        <StatCard
           icon={<IconToday />}
           value={stats?.today_visits}
           label="Today's Visits"
-          accent="primary"
-          status={statsStatus}
-          delta={statsStatus === 'done' ? (stats?.today_visits ?? 0) - (stats?.yesterday_visits ?? 0) : null}
-          onClick={() => navigate('/patients')}
-        />
-        <StatCard
-          icon={<IconChart />}
-          value={stats?.total_visits}
-          label="Total Visits"
           accent="success"
           status={statsStatus}
+          delta={statsStatus === 'done' ? (stats?.today_visits ?? 0) - (stats?.yesterday_visits ?? 0) : null}
+          onClick={() => navigate('/opd')}
         />
         <StatCard
           icon={<IconPeople />}
@@ -235,8 +236,8 @@ export default function DashboardPage() {
           <p className="dash-onboard-sub">
             Register your first patient to start tracking visits, prescriptions, and revenue.
           </p>
-          <button className="btn-primary dash-onboard-btn" onClick={() => navigate('/patients?new=1')}>
-            Register First Patient
+          <button className="btn-primary dash-onboard-btn" onClick={() => navigate('/prescriptions/new')}>
+            Write First Prescription
           </button>
         </div>
       ) : (
@@ -247,14 +248,64 @@ export default function DashboardPage() {
           </section>
 
           {/* ── Activity grid ──────────────────────────────────────── */}
-          <div className="dash-grid">
+          <div className={`dash-grid${followupStatus !== 'loading' && followups.length > 0 ? ' dash-grid--3col' : ''}`}>
+
+            {/* Today's prescriptions — primary card */}
+            <ErrorBoundary>
+              <div className="card dash-card dash-card--rx">
+                <div className="dash-card-header">
+                  <span className="dash-card-title dash-card-title--rx">Today's Prescriptions</span>
+                  <div className="dash-card-header-right">
+                    {statsStatus === 'done' && (stats?.completed_today ?? 0) > 0 && (
+                      <span className="dash-completed-badge">{stats.completed_today} filled</span>
+                    )}
+                    <button className="btn-link" onClick={() => navigate('/prescriptions')}>View all</button>
+                  </div>
+                </div>
+                <SidePanel
+                  status={rxStatus}
+                  items={pendingRx}
+                  emptyIcon={<IconPillEmpty />}
+                  emptyTitle="No prescriptions yet today"
+                  emptySub="Prescriptions written today will appear here."
+                >
+                  {pendingRx.map((rx) => {
+                    const meds = rx.items?.slice(0, 3).map(i => i.medicine_name).filter(Boolean) ?? []
+                    const extra = (rx.items?.length ?? 0) - 3
+                    return (
+                      <li key={rx.id}>
+                        <button className="dash-list-item" onClick={() => navigate(`/prescriptions/${rx.id}`)}>
+                          <div className="dash-avatar rx-avatar"><IconRx /></div>
+                          <div className="dash-item-body">
+                            <div className="dash-item-name">
+                              {rx.patient?.name ?? `Patient #${rx.patient_id}`}
+                            </div>
+                            <div className="dash-item-sub dash-rx-meds">
+                              {meds.length > 0
+                                ? <>{meds.join(', ')}{extra > 0 && <span className="dash-rx-extra"> +{extra}</span>}</>
+                                : `${rx.items?.length ?? 0} item${rx.items?.length !== 1 ? 's' : ''}`
+                              }
+                            </div>
+                          </div>
+                          <span className="dash-badge">Pending</span>
+                          <span className="dash-arrow" aria-hidden="true">→</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </SidePanel>
+                <button className="dash-new-rx-btn" onClick={() => navigate('/prescriptions/new')}>
+                  + New Prescription
+                </button>
+              </div>
+            </ErrorBoundary>
 
             {/* Seen today */}
             <ErrorBoundary>
               <div className="card dash-card">
                 <div className="dash-card-header">
                   <span className="dash-card-title">Seen Today</span>
-                  <button className="btn-link" onClick={() => navigate('/patients')}>View all</button>
+                  <button className="btn-link" onClick={() => navigate('/opd')}>View OPD</button>
                 </div>
                 <SidePanel
                   status={todayStatus}
@@ -285,57 +336,12 @@ export default function DashboardPage() {
               </div>
             </ErrorBoundary>
 
-            {/* Pending at pharmacy */}
-            <ErrorBoundary>
-              <div className="card dash-card">
-                <div className="dash-card-header">
-                  <span className="dash-card-title">Pending at Pharmacy</span>
-                  <div className="dash-card-header-right">
-                    {statsStatus === 'done' && (stats?.completed_today ?? 0) > 0 && (
-                      <span className="dash-completed-badge">
-                        {stats.completed_today} completed today
-                      </span>
-                    )}
-                    <button className="btn-link" onClick={() => navigate('/prescriptions')}>View all</button>
-                  </div>
-                </div>
-                <SidePanel
-                  status={rxStatus}
-                  items={pendingRx}
-                  emptyIcon={<IconPillEmpty />}
-                  emptyTitle="No pending prescriptions"
-                  emptySub="Prescriptions sent to pharmacy appear here."
-                >
-                  {pendingRx.map((rx) => (
-                    <li key={rx.id}>
-                      <button className="dash-list-item" onClick={() => navigate(`/prescriptions/${rx.id}`)}>
-                        <div className="dash-avatar rx-avatar"><IconRx /></div>
-                        <div className="dash-item-body">
-                          <div className="dash-item-name">
-                            {rx.patient?.name ?? `Patient #${rx.patient_id}`}
-                          </div>
-                          <div className="dash-item-sub">
-                            {rx.items?.length > 0
-                              ? `${rx.items.length} item${rx.items.length !== 1 ? 's' : ''}`
-                              : 'Prescription'}
-                          </div>
-                        </div>
-                        <span className="dash-badge">Pending</span>
-                        <span className="dash-arrow" aria-hidden="true">→</span>
-                      </button>
-                    </li>
-                  ))}
-                </SidePanel>
-              </div>
-            </ErrorBoundary>
-
-
             {/* Upcoming follow-ups */}
             {followupStatus !== 'loading' && followups.length > 0 && (
               <ErrorBoundary>
-                <div className="card dash-card" style={{ borderLeft: '3px solid var(--clr-primary)' }}>
+                <div className="card dash-card">
                   <div className="dash-card-header">
-                    <span className="dash-card-title">Upcoming Follow-ups</span>
+                    <span className="dash-card-title">Follow-ups</span>
                     <button className="btn-link" onClick={() => navigate('/opd')}>View OPD</button>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -344,7 +350,7 @@ export default function DashboardPage() {
                       return (
                         <li key={f.id}>
                           <button className="dash-list-item" onClick={() => navigate(`/visits/${f.id}`)}>
-                            <div className="dash-avatar" style={{ background: isToday ? 'var(--clr-danger)' : 'var(--clr-primary)', fontSize: 11 }}>
+                            <div className="dash-avatar" style={{ background: isToday ? 'var(--clr-danger)' : 'var(--clr-primary)', color: '#fff', fontSize: 11 }}>
                               {isToday ? 'NOW' : f.followup_date?.slice(5)}
                             </div>
                             <div className="dash-item-body">

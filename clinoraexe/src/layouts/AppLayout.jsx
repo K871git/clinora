@@ -40,15 +40,18 @@ const STORAGE_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/api$/, '') 
 function avatarUrl(path) { return path ? `${STORAGE_BASE}/${path}` : null }
 
 const DOCTOR_NAV = [
-  { to: '/',              label: 'Dashboard',    icon: IconDashboard },
-  { to: '/patients',      label: 'Patients',     icon: IconPatients },
-  { to: '/opd',           label: 'OPD',          icon: IconClipboard },
-  { to: '/appointments',  label: 'Appointments', icon: IconCalendar },
-  { to: '/prescriptions', label: 'Prescriptions',icon: IconPrescription },
-  { to: '/medicines',     label: 'Medicines',    icon: IconMedicines },
-  { to: '/revenue',       label: 'Revenue',      icon: IconRevenue },
-  { to: '/games',         label: 'Games',        icon: IconGames },
-  { to: '/notes',         label: 'Notes',        icon: IconNotes },
+  { to: '/',              label: 'Dashboard',     icon: IconDashboard },
+  { section: 'Clinical' },
+  { to: '/prescriptions', label: 'Prescriptions', icon: IconPrescription },
+  { to: '/patients',      label: 'Patients',      icon: IconPatients },
+  { to: '/medicines',     label: 'Medicines',     icon: IconMedicines },
+  { section: 'Schedule' },
+  { to: '/appointments',  label: 'Appointments',  icon: IconCalendar },
+  { to: '/opd',           label: 'OPD',           icon: IconClipboard },
+  { to: '/revenue',       label: 'Revenue',       icon: IconRevenue },
+  { section: 'More' },
+  { to: '/notes',         label: 'Notes',         icon: IconNotes },
+  { to: '/games',         label: 'Games',         icon: IconGames },
 ]
 
 const PHARMACY_NAV = [
@@ -66,6 +69,7 @@ const PAGE_TITLES = {
   '/prescriptions':       'Prescriptions',
   '/medicines':           'Medicine Library',
   '/settings':            'Settings',
+  '/prescription-settings': 'Prescription Settings',
   '/profile':             'My Profile',
   '/pharmacy':            'Queue',
   '/pharmacy/history':    'History',
@@ -279,29 +283,46 @@ export default function AppLayout() {
           </div>
         </div>
 
-        {/* Pharmacy brand label — pharmacy users only */}
-        {user?.role === 'pharmacy' && (
-          <div className="pharmacy-nav-brand">
+        {/* Role label strip */}
+        {user?.role === 'pharmacy' ? (
+          <div className="sidebar-role-strip sidebar-role-strip--pharmacy">
             <IconRx />
-            <span className="pharmacy-nav-brand-label">Rx Dispensary</span>
+            <span className="sidebar-role-label">Rx Dispensary</span>
+          </div>
+        ) : (
+          <div className={`sidebar-role-strip sidebar-role-strip--doctor${collapsed ? ' sidebar-role-strip--collapsed' : ''}`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <span className="sidebar-role-label">Doctor Portal</span>
           </div>
         )}
 
         {/* Nav links */}
         <nav className="sidebar-nav">
-          {navItems.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end ?? false}
-              className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}
-              onClick={() => setMobileOpen(false)}
-              title={label}
-            >
-              <span className="nav-icon-wrap"><Icon /></span>
-              <span className="nav-label">{label}</span>
-            </NavLink>
-          ))}
+          {navItems.map((item, idx) => {
+            if (item.section) {
+              return (
+                <div key={`section-${idx}`} className={`nav-section-divider${collapsed ? ' nav-section-divider--collapsed' : ''}`}>
+                  <span className="nav-section-label">{item.section}</span>
+                </div>
+              )
+            }
+            const { to, label, icon: Icon, end } = item
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={end ?? false}
+                className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}
+                onClick={() => setMobileOpen(false)}
+                title={label}
+              >
+                <span className="nav-icon-wrap"><Icon /></span>
+                <span className="nav-label">{label}</span>
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* User section */}
@@ -362,6 +383,11 @@ export default function AppLayout() {
               <button className="profile-menu-item" onClick={goSettings}>
                 <IconSettings /> {user?.role === 'pharmacy' ? 'Dispensary Settings' : 'Settings'}
               </button>
+              {user?.role !== 'pharmacy' && (
+                <button className="profile-menu-item" onClick={() => { setProfileOpen(false); navigate('/prescription-settings') }}>
+                  <IconPrescriptionSettings /> Prescription Settings
+                </button>
+              )}
 
               <div className="profile-menu-sep" />
 
@@ -767,6 +793,18 @@ function IconSettings() {
       strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="9" cy="9" r="2.5" />
       <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.05 3.05l1.41 1.41M13.54 13.54l1.41 1.41M3.05 14.95l1.41-1.41M13.54 4.46l1.41-1.41" />
+    </svg>
+  )
+}
+
+function IconPrescriptionSettings() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="9" y1="13" x2="15" y2="13"/>
+      <line x1="9" y1="17" x2="13" y2="17"/>
     </svg>
   )
 }
