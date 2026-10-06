@@ -5,6 +5,7 @@ import { getPrescription } from '../../services/prescriptionService'
 import { getSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
 import '../../styles/print-prescription.css'
+import '../../styles/rx-preview.css'
 import { fmtDateTime, fmtDateParts } from '../../lib/dateUtils'
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
@@ -19,30 +20,75 @@ function dateParts(iso) {
   return fmtDateParts(iso)
 }
 
-/* ── Medicine list ───────────────────────────────────────────────────── */
+/* ── Language labels (same as QuickRxPage) ──────────────────────────── */
+const LANG = {
+  en: { medicine: 'Medicine', morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening',
+        beforeMeal: 'Before Meal', afterMeal: 'After Meal', days: 'Days' },
+  hi: { medicine: 'दवा', morning: 'सुबह', afternoon: 'दोपहर', evening: 'शाम',
+        beforeMeal: 'खाने से पहले', afterMeal: 'खाने के बाद', days: 'दिन' },
+  mr: { medicine: 'औषध', morning: 'सकाळी', afternoon: 'दुपारी', evening: 'संध्याकाळी',
+        beforeMeal: 'जेवणापूर्वी', afterMeal: 'जेवणानंतर', days: 'दिवस' },
+}
 
-function MedicineList({ items }) {
-  if (!items?.length) {
-    return <p className="print-no-medicines">No medicines on this prescription.</p>
+/* Parse DB item (dosage string "1-0-1 After meal 40", duration "20 days")
+   back into structured timing/meal/days for the table display. */
+function parseMed(item) {
+  const d = item.dosage ?? ''
+  const dur = item.duration ?? ''
+  const tim = d.match(/^(\d+)-(\d+)-(\d+)/)
+  const days = (dur.match(/^(\d+)/) || [])[1] ?? ''
+  const dose = tim ? (Number(tim[1]) || Number(tim[2]) || Number(tim[3]) || 1) : 1
+  const timingCount = tim ? [tim[1],tim[2],tim[3]].filter(n => Number(n) > 0).length : 0
+  const qty = timingCount > 0 && days
+    ? String(timingCount * dose * Number(days)) : ''
+  const calcNote = timingCount > 0 && days && qty
+    ? `${[tim&&Number(tim[1])>0&&'M',tim&&Number(tim[2])>0&&'A',tim&&Number(tim[3])>0&&'E'].filter(Boolean).join('+')} × ${days} = ${qty} tab`
+    : ''
+  return {
+    id:          item.id,
+    name:        item.medicine_name,
+    morning:     tim ? Number(tim[1]) > 0 : false,
+    afternoon:   tim ? Number(tim[2]) > 0 : false,
+    evening:     tim ? Number(tim[3]) > 0 : false,
+    beforeMeal:  /before meal/i.test(d),
+    afterMeal:   /after meal/i.test(d),
+    days,
+    calcNote,
+    notes:       item.instructions ?? '',
   }
+}
+
+/* ── Shared medicine table (same format as RxPreview) ───────────────── */
+function MedicineList({ items, L }) {
+  if (!items?.length) return <p className="print-no-medicines">No medicines on this prescription.</p>
+  const meds = items.map(parseMed)
   return (
-    <ol className="print-med-list">
-      {items.map((item, idx) => (
-        <li key={item.id ?? idx} className="print-med-item">
-          <div className="print-med-body">
-            <div className="print-med-name">{item.medicine_name}</div>
-            {(item.dosage || item.frequency || item.duration) && (
-              <div className="print-med-meta">
-                {[item.dosage, item.frequency, item.duration].filter(Boolean).join(' · ')}
-              </div>
-            )}
-            {item.instructions && (
-              <div className="print-med-instructions">{item.instructions}</div>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
+    <table className="rxp-med-table">
+      <tbody>
+        {meds.map(m => {
+          const timingParts = [
+            m.morning   && L.morning,
+            m.afternoon && L.afternoon,
+            m.evening   && L.evening,
+          ].filter(Boolean)
+          const meal = m.beforeMeal ? L.beforeMeal : m.afterMeal ? L.afterMeal : '—'
+          return (
+            <tr key={m.id} className="rxp-med-tr">
+              <td className="rxp-td rxp-td--name">
+                <span className="rxp-med-name">{m.name}</span>
+                {m.calcNote && <div className="rxp-med-calc">{m.calcNote}</div>}
+                {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
+              </td>
+              <td className="rxp-td rxp-td--timing">
+                {timingParts.length > 0 ? timingParts.join(' + ') : '—'}
+              </td>
+              <td className="rxp-td rxp-td--meal">{meal}</td>
+              <td className="rxp-td rxp-td--days">{m.days || '—'}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }
 
@@ -160,6 +206,14 @@ export default function PrintPrescriptionPage() {
   const clinic = settings.clinic
   const ps     = settings
 
+  /* Read language stored at save time — fall back to last used lang, then en */
+  const lang = (
+    localStorage.getItem('clinora:rx-lang-' + prescriptionId) ||
+    localStorage.getItem('clinora:rx-lang') ||
+    'en'
+  )
+  const L = LANG[lang] || LANG.en
+
   const sigName = clinic.doctor_name
     ? `Dr. ${clinic.doctor_name}`
     : prescription.doctor?.name
@@ -274,7 +328,7 @@ export default function PrintPrescriptionPage() {
 
           {/* Rx + Medicines */}
           <div className="print-rx-symbol">&#8478;</div>
-          <MedicineList items={prescription.items} />
+          <MedicineList items={prescription.items} L={L} />
 
           {/* Notes */}
           {prescription.doctor_notes && (
@@ -369,7 +423,7 @@ export default function PrintPrescriptionPage() {
                 left:  `${pdfLayout.meds_x}mm`,
                 width: `${pdfLayout.meds_w}mm`,
               }}>
-                <MedicineList items={prescription.items} />
+                <MedicineList items={prescription.items} L={L} />
                 {prescription.doctor_notes && (
                   <div className="print-tpl-notes" style={{ marginTop: '12pt' }}>
                     <div className="print-notes-label">Notes</div>
@@ -391,7 +445,7 @@ export default function PrintPrescriptionPage() {
                   <span className="print-tpl-val">{prescription.visit.diagnosis}</span>
                 </div>
               )}
-              <MedicineList items={prescription.items} />
+              <MedicineList items={prescription.items} L={L} />
               {prescription.doctor_notes && (
                 <div className="print-tpl-notes">
                   <div className="print-notes-label">Notes</div>

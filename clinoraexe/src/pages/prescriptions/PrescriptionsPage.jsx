@@ -2,16 +2,70 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   getClinicPrescriptions,
+  getPrescription,
+  updatePrescription,
+  sendPrescription,
   listTemplates,
   uploadTemplate,
   deleteTemplate,
   setActiveTemplate,
   deletePrescription,
 } from '../../services/prescriptionService'
+import { toast } from 'sonner'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import '../../styles/prescriptions.css'
 import { confirmDelete } from '../../lib/swal'
+
+/* ── Edit modal helpers ──────────────────────────────────────── */
+function newMedItem(o = {}) {
+  return { id: Math.random().toString(36).slice(2), medicine_name: '', dosage: '', instructions: '', ...o }
+}
+function itemsFromApi(apiItems) {
+  return (apiItems ?? []).map(s => newMedItem({
+    medicine_name: s.medicine_name,
+    dosage:        s.dosage        ?? '',
+    instructions:  s.instructions  ?? '',
+  }))
+}
+function itemsForApi(items) {
+  return items.map((item, idx) => ({
+    medicine_name: item.medicine_name.trim(),
+    dosage:        item.dosage.trim()       || null,
+    frequency:     null,
+    duration:      null,
+    instructions:  item.instructions.trim() || null,
+    sort_order:    idx,
+  }))
+}
+
+function MedEditor({ items, onChange }) {
+  function update(id, field, val) { onChange(items.map(m => m.id === id ? { ...m, [field]: val } : m)) }
+  function remove(id) { if (items.length > 1) onChange(items.filter(m => m.id !== id)) }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {items.map((item, idx) => (
+        <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 28px', gap: 6, padding: '10px 12px', border: '1px solid var(--clr-border)', borderRadius: 8, background: 'var(--clr-bg-subtle)' }}>
+          <div style={{ gridColumn: '1 / 3' }}>
+            <input className="field" placeholder={`Medicine ${idx + 1} *`} value={item.medicine_name}
+              onChange={e => update(item.id, 'medicine_name', e.target.value)} style={{ fontSize: 13 }} />
+          </div>
+          <button type="button" onClick={() => remove(item.id)}
+            style={{ gridColumn: 3, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-muted)', fontSize: 18, lineHeight: 1, opacity: items.length === 1 ? 0.3 : 1 }}
+            disabled={items.length === 1}>×</button>
+          <input className="field" placeholder="Dosage (1-0-1)" value={item.dosage}
+            onChange={e => update(item.id, 'dosage', e.target.value)} style={{ fontSize: 12 }} />
+          <input className="field" placeholder="Instructions" value={item.instructions}
+            onChange={e => update(item.id, 'instructions', e.target.value)} style={{ fontSize: 12 }} />
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...items, newMedItem()])}
+        style={{ alignSelf: 'flex-start', padding: '5px 14px', fontSize: 12, border: '1px dashed var(--clr-border)', borderRadius: 8, background: 'none', cursor: 'pointer', color: 'var(--clr-text-muted)' }}>
+        + Add Medicine
+      </button>
+    </div>
+  )
+}
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -298,6 +352,16 @@ export default function PrescriptionsPage() {
   const [page,           setPage]           = useState(0)
   const [rxError,        setRxError]        = useState(null)
 
+  /* Edit modal */
+  const [editRx,      setEditRx]      = useState(null)
+  const [editLoading, setEditLoading] = useState(null)
+  const [editItems,   setEditItems]   = useState([])
+  const [editNotes,   setEditNotes]   = useState('')
+  const [editSaving,  setEditSaving]  = useState(false)
+
+  /* Send to pharmacy */
+  const [sendingId, setSendingId] = useState(null)
+
   const filteredPrescriptions = useMemo(() => {
     let list = prescriptions
     if (activeTab) {
@@ -384,6 +448,56 @@ export default function PrescriptionsPage() {
       setPrescriptions(prev => prev.filter(p => p.id !== rx.id))
     } catch {
       setRxError('Could not delete prescription — please try again.')
+    }
+  }
+
+  async function handleEdit(e, rx) {
+    e.stopPropagation()
+    setEditLoading(rx.id)
+    try {
+      const { data } = await getPrescription(rx.id)
+      setEditRx(data)
+      setEditItems(itemsFromApi(data.items ?? []))
+      setEditNotes(data.doctor_notes ?? '')
+    } catch {
+      toast.error('Could not load prescription')
+    } finally {
+      setEditLoading(null)
+    }
+  }
+
+  async function handleEditSave() {
+    if (editItems.some(i => !i.medicine_name.trim())) {
+      toast.error('All medicines need a name'); return
+    }
+    setEditSaving(true)
+    try {
+      const { data } = await updatePrescription(editRx.id, {
+        prescribed_at: editRx.prescribed_at,
+        doctor_notes:  editNotes.trim() || null,
+        items:         itemsForApi(editItems),
+      })
+      setPrescriptions(prev => prev.map(p => p.id === data.id ? { ...p, items: data.items, doctor_notes: data.doctor_notes } : p))
+      setEditRx(null)
+      toast.success('Prescription updated')
+    } catch {
+      toast.error('Could not save changes')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  async function handleSendRow(e, rx) {
+    e.stopPropagation()
+    setSendingId(rx.id)
+    try {
+      const { data } = await sendPrescription(rx.id)
+      setPrescriptions(prev => prev.map(p => p.id === rx.id ? { ...p, status: data.status } : p))
+      toast.success(`Sent to pharmacy — ${rx.patient?.name}`)
+    } catch {
+      toast.error('Could not send to pharmacy')
+    } finally {
+      setSendingId(null)
     }
   }
 
@@ -554,13 +668,7 @@ export default function PrescriptionsPage() {
                       : firstMed
 
                     return (
-                      <tr
-                        key={rx.id}
-                        className="rx-tr"
-                        onClick={() => navigate(`/prescriptions/${rx.id}`)}
-                        tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && navigate(`/prescriptions/${rx.id}`)}
-                      >
+                      <tr key={rx.id} className="rx-tr">
                         <td className="rx-td">
                           <div className="rx-patient-cell">
                             <div className="rx-avatar" style={{ background: color }}>
@@ -596,43 +704,72 @@ export default function PrescriptionsPage() {
                         <td className="rx-td">
                           <span className={meta.cls}>{meta.label}</span>
                         </td>
-                        <td className="rx-td" onClick={e => e.stopPropagation()}>
+                        <td className="rx-td">
                           <div className="rx-row-actions">
-                            <button
-                              className="rx-act-btn"
-                              title="View PDF"
-                              onClick={() => navigate(`/prescriptions/${rx.id}/print`)}
-                            >
+                            {/* View PDF */}
+                            <button className="rx-act-btn" title="View PDF"
+                              onClick={() => navigate(`/prescriptions/${rx.id}/print`)}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
                               </svg>
                               PDF
                             </button>
+
+                            {/* Edit — draft only */}
                             {isDraft && (
-                              <>
-                                <button
-                                  className="rx-act-btn"
-                                  title="Edit"
-                                  onClick={() => navigate(`/prescriptions/${rx.id}`)}
-                                >
+                              <button className="rx-act-btn" title="Edit prescription"
+                                onClick={e => handleEdit(e, rx)}
+                                disabled={editLoading === rx.id}>
+                                {editLoading === rx.id ? <Spinner size={11} /> : (
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                   </svg>
-                                </button>
-                                <button
-                                  className="rx-act-btn rx-act-btn--del"
-                                  title="Delete"
-                                  onClick={e => handleDelete(e, rx)}
-                                >
+                                )}
+                                Edit
+                              </button>
+                            )}
+
+                            {/* Doctor Invoice */}
+                            {rx.visit_id && (
+                              <button className="rx-act-btn rx-act-btn--invoice" title="Doctor Invoice"
+                                onClick={() => navigate(`/visits/${rx.visit_id}/invoice`)}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                  <polyline points="14 2 14 8 20 8"/>
+                                  <line x1="8" y1="12" x2="16" y2="12"/>
+                                  <line x1="8" y1="16" x2="12" y2="16"/>
+                                </svg>
+                                Invoice
+                              </button>
+                            )}
+
+                            {/* Send to Pharmacy — draft only */}
+                            {isDraft && (
+                              <button className="rx-act-btn rx-act-btn--send" title="Send to pharmacy"
+                                onClick={e => handleSendRow(e, rx)}
+                                disabled={sendingId === rx.id}>
+                                {sendingId === rx.id ? <Spinner size={11} /> : (
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6"/>
-                                    <path d="M19 6l-1 14H6L5 6"/>
-                                    <path d="M10 11v6M14 11v6"/>
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                                   </svg>
-                                </button>
-                              </>
+                                )}
+                                Send
+                              </button>
+                            )}
+
+                            {/* Delete — draft only */}
+                            {isDraft && (
+                              <button className="rx-act-btn rx-act-btn--del" title="Delete"
+                                onClick={e => handleDelete(e, rx)}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6"/>
+                                  <path d="M19 6l-1 14H6L5 6"/>
+                                  <path d="M10 11v6M14 11v6"/>
+                                </svg>
+                              </button>
                             )}
                           </div>
                         </td>
@@ -678,6 +815,35 @@ export default function PrescriptionsPage() {
 
       {/* ══ TEMPLATES TAB ══ */}
       {pageTab === 'templates' && <TemplatesPanel />}
+
+      {/* ── Edit modal ── */}
+      {editRx && (
+        <div className="rx-edit-overlay" onClick={() => !editSaving && setEditRx(null)}>
+          <div className="rx-edit-modal" onClick={e => e.stopPropagation()}>
+            <div className="rx-edit-header">
+              <div>
+                <div className="rx-edit-title">Edit Prescription</div>
+                <div className="rx-edit-patient">{editRx.patient?.name}</div>
+              </div>
+              <button className="rx-edit-close" onClick={() => setEditRx(null)} disabled={editSaving}>×</button>
+            </div>
+            <div className="rx-edit-body">
+              <div className="rx-edit-section-label">Medicines</div>
+              <MedEditor items={editItems} onChange={setEditItems} />
+              <div className="rx-edit-section-label" style={{ marginTop: 18 }}>Doctor Notes <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></div>
+              <textarea className="field" style={{ minHeight: 72, resize: 'vertical', fontSize: 13 }}
+                value={editNotes} onChange={e => setEditNotes(e.target.value)}
+                placeholder="Diagnosis, instructions…" />
+            </div>
+            <div className="rx-edit-footer">
+              <button className="btn-secondary" onClick={() => setEditRx(null)} disabled={editSaving}>Cancel</button>
+              <button className="btn-primary" onClick={handleEditSave} disabled={editSaving}>
+                {editSaving ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Medicine modal */}
       {medModal && (
