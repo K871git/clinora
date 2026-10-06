@@ -360,6 +360,8 @@ export default function QuickRxPage() {
 
       clearDraft()
       setSavedRxId(rx.id)
+      // Persist language with this prescription so print page uses same lang
+      try { localStorage.setItem('clinora:rx-lang-' + rx.id, lang) } catch {}
       setSubmitting(false)
     } catch (err) {
       const msg = typeof err === 'string' ? err : (err?.message ?? 'Could not save — please try again.')

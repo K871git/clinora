@@ -5,6 +5,7 @@ import { getPharmacyPrescription } from '../../services/pharmacyService'
 import { getSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
 import '../../styles/print-prescription.css'
+import '../../styles/rx-preview.css'
 import { fmtDateTime, fmtDateParts } from '../../lib/dateUtils'
 
 function fmtDate(iso) {
@@ -17,26 +18,61 @@ function dateParts(iso) {
   return fmtDateParts(iso)
 }
 
-function MedicineList({ items }) {
+const LANG = {
+  en: { medicine: 'Medicine', morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening',
+        beforeMeal: 'Before Meal', afterMeal: 'After Meal', days: 'Days' },
+  hi: { medicine: 'दवा', morning: 'सुबह', afternoon: 'दोपहर', evening: 'शाम',
+        beforeMeal: 'खाने से पहले', afterMeal: 'खाने के बाद', days: 'दिन' },
+  mr: { medicine: 'औषध', morning: 'सकाळी', afternoon: 'दुपारी', evening: 'संध्याकाळी',
+        beforeMeal: 'जेवणापूर्वी', afterMeal: 'जेवणानंतर', days: 'दिवस' },
+}
+
+function parseMed(item) {
+  const d = item.dosage ?? ''
+  const dur = item.duration ?? ''
+  const tim = d.match(/^(\d+)-(\d+)-(\d+)/)
+  const days = (dur.match(/^(\d+)/) || [])[1] ?? ''
+  return {
+    id:         item.id,
+    name:       item.medicine_name,
+    morning:    tim ? Number(tim[1]) > 0 : false,
+    afternoon:  tim ? Number(tim[2]) > 0 : false,
+    evening:    tim ? Number(tim[3]) > 0 : false,
+    beforeMeal: /before meal/i.test(d),
+    afterMeal:  /after meal/i.test(d),
+    days,
+    notes:      item.instructions ?? '',
+  }
+}
+
+function MedicineList({ items, L }) {
   if (!items?.length) return <p className="print-no-medicines">No medicines on this prescription.</p>
   return (
-    <ol className="print-med-list">
-      {items.map((item, idx) => (
-        <li key={item.id ?? idx} className="print-med-item">
-          <div className="print-med-body">
-            <div className="print-med-name">{item.medicine_name}</div>
-            {(item.dosage || item.frequency || item.duration) && (
-              <div className="print-med-meta">
-                {[item.dosage, item.frequency, item.duration].filter(Boolean).join(' · ')}
-              </div>
-            )}
-            {item.instructions && (
-              <div className="print-med-instructions">{item.instructions}</div>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
+    <table className="rxp-med-table">
+      <tbody>
+        {items.map(parseMed).map(m => {
+          const timingParts = [
+            m.morning   && L.morning,
+            m.afternoon && L.afternoon,
+            m.evening   && L.evening,
+          ].filter(Boolean)
+          const meal = m.beforeMeal ? L.beforeMeal : m.afterMeal ? L.afterMeal : '—'
+          return (
+            <tr key={m.id} className="rxp-med-tr">
+              <td className="rxp-td rxp-td--name">
+                <span className="rxp-med-name">{m.name}</span>
+                {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
+              </td>
+              <td className="rxp-td rxp-td--timing">
+                {timingParts.length > 0 ? timingParts.join(' + ') : '—'}
+              </td>
+              <td className="rxp-td rxp-td--meal">{meal}</td>
+              <td className="rxp-td rxp-td--days">{m.days || '—'}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }
 
@@ -122,6 +158,13 @@ export default function PharmacyPrescriptionPrintPage() {
   const clinic  = settings.clinic
   const ps      = settings
   const p       = prescription.patient
+
+  const lang = (
+    localStorage.getItem('clinora:rx-lang-' + prescriptionId) ||
+    localStorage.getItem('clinora:rx-lang') ||
+    'en'
+  )
+  const L = LANG[lang] || LANG.en
 
   const drName = prescription.doctor?.name
     ? (/^dr\.?\s/i.test(prescription.doctor.name) ? prescription.doctor.name : `Dr. ${prescription.doctor.name}`)
@@ -209,7 +252,7 @@ export default function PharmacyPrescriptionPrintPage() {
           </div>
 
           <div className="print-rx-symbol">&#8478;</div>
-          <MedicineList items={prescription.items} />
+          <MedicineList items={prescription.items} L={L} />
 
           {prescription.doctor_notes && (
             <div className="print-notes-section" style={{ marginTop: 14 }}>
@@ -271,7 +314,7 @@ export default function PharmacyPrescriptionPrintPage() {
                 )
               })()}
               <div style={{ position: 'absolute', top: `${pdfLayout.meds_start_y}mm`, left: `${pdfLayout.meds_x}mm`, width: `${pdfLayout.meds_w}mm` }}>
-                <MedicineList items={prescription.items} />
+                <MedicineList items={prescription.items} L={L} />
                 {prescription.doctor_notes && (
                   <div className="print-tpl-notes" style={{ marginTop: '12pt' }}>
                     <div className="print-notes-label">Doctor Notes</div>
@@ -292,7 +335,7 @@ export default function PharmacyPrescriptionPrintPage() {
                 <span className="print-tpl-val">{p.name}</span>
                 <span className="print-tpl-val">{fmtDate(prescription.prescribed_at)}</span>
               </div>
-              <MedicineList items={prescription.items} />
+              <MedicineList items={prescription.items} L={L} />
               {prescription.doctor_notes && (
                 <div className="print-tpl-notes">
                   <div className="print-notes-label">Doctor Notes</div>

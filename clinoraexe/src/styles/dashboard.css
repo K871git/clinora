@@ -1,3 +1,9 @@
+/* ─── Dashboard root — constrain width ──────────────────────────────────── */
+.dash-root {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
 /* ─── Dashboard color tokens ─────────────────────────────────────────────── */
 :root {
   --dash-sand:        #c9a86c;
