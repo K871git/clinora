@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { searchPatients, createPatient, getPatient } from '../../services/patientService'
 import { createVisit, saveFee } from '../../services/visitService'
-import { createPrescription } from '../../services/prescriptionService'
+import { createPrescription, sendPrescription } from '../../services/prescriptionService'
 import { getPatientAllergies } from '../../services/medicalHistoryService'
 import { getVisit } from '../../services/visitService'
 import { searchMedicineTemplates } from '../../services/medicineTplService'
@@ -106,6 +106,10 @@ export default function QuickRxPage() {
 
   /* Preview */
   const [showPreview, setShowPreview] = useState(false)
+
+  /* Post-save pharmacy prompt */
+  const [savedRxId,      setSavedRxId]      = useState(null)
+  const [pharmacySending, setPharmacySending] = useState(false)
   const [tplUrl, setTplUrl]     = useState(null)
   const [tplPath, setTplPath]   = useState(null)
   const [tplLayout, setTplLayout] = useState(null)
@@ -260,6 +264,18 @@ export default function QuickRxPage() {
   /* ── Language toggle ── */
   function switchLang(l) { setLang(l); saveLang(l) }
 
+  /* ── Post-save pharmacy prompt handlers ── */
+  async function handleSendToPharmacy() {
+    setPharmacySending(true)
+    try {
+      await sendPrescription(savedRxId)
+      toast.success('Sent to pharmacy!')
+    } catch {
+      toast.error('Could not send — you can send it from Prescriptions page.')
+    }
+    navigate('/prescriptions')
+  }
+
   /* ── Save ── */
   async function handleSave() {
     const errs = {}
@@ -343,7 +359,8 @@ export default function QuickRxPage() {
       })
 
       clearDraft()
-      navigate(`/prescriptions/${rx.id}`, { replace: true })
+      setSavedRxId(rx.id)
+      setSubmitting(false)
     } catch (err) {
       const msg = typeof err === 'string' ? err : (err?.message ?? 'Could not save — please try again.')
       toast.error(msg)
@@ -573,6 +590,30 @@ export default function QuickRxPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Pharmacy prompt (shown after save) ── */}
+      {savedRxId && (
+        <div className="qrx-pharmacy-overlay">
+          <div className="qrx-pharmacy-card">
+            <div className="qrx-pharmacy-check">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h3 className="qrx-pharmacy-title">Prescription Saved!</h3>
+            <p className="qrx-pharmacy-desc">Send this prescription to the pharmacy now, or save it for later.</p>
+            <div className="qrx-pharmacy-btns">
+              <button className="btn-secondary" onClick={() => navigate('/prescriptions')} disabled={pharmacySending}>
+                Save for Later
+              </button>
+              <button className="btn-primary" onClick={handleSendToPharmacy} disabled={pharmacySending}>
+                {pharmacySending ? 'Sending…' : 'Send to Pharmacy →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Preview overlay ── */}
       {showPreview && (

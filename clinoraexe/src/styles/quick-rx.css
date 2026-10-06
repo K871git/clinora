@@ -723,3 +723,53 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
 
   .qrx-fee-card { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
 }
+
+/* ── Post-save Pharmacy Prompt ──────────────────────────────── */
+.qrx-pharmacy-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+  animation: rxp-fade-in 0.15s ease;
+}
+
+.qrx-pharmacy-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px 36px 36px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  animation: rxp-slide-up 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.qrx-pharmacy-check {
+  margin-bottom: 18px;
+}
+
+.qrx-pharmacy-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 10px;
+  font-family: inherit;
+}
+
+.qrx-pharmacy-desc {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 28px;
+  line-height: 1.6;
+}
+
+.qrx-pharmacy-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
