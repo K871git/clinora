@@ -4,7 +4,8 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 export async function getSettings() {
   const result = await invoke('get_settings')
   // Convert absolute template path to asset:// URL the WebView can load
-  if (result.prescription_template_path) {
+  const tplName = result.prescription_template
+  if (tplName && tplName.trim() && result.prescription_template_path) {
     result.prescription_template_url = convertFileSrc(result.prescription_template_path)
   }
   return { data: result }

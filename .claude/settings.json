@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Remove-Item \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\pages\\\\prescriptions\\\\NewPrescriptionPage.jsx\" -Force)",
+      "Bash(Remove-Item \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\pages\\\\prescriptions\\\\MedicineEditor.jsx\" -Force)",
+      "Bash(Remove-Item \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\pages\\\\prescriptions\\\\medicineUtils.js\" -Force)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

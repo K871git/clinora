@@ -7,7 +7,7 @@ import PatientsPage from '../pages/patients/PatientsPage'
 import PatientDetailPage from '../pages/patients/PatientDetailPage'
 import NewVisitPage from '../pages/visits/NewVisitPage'
 import VisitDetailPage from '../pages/visits/VisitDetailPage'
-import NewPrescriptionPage from '../pages/prescriptions/NewPrescriptionPage'
+import QuickRxPage from '../pages/prescriptions/QuickRxPage'
 import PrescriptionDetailPage from '../pages/prescriptions/PrescriptionDetailPage'
 import PrintPrescriptionPage from '../pages/prescriptions/PrintPrescriptionPage'
 import PrescriptionsPage from '../pages/prescriptions/PrescriptionsPage'
@@ -19,6 +19,7 @@ import PharmacyHelpPage from '../pages/pharmacy/help/PharmacyHelpPage'
 import PharmacyInvoicePage from '../pages/pharmacy/PharmacyInvoicePage'
 import PharmacySettingsPage from '../pages/pharmacy/PharmacySettingsPage'
 import SettingsPage from '../pages/settings/SettingsPage'
+import PrescriptionSettingsPage from '../pages/settings/PrescriptionSettingsPage'
 import ProfilePage from '../pages/profile/ProfilePage'
 import MedicinesPage from '../pages/medicines/MedicinesPage'
 import PharmacyStockPage from '../pages/pharmacy/PharmacyStockPage'
@@ -81,7 +82,8 @@ export default function AppRoutes() {
             <Route path="/patients/:id" element={<KeyedPatientDetail />} />
             <Route path="/patients/:id/visits/new" element={<NewVisitPage />} />
             <Route path="/visits/:visitId" element={<VisitDetailPage />} />
-            <Route path="/visits/:visitId/prescriptions/new" element={<NewPrescriptionPage />} />
+            <Route path="/visits/:visitId/prescriptions/new" element={<QuickRxPage />} />
+            <Route path="/prescriptions/new" element={<QuickRxPage />} />
             <Route path="/prescriptions/:prescriptionId" element={<PrescriptionDetailPage />} />
             <Route path="/prescriptions" element={<PrescriptionsPage />} />
             <Route path="/visits" element={<VisitsPage />} />
@@ -90,6 +92,7 @@ export default function AppRoutes() {
             <Route path="/opd" element={<OPDRegisterPage />} />
             <Route path="/revenue" element={<DoctorRevenuePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/prescription-settings" element={<PrescriptionSettingsPage />} />
             <Route path="/help" element={<DoctorHelpPage />} />
             <Route path="/games" element={<GamesHubPage />} />
             <Route path="/games/snake" element={<SnakeGame />} />

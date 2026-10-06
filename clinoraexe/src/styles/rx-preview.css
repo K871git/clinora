@@ -1,0 +1,302 @@
+/* ── Rx Preview Overlay ──────────────────────────────────────── */
+
+.rxp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.72);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px 40px;
+  overflow-y: auto;
+  backdrop-filter: blur(3px);
+  animation: rxp-fade-in 0.15s ease;
+}
+
+@keyframes rxp-fade-in {
+  from { opacity: 0 } to { opacity: 1 }
+}
+
+.rxp-sheet {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: rxp-slide-up 0.18s cubic-bezier(0.16,1,0.3,1);
+}
+
+@keyframes rxp-slide-up {
+  from { transform: translateY(16px); opacity: 0 }
+  to   { transform: translateY(0);    opacity: 1 }
+}
+
+/* Controls */
+.rxp-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 10px;
+}
+
+.rxp-close-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.rxp-close-btn:hover { background: rgba(255,255,255,0.14); }
+
+.rxp-print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--clr-primary, #4f46e5);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.rxp-print-btn:hover { opacity: 0.88; }
+
+/* No template */
+.rxp-no-tpl {
+  background: #fff;
+  border-radius: 12px;
+  padding: 56px 40px 48px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  font-family: Arial, sans-serif;
+}
+.rxp-no-tpl-icon  { color: #c0c0d0; margin-bottom: 4px; }
+.rxp-no-tpl-title { font-size: 18px; font-weight: 700; color: #1a1a2e; margin: 0; }
+.rxp-no-tpl-desc  { font-size: 14px; color: #666; max-width: 340px; line-height: 1.6; margin: 0; }
+
+.rxp-go-settings-btn {
+  margin-top: 8px;
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  background: var(--clr-primary, #4f46e5);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  transition: opacity 0.12s;
+}
+.rxp-go-settings-btn:hover { opacity: 0.88; }
+
+/* ── Prescription paper ───────────────────────────────────────── */
+.rxp-paper {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  background: #fff;
+}
+
+/* The template itself — fills the paper */
+.rxp-tpl-bg--img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.rxp-tpl-bg--pdf {
+  display: block;
+  width: 100%;
+  /* A4 at 720px wide = ~1019px tall. Keep enough room for all content. */
+  height: 1020px;
+  border: none;
+  pointer-events: none;
+}
+
+/* ── Data written ON the template ────────────────────────────── */
+/*
+  This div is absolutely positioned over the template.
+  Each field is positioned to land on the template's blank lines.
+
+  ⚠ These values are tuned for the standard Atmajot/Indian A4 prescription pad.
+     If your template's Name/Date line is at a different height, adjust
+     --rxp-name-top below (in px from top of paper).
+*/
+:root {
+  --rxp-name-top:  261px;   /* y of the Name blank line */
+  --rxp-name-left: 155px;   /* x after "Name -" text */
+  --rxp-date-right: 44px;   /* x from right edge for date */
+  --rxp-meds-top:  375px;   /* y where medicines start — below PR- vitals row */
+  --rxp-meds-left:  42px;
+  --rxp-meds-right: 42px;
+}
+
+.rxp-on-tpl {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;     /* clicks pass through to iframe / image */
+}
+
+/* Patient name — sits on the Name blank */
+.rxp-field-name {
+  position: absolute;
+  top: var(--rxp-name-top);
+  left: var(--rxp-name-left);
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Date — sits on the Date blank */
+.rxp-field-date {
+  position: absolute;
+  top: var(--rxp-name-top);
+  right: var(--rxp-date-right);
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Medicines — fills the Rx / writing area */
+.rxp-field-meds {
+  position: absolute;
+  top: var(--rxp-meds-top);
+  left: var(--rxp-meds-left);
+  right: var(--rxp-meds-right);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rxp-meds-empty {
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  color: #aaa;
+}
+
+.rxp-med-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.rxp-med-num {
+  font-family: Arial, sans-serif;
+  font-size: 12.5px;
+  color: #666;
+  flex-shrink: 0;
+  margin-top: 1px;
+  min-width: 18px;
+}
+
+.rxp-med-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rxp-med-line {
+  display: inline;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.rxp-med-name {
+  font-weight: 700;
+  color: #111;
+}
+
+.rxp-med-meta {
+  font-weight: 400;
+  color: #333;
+}
+
+.rxp-med-note {
+  font-family: Arial, sans-serif;
+  font-size: 11.5px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Doctor notes */
+.rxp-field-notes {
+  position: absolute;
+  left: var(--rxp-meds-left);
+  right: var(--rxp-meds-right);
+  /* dynamic: sits after meds, but we can't know exact height — push far enough down */
+  top: calc(var(--rxp-meds-top) + 240px);
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  color: #333;
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+/* Signature — bottom right of the paper */
+.rxp-field-sig {
+  position: absolute;
+  bottom: 72px;
+  right: 48px;
+  text-align: center;
+  min-width: 140px;
+}
+
+.rxp-sig-line {
+  height: 1px;
+  background: #333;
+  margin-bottom: 4px;
+}
+
+.rxp-sig-name {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* ── Print ────────────────────────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+
+  .rxp-overlay {
+    position: static;
+    background: none;
+    padding: 0;
+    backdrop-filter: none;
+  }
+
+  .rxp-sheet { max-width: 100%; }
+
+  .rxp-paper {
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .rxp-tpl-bg--pdf { height: 100vh; }
+
+  .rxp-on-tpl { pointer-events: auto; }
+}

@@ -298,7 +298,7 @@ pub async fn scan_template_layout(path: String, state: State<'_, AppState>) -> A
     Ok(pdf_scan_layout(&safe.to_string_lossy()))
 }
 
-fn pdf_scan_layout(path: &str) -> Value {
+pub fn pdf_scan_layout(path: &str) -> Value {
     const A4_H_PT: f64 = 841.89;   // A4 height in points
     const PT_MM: f64 = 25.4 / 72.0; // 1pt → mm
     const BASELINE: f64 = 5.0;      // FPDF Cell top-to-baseline offset

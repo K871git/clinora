@@ -434,6 +434,9 @@ export default function PrescriptionsPage() {
             </div>
 
             <div className="rx-header-right">
+              <button className="btn-primary" style={{ fontSize: 13, padding: '0 14px', height: 34 }} onClick={() => navigate('/prescriptions/new')}>
+                + New Prescription
+              </button>
               {/* Date range dropdown */}
               <div className="rx-date-filter" onClick={e => e.stopPropagation()}>
                 <button

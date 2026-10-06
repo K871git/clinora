@@ -315,6 +315,11 @@ pub fn run() {
             commands::pharmacy_returns::get_pharmacy_return,
             // Audit Log
             commands::audit::list_audit_log,
+            // Medicine Templates
+            commands::medicine_templates::search_medicine_templates,
+            commands::medicine_templates::list_medicine_templates,
+            commands::medicine_templates::save_medicine_template,
+            commands::medicine_templates::delete_medicine_template,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
