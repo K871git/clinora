@@ -1,13 +1,14 @@
 import '../../styles/quick-rx.css'
 import { useState, useEffect, useRef, useCallback, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { searchPatients, createPatient } from '../../services/patientService'
+import { searchPatients, createPatient, getPatient } from '../../services/patientService'
 import { createVisit, saveFee } from '../../services/visitService'
 import { createPrescription } from '../../services/prescriptionService'
 import { getPatientAllergies } from '../../services/medicalHistoryService'
 import { getVisit } from '../../services/visitService'
 import { searchMedicineTemplates } from '../../services/medicineTplService'
 import { getSettings } from '../../services/settingsService'
+import { invoke } from '@tauri-apps/api/core'
 import { AuthContext } from '../../contexts/AuthContext'
 import PageLoader from '../../components/ui/PageLoader'
 import RxPreview from './RxPreview'
@@ -45,6 +46,15 @@ function buildDosage(row) {
 }
 
 const EMPTY_PT = { name: '', age: '', mobile: '', dob: '', gender: '', address: '' }
+
+/* ── Rx overlay coordinate helpers (shared with RxLivePanel) ─── */
+const PANEL_W = 480          // live-preview column width in px
+const TPLNAT_W = 720         // natural template width (px)
+const PANEL_SCALE = PANEL_W / TPLNAT_W  // = 0.667 (exactly 2/3)
+
+const px = mm => `${(mm / 210) * 100}%`           // horizontal % of A4 width
+const py = mm => `${mm - 5}mm`                     // vertical mm with scan offset
+const pw = mm => `${(mm / 210) * 100}%`
 
 /* ── Language labels ─────────────────────────────────────────── */
 const LANG = {
@@ -96,8 +106,9 @@ export default function QuickRxPage() {
 
   /* Preview */
   const [showPreview, setShowPreview] = useState(false)
-  const [tplUrl, setTplUrl]   = useState(null)
-  const [tplPath, setTplPath] = useState(null)
+  const [tplUrl, setTplUrl]     = useState(null)
+  const [tplPath, setTplPath]   = useState(null)
+  const [tplLayout, setTplLayout] = useState(null)
 
   /* UI */
   const [errors, setErrors]       = useState({})
@@ -114,6 +125,14 @@ export default function QuickRxPage() {
       setTplPath(data.prescription_template_path ?? null)
     }).catch(() => {})
   }, [])
+
+  /* ── Scan PDF template layout for live preview ── */
+  useEffect(() => {
+    if (!tplPath || !tplPath.toLowerCase().endsWith('.pdf')) { setTplLayout(null); return }
+    invoke('scan_template_layout', { path: tplPath })
+      .then(l => setTplLayout(l))
+      .catch(() => setTplLayout(null))
+  }, [tplPath])
 
   /* ── Visit mode: load patient ── */
   useEffect(() => {
@@ -274,6 +293,21 @@ export default function QuickRxPage() {
       if (!visitMode) {
         if (selectedPatient) {
           patientId = selectedPatient.id
+          const ptCheck = await getPatient(patientId).catch(() => null)
+          if (!ptCheck?.data?.id) {
+            // Patient missing from DB (stale draft) — re-insert using stored data
+            const { data: np } = await createPatient({
+              name:          selectedPatient.name?.trim() || pt.name.trim(),
+              mobile:        selectedPatient.mobile?.trim() || pt.mobile?.trim() || '',
+              age:           selectedPatient.age ? Number(selectedPatient.age) : null,
+              date_of_birth: selectedPatient.date_of_birth || null,
+              gender:        selectedPatient.gender || null,
+              address:       selectedPatient.address?.trim() || null,
+              consent_obtained: true,
+            })
+            patientId = np.id
+            setSelectedPatient(np)
+          }
         } else {
           const { data: np } = await createPatient({
             name: pt.name.trim(), mobile: pt.mobile.trim(),
@@ -310,8 +344,9 @@ export default function QuickRxPage() {
 
       clearDraft()
       navigate(`/prescriptions/${rx.id}`, { replace: true })
-    } catch {
-      toast.error('Could not save — please try again.')
+    } catch (err) {
+      const msg = typeof err === 'string' ? err : (err?.message ?? 'Could not save — please try again.')
+      toast.error(msg)
       setSubmitting(false)
     }
   }
@@ -348,6 +383,10 @@ export default function QuickRxPage() {
           {!visitMode && <span className="qrx-draft-badge">Draft auto-saved</span>}
         </div>
       </div>
+
+      {/* ── Two-column body layout ── */}
+      <div className="qrx-body-layout">
+      <div className="qrx-form-col">
 
       {/* ── Allergy banner ── */}
       {allergies.length > 0 && (
@@ -443,13 +482,22 @@ export default function QuickRxPage() {
 
         <div className="qrx-med-table">
           <div className="qrx-med-header">
-            <span className="qrx-col-name">Medicine</span>
-            <span className="qrx-col-dose">Dose</span>
-            <span className="qrx-col-timing">Timing</span>
-            <span className="qrx-col-meal">Meal</span>
-            <span className="qrx-col-days">Days</span>
-            <span className="qrx-col-qty">Qty</span>
-            <span className="qrx-col-notes">Notes</span>
+            <span className="qrx-col-name">
+              <span className="qrx-col-title">Medicine</span>
+              <span className="qrx-col-desc">Drug / brand name</span>
+            </span>
+            <span className="qrx-col-timing">
+              <span className="qrx-col-title">When to Take</span>
+            </span>
+            <span className="qrx-col-meal">
+              <span className="qrx-col-title">Food</span>
+            </span>
+            <span className="qrx-col-days">
+              <span className="qrx-col-title">Days</span>
+            </span>
+            <span className="qrx-col-notes">
+              <span className="qrx-col-title">Notes / Instructions</span>
+            </span>
             <span className="qrx-col-del" />
           </div>
 
@@ -499,17 +547,27 @@ export default function QuickRxPage() {
         </div>
       )}
 
+      </div>{/* close qrx-form-col */}
+
+      {/* ── Live preview panel ── */}
+      <div className="qrx-preview-col">
+        <RxLivePanel
+          patient={previewPatient}
+          medicines={medicines}
+          doctorNotes={doctorNotes}
+          langLabels={LANG[lang] || LANG.en}
+          templateUrl={tplUrl}
+          templatePath={tplPath}
+          layout={tplLayout}
+          onClick={() => setShowPreview(true)}
+        />
+      </div>
+      </div>{/* close qrx-body-layout */}
+
       {/* ── Actions ── */}
       <div className="qrx-footer">
         <div className="qrx-footer-actions">
           <button type="button" className="btn-secondary" onClick={() => navigate(-1)} disabled={submitting}>Cancel</button>
-          <button type="button" className="qrx-preview-btn" onClick={() => setShowPreview(true)} disabled={submitting}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            Preview
-          </button>
           <button type="button" className="btn-primary" onClick={handleSave} disabled={submitting}>
             {submitting ? 'Saving…' : 'Save Prescription'}
           </button>
@@ -554,6 +612,110 @@ function AutoTextarea({ value, onChange, className, placeholder }) {
       rows={1}
       style={{ overflow: 'hidden', resize: 'none' }}
     />
+  )
+}
+
+/* ── Rx Medicine list (shared by live panel) ─────────────────── */
+function RxMedList({ filled, medLine }) {
+  if (!filled.length) return <p className="rxp-empty-meds">No medicines added.</p>
+  return (
+    <ol className="rxp-med-list">
+      {filled.map(m => (
+        <li key={m.id} className="rxp-med-item">
+          <span className="rxp-med-name">{m.name}</span>
+          {medLine(m) && <span className="rxp-med-meta">  —  {medLine(m)}</span>}
+          {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+/* ── Live prescription preview panel ────────────────────────── */
+function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateUrl, templatePath, layout, onClick }) {
+  const filled = medicines.filter(m => m.name.trim())
+  const now = new Date()
+  const dd   = String(now.getDate()).padStart(2,'0')
+  const mm   = String(now.getMonth()+1).padStart(2,'0')
+  const yyyy = now.getFullYear()
+
+  function medLine(m) {
+    const t = [m.morning && L.morning, m.afternoon && L.afternoon, m.evening && L.evening]
+      .filter(Boolean).join(' - ')
+    const meal = m.beforeMeal ? L.beforeMeal : m.afterMeal ? L.afterMeal : ''
+    const days = m.days ? `${m.days} ${L.days}` : ''
+    return [t, meal, days].filter(Boolean).join('  |  ')
+  }
+
+  const isPdf = (templatePath ?? '').toLowerCase().endsWith('.pdf')
+
+  return (
+    <div className="qrx-live-panel">
+      <div className="qrx-live-label">
+        Live Preview
+        {templateUrl && <span className="qrx-live-label-hint">click to expand</span>}
+      </div>
+
+      {!templateUrl ? (
+        <div className="qrx-live-empty" onClick={onClick}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span>No template</span>
+          <small>Upload in Prescription Settings</small>
+        </div>
+      ) : (
+        <div className="qrx-live-outer" onClick={onClick} title="Click to open full preview">
+          <div className="qrx-live-scale-wrap" style={{ transform: `scale(${PANEL_SCALE})` }}>
+
+            {isPdf
+              ? <iframe src={templateUrl} title="Rx" className="rxp-tpl-bg rxp-tpl-bg--pdf" />
+              : <img    src={templateUrl} alt="Rx"   className="rxp-tpl-bg rxp-tpl-bg--img" />
+            }
+
+            {layout ? (
+              <div className="rxp-on-tpl rxp-on-tpl--abs">
+                <span className="rxp-tpl-val" style={{ top: py(layout.name_y), left: px(layout.name_x) }}>
+                  {patient?.name || '—'}
+                </span>
+                {(() => {
+                  const dy = layout.date_y, dx = layout.date_x
+                  const SLOT = layout.date_slot_w ?? 10.5
+                  return (
+                    <>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx) }}>{dd}</span>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx + SLOT) }}>{mm}</span>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx + SLOT * 2) }}>{yyyy}</span>
+                    </>
+                  )
+                })()}
+                <div style={{ position: 'absolute', top: py(layout.meds_start_y), left: px(layout.meds_x), width: pw(layout.meds_w ?? 130) }}>
+                  <RxMedList filled={filled} medLine={medLine} />
+                  {doctorNotes?.trim() && <div className="rxp-tpl-notes">{doctorNotes}</div>}
+                </div>
+              </div>
+            ) : (
+              <div className="rxp-on-tpl rxp-on-tpl--pad">
+                <div className="rxp-pt-row">
+                  <span className="rxp-tpl-val">{patient?.name || '—'}</span>
+                  <span className="rxp-tpl-val">{dd}  {mm}  {yyyy}</span>
+                </div>
+                <RxMedList filled={filled} medLine={medLine} />
+                {doctorNotes?.trim() && <div className="rxp-tpl-notes">{doctorNotes}</div>}
+              </div>
+            )}
+          </div>
+
+          <div className="qrx-live-hint">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            Full view
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -622,46 +784,38 @@ function MedRow({ row, idx, autoFocusName, onChange, onApplyTemplate, onRemove, 
         )}
       </div>
 
-      {/* Dose per intake */}
-      <input
-        className="field qrx-dose-input"
-        type="number" min="0.5" step="0.5"
-        title="Dose per intake (how many tablets/units at once)"
-        value={row.dosePerIntake}
-        onChange={e => onChange(row.id, 'dosePerIntake', e.target.value)}
-      />
-
       {/* Timing: M A E */}
       <div className="qrx-timing-group">
-        {[['morning', 'M'], ['afternoon', 'A'], ['evening', 'E']].map(([field, label]) => (
-          <label key={field} className={`qrx-chk${row[field] ? ' qrx-chk--on' : ''}`}
-            title={{ morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' }[field]}>
+        {[['morning', 'Morning'], ['afternoon', 'Afternoon'], ['evening', 'Evening']].map(([field, label]) => (
+          <label key={field} className={`qrx-chk${row[field] ? ' qrx-chk--on' : ''}`}>
             <input type="checkbox" checked={row[field]} onChange={e => onChange(row.id, field, e.target.checked)} />
             {label}
           </label>
         ))}
       </div>
 
-      {/* Meal: Bef Aft */}
+      {/* Meal: Before / After — mutually exclusive */}
       <div className="qrx-meal-group">
-        {[['beforeMeal', 'Bef'], ['afterMeal', 'Aft']].map(([field, label]) => (
-          <label key={field} className={`qrx-chk qrx-chk--meal${row[field] ? ' qrx-chk--on' : ''}`}
-            title={{ beforeMeal: 'Before meal', afterMeal: 'After meal' }[field]}>
-            <input type="checkbox" checked={row[field]} onChange={e => onChange(row.id, field, e.target.checked)} />
-            {label}
-          </label>
-        ))}
+        {[['beforeMeal', 'Before'], ['afterMeal', 'After']].map(([field, label]) => {
+          const other = field === 'beforeMeal' ? 'afterMeal' : 'beforeMeal'
+          const isOn  = row[field]
+          const dim   = !isOn && row[other]
+          return (
+            <label key={field}
+              className={`qrx-chk qrx-chk--meal${isOn ? ' qrx-chk--on' : ''}${dim ? ' qrx-chk--meal-dim' : ''}`}>
+              <input type="checkbox" checked={isOn} onChange={e => {
+                onChange(row.id, field, e.target.checked)
+                if (e.target.checked) onChange(row.id, other, false)
+              }} />
+              {label}
+            </label>
+          )
+        })}
       </div>
 
       {/* Days */}
       <input className="field qrx-days-input" type="number" min="1" placeholder="Days"
         value={row.days} onChange={e => onChange(row.id, 'days', e.target.value)} />
-
-      {/* Quantity — auto-calculated from timings × dose × days */}
-      <input className="field qrx-qty-input qrx-qty-auto"
-        placeholder="—" readOnly
-        title={`Auto: timings × dose × days`}
-        value={row.quantity} />
 
       {/* Notes */}
       <input className="field qrx-row-notes" placeholder="Notes…" value={row.notes}

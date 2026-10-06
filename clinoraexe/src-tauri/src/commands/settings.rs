@@ -313,7 +313,7 @@ pub fn pdf_scan_layout(path: &str) -> Value {
         "name_x": 38.0, "name_y": 68.0,
         "date_x": 155.0, "date_y": 68.0,
         "date_slot_w": 10.5,
-        "meds_x": 18.0, "meds_start_y": 96.0,
+        "meds_x": 18.0, "meds_start_y": 103.0,
         "meds_w": 130.0
     });
 
@@ -383,12 +383,11 @@ pub fn pdf_scan_layout(path: &str) -> Value {
         }
     }
 
-    // Medicines start just below Rx.
-    let meds_y = rx_by.map(|y| y - BASELINE + 14.0).unwrap_or(96.0);
+    // Medicines start below Rx — 19mm clears BP/SPO2/PR vitals block.
+    let meds_y = rx_by.map(|y| y - BASELINE + 19.0).unwrap_or(103.0);
 
-    // If name/date were not found (or scan found only header hits), derive from Rx position.
-    // Name and Date are typically on the same line, ~12–16mm above Rx.
-    let rx_ref = rx_by.unwrap_or(meds_y - 14.0 + BASELINE);
+    // If name/date were not found, derive from Rx position — fallback is original 87mm (unchanged).
+    let rx_ref = rx_by.unwrap_or(87.0);
     let name_y = match name_by {
         Some(y) if y > 58.0 && y < rx_ref + 2.0 => y - BASELINE,
         _ => rx_ref - 13.0,
