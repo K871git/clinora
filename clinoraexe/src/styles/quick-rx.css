@@ -110,26 +110,46 @@
 .qrx-live-empty small { font-size: 11px; opacity: 0.6; }
 
 .qrx-section {
-  padding: 28px 32px;
-  margin-bottom: 16px;
+  padding: 24px 28px;
+  margin-bottom: 14px;
 }
 
 .qrx-section-label {
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--clr-text-muted);
   margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--clr-border);
 }
+
+.qrx-sec-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.qrx-sec-icon--patient  { background: color-mix(in srgb, #6366f1 12%, var(--clr-surface)); color: #6366f1; }
+.qrx-sec-icon--med      { background: color-mix(in srgb, #2563eb 12%, var(--clr-surface)); color: #2563eb; }
+.qrx-sec-icon--notes    { background: color-mix(in srgb, #8b5cf6 12%, var(--clr-surface)); color: #8b5cf6; }
+.qrx-sec-icon--fee      { background: color-mix(in srgb, #059669 12%, var(--clr-surface)); color: #059669; }
 
 .qrx-opt {
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
   font-size: 10px;
-  opacity: 0.7;
-  margin-left: 4px;
+  opacity: 0.65;
+  margin-left: 2px;
 }
 
 /* ── Top bar ────────────────────────────────────────────────── */
@@ -137,19 +157,96 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 22px;
+  padding: 2px 0 16px;
+  border-bottom: 1px solid var(--clr-border);
+  gap: 16px;
+}
+
+.qrx-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.qrx-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px 5px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.qrx-back-btn:hover {
+  background: color-mix(in srgb, var(--clr-primary) 7%, var(--clr-surface));
+  color: var(--clr-primary);
+  border-color: var(--clr-primary);
+  transform: translateX(-2px);
+}
+
+.qrx-topbar-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--clr-border);
+  flex-shrink: 0;
+}
+
+.qrx-topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qrx-topbar-for {
+  color: var(--clr-primary);
 }
 
 .qrx-topbar-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .qrx-draft-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: var(--clr-text-muted);
-  opacity: 0.6;
+  background: var(--clr-bg-subtle);
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--clr-border);
+  white-space: nowrap;
+}
+
+.qrx-draft-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+  animation: qrx-dot-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes qrx-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
 }
 
 /* Language toggle */
@@ -422,12 +519,19 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   grid-template-columns: 1fr 220px 130px 62px 1fr 24px;
   gap: 8px;
   align-items: center;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  transition: background 0.1s;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+  margin-bottom: 2px;
 }
 
 .qrx-med-row:hover { background: var(--clr-bg-subtle); }
+
+.qrx-med-row:focus-within {
+  background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface));
+  border-color: color-mix(in srgb, var(--clr-primary) 22%, transparent);
+}
 
 /* Medicine name + autocomplete wrapper */
 .qrx-med-name-wrap {
@@ -657,7 +761,15 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: var(--space-md) 0 var(--space-xl);
+  padding: 12px 0 20px;
+  position: sticky;
+  bottom: 0;
+  background: var(--clr-bg);
+  border-top: 1px solid var(--clr-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 50;
+  margin-top: 4px;
 }
 
 .qrx-footer-actions {
@@ -772,4 +884,60 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+/* ── Color-coded timing / meal buttons ──────────────────────── */
+.qrx-chk--morning.qrx-chk--on   { background: #f59e0b; border-color: #f59e0b; }
+.qrx-chk--afternoon.qrx-chk--on { background: #0ea5e9; border-color: #0ea5e9; }
+.qrx-chk--evening.qrx-chk--on   { background: #8b5cf6; border-color: #8b5cf6; }
+.qrx-chk--before.qrx-chk--on    { background: #f97316; border-color: #f97316; }
+.qrx-chk--after.qrx-chk--on     { background: #10b981; border-color: #10b981; }
+
+.qrx-chk--morning.qrx-chk--on:hover   { background: #d97706; border-color: #d97706; opacity: 1; }
+.qrx-chk--afternoon.qrx-chk--on:hover { background: #0284c7; border-color: #0284c7; opacity: 1; }
+.qrx-chk--evening.qrx-chk--on:hover   { background: #7c3aed; border-color: #7c3aed; opacity: 1; }
+.qrx-chk--before.qrx-chk--on:hover    { background: #ea580c; border-color: #ea580c; opacity: 1; }
+.qrx-chk--after.qrx-chk--on:hover     { background: #059669; border-color: #059669; opacity: 1; }
+
+/* ── Dark mode — pharmacy prompt card ──────────────────────── */
+html[data-theme="dark"] .qrx-pharmacy-card {
+  background: var(--clr-surface);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme="dark"] .qrx-pharmacy-title { color: var(--clr-text); }
+html[data-theme="dark"] .qrx-pharmacy-desc  { color: var(--clr-text-muted); }
+
+/* ── Med table header — visual sep ─────────────────────────── */
+.qrx-med-header {
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+}
+
+/* ── Add medicine button — improve ─────────────────────────── */
+.qrx-add-med {
+  width: 100%;
+  justify-content: center;
+  border-radius: 10px;
+  height: 40px;
+  margin-top: 10px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+/* ── Fee card — inline layout ───────────────────────────────── */
+.qrx-fee-card {
+  border-left: 3px solid color-mix(in srgb, #059669 50%, transparent);
+}
+
+/* ── Section focus accent ───────────────────────────────────── */
+.qrx-section:focus-within {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--clr-primary) 15%, transparent), var(--shadow-sm);
+}
+
+/* ── Responsive back btn ────────────────────────────────────── */
+@media (max-width: 600px) {
+  .qrx-topbar-title { display: none; }
+  .qrx-topbar-sep   { display: none; }
+  .qrx-back-btn     { padding: 5px 11px 5px 8px; font-size: 12px; }
 }

@@ -785,8 +785,24 @@ html[data-theme="dark"] .dlg {
 .detail-back {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-bottom: var(--space-md);
+  padding: 5px 13px 5px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted) !important;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: all 0.15s;
+}
+
+.detail-back:hover {
+  background: color-mix(in srgb, var(--clr-primary) 7%, var(--clr-surface));
+  color: var(--clr-primary) !important;
+  border-color: var(--clr-primary);
+  transform: translateX(-2px);
 }
 
 .detail-header-card {
