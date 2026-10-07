@@ -19,11 +19,13 @@ import { confirmDelete } from '../../lib/swal'
 
 /* ── Edit modal helpers ──────────────────────────────────────── */
 function newMedItem(o = {}) {
-  return { id: Math.random().toString(36).slice(2), medicine_name: '', dosage: '', instructions: '', ...o }
+  return { id: Math.random().toString(36).slice(2), medicine_name: '', frequency: '', duration: '', dosage: '', instructions: '', ...o }
 }
 function itemsFromApi(apiItems) {
   return (apiItems ?? []).map(s => newMedItem({
     medicine_name: s.medicine_name,
+    frequency:     s.frequency     ?? '',
+    duration:      s.duration != null ? String(s.duration) : '',
     dosage:        s.dosage        ?? '',
     instructions:  s.instructions  ?? '',
   }))
@@ -31,13 +33,15 @@ function itemsFromApi(apiItems) {
 function itemsForApi(items) {
   return items.map((item, idx) => ({
     medicine_name: item.medicine_name.trim(),
+    frequency:     item.frequency.trim()    || null,
+    duration:      item.duration            ? Number(item.duration) : null,
     dosage:        item.dosage.trim()       || null,
-    frequency:     null,
-    duration:      null,
     instructions:  item.instructions.trim() || null,
     sort_order:    idx,
   }))
 }
+
+const FREQ_OPTS = ['OD','BD','TDS','QID','SOS']
 
 function MedEditor({ items, onChange }) {
   function update(id, field, val) { onChange(items.map(m => m.id === id ? { ...m, [field]: val } : m)) }
@@ -46,17 +50,29 @@ function MedEditor({ items, onChange }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {items.map((item, idx) => (
         <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 28px', gap: 6, padding: '10px 12px', border: '1px solid var(--clr-border)', borderRadius: 8, background: 'var(--clr-bg-subtle)' }}>
+          {/* Row 1: medicine name + delete */}
           <div style={{ gridColumn: '1 / 3' }}>
             <input className="field" placeholder={`Medicine ${idx + 1} *`} value={item.medicine_name}
               onChange={e => update(item.id, 'medicine_name', e.target.value)} style={{ fontSize: 13 }} />
           </div>
           <button type="button" onClick={() => remove(item.id)}
-            style={{ gridColumn: 3, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-muted)', fontSize: 18, lineHeight: 1, opacity: items.length === 1 ? 0.3 : 1 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-muted)', fontSize: 18, lineHeight: 1, opacity: items.length === 1 ? 0.3 : 1, alignSelf: 'center' }}
             disabled={items.length === 1}>×</button>
-          <input className="field" placeholder="Dosage (1-0-1)" value={item.dosage}
+          {/* Row 2: frequency + duration days */}
+          <select className="field" value={item.frequency}
+            onChange={e => update(item.id, 'frequency', e.target.value)} style={{ fontSize: 12 }}>
+            <option value="">Frequency</option>
+            {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <input className="field" type="number" placeholder="Days" min={1} value={item.duration}
+            onChange={e => update(item.id, 'duration', e.target.value)} style={{ fontSize: 12 }} />
+          <div />
+          {/* Row 3: dosage + instructions */}
+          <input className="field" placeholder="Dosage (1 tab, 500 mg…)" value={item.dosage}
             onChange={e => update(item.id, 'dosage', e.target.value)} style={{ fontSize: 12 }} />
-          <input className="field" placeholder="Instructions" value={item.instructions}
+          <input className="field" placeholder="Instructions (before/after food)" value={item.instructions}
             onChange={e => update(item.id, 'instructions', e.target.value)} style={{ fontSize: 12 }} />
+          <div />
         </div>
       ))}
       <button type="button" onClick={() => onChange([...items, newMedItem()])}
@@ -80,7 +96,7 @@ const fmtDate = (s) => s
 const STATUS_META = {
   draft:            { label: 'Draft',       cls: 'rx-badge rx-badge--draft' },
   sent_to_pharmacy: { label: 'Sent',        cls: 'rx-badge rx-badge--sent' },
-  dispensing:       { label: 'Dispensing',  cls: 'rx-badge rx-badge--dispensing' },
+  dispensing:       { label: 'At Pharmacy', cls: 'rx-badge rx-badge--dispensing' },
   completed:        { label: 'Completed',   cls: 'rx-badge rx-badge--done' },
 }
 
@@ -88,7 +104,7 @@ const STATUS_TABS = [
   { key: '',                 label: 'All' },
   { key: 'draft',            label: 'Draft' },
   { key: 'sent_to_pharmacy', label: 'Sent' },
-  { key: 'dispensing',       label: 'Dispensing' },
+  { key: 'dispensing',       label: 'At Pharmacy' },
   { key: 'completed',        label: 'Completed' },
 ]
 
@@ -668,13 +684,15 @@ export default function PrescriptionsPage() {
                       : firstMed
 
                     return (
-                      <tr key={rx.id} className="rx-tr">
+                      <tr key={rx.id} className={`rx-tr${isDraft ? ' rx-tr--draft' : ''}`}>
                         <td className="rx-td">
                           <div className="rx-patient-cell">
                             <div className="rx-avatar" style={{ background: color }}>
                               {name[0].toUpperCase()}
                             </div>
-                            <span className="rx-patient-name">{name}</span>
+                            <button className="rx-patient-name rx-patient-link" onClick={() => navigate(`/patients/${rx.patient_id}`)}>
+                              {name}
+                            </button>
                           </div>
                         </td>
                         <td className="rx-td">

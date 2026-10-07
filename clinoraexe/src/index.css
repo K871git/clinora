@@ -64,9 +64,33 @@
   --space-xl: 32px;
   --space-2xl: 48px;
 
-  /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* Typography — font stacks */
+  --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+
+  /* Typography — size scale */
+  --text-xs:   11px;
+  --text-sm:   12.5px;
+  --text-base: 14px;
+  --text-md:   15px;
+  --text-lg:   17px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+  --text-3xl:  30px;
+
+  /* Typography — weight */
+  --fw-normal:    400;
+  --fw-medium:    500;
+  --fw-semibold:  600;
+  --fw-bold:      700;
+  --fw-extrabold: 800;
+
+  /* Typography — line height */
+  --lh-tight:   1.25;
+  --lh-snug:    1.4;
+  --lh-base:    1.6;
+  --lh-relaxed: 1.75;
 
   /* Additional tokens */
   --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
@@ -332,12 +356,14 @@ body {
   background-color: var(--clr-bg);
   color: var(--clr-text);
   font-family: var(--font-sans);
-  line-height: 1.5;
-  letter-spacing: -0.011em;
+  font-size: var(--text-base, 14px);
+  line-height: var(--lh-base, 1.6);
+  letter-spacing: -0.009em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100dvh;
-  font-feature-settings: "cv02","cv03","cv04","cv11";
+  font-feature-settings: "cv02","cv03","cv04","cv11","kern" 1;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
@@ -785,8 +811,24 @@ html[data-theme="dark"] .dlg {
 .detail-back {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-bottom: var(--space-md);
+  padding: 5px 13px 5px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted) !important;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: all 0.15s;
+}
+
+.detail-back:hover {
+  background: color-mix(in srgb, var(--clr-primary) 7%, var(--clr-surface));
+  color: var(--clr-primary) !important;
+  border-color: var(--clr-primary);
+  transform: translateX(-2px);
 }
 
 .detail-header-card {
@@ -1224,4 +1266,187 @@ html[data-role="pharmacy"] .field:focus {
 }
 [data-theme="dark"] .status-badge--blue {
   background: rgba(37,99,235,0.12); color: #93c5fd; border-color: rgba(37,99,235,0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TYPOGRAPHY SYSTEM — Clinora Design Language
+   Professional hierarchy: where to bold, where to italic, where dark
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Page titles — Playfair Display for gravitas ────────────────── */
+.typo-page-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--clr-text);
+  line-height: var(--lh-tight, 1.25);
+}
+
+/* ── Section / card titles ──────────────────────────────────────── */
+.typo-section-title {
+  font-size: var(--text-md, 15px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--clr-text);
+  line-height: var(--lh-snug, 1.4);
+}
+
+/* ── Overline / eyebrow — small ALL-CAPS label above a section ──── */
+.typo-overline {
+  font-size: var(--text-xs, 11px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+
+/* ── Body copy ──────────────────────────────────────────────────── */
+.typo-body {
+  font-size: var(--text-base, 14px);
+  font-weight: 400;
+  line-height: var(--lh-base, 1.6);
+  color: var(--clr-text);
+}
+
+/* ── Caption / hint — italic, muted, small ──────────────────────── */
+.typo-caption {
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--clr-text-muted);
+  line-height: var(--lh-relaxed, 1.75);
+}
+
+/* ── Numeric amounts — tabular nums, bold ───────────────────────── */
+.typo-amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* ── Metadata row — small muted inline facts ────────────────────── */
+.typo-meta {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+/* ── Emphasis — inline bold highlight ───────────────────────────── */
+.typo-em {
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+/* ── Subtle emphasis — italic within body ───────────────────────── */
+.typo-em-soft {
+  font-style: italic;
+  color: var(--clr-text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   GLOBAL COMPONENT TYPOGRAPHY REFINEMENTS
+   These apply to shared component classes used throughout the app
+   ───────────────────────────────────────────────────────────────── */
+
+/* Page-level headings (h1 used in AppLayout shell header) */
+h1, .page-heading {
+  font-size: var(--text-lg, 17px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: var(--lh-tight, 1.25);
+  color: var(--clr-text);
+}
+
+h2, .section-heading {
+  font-size: var(--text-md, 15px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--clr-text);
+}
+
+h3, .card-heading {
+  font-size: var(--text-base, 14px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--clr-text);
+}
+
+/* Tables — tighter, professional */
+table {
+  font-size: var(--text-base, 14px);
+  border-collapse: collapse;
+}
+
+th {
+  font-size: var(--text-xs, 11px);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* Code blocks and monospaced snippets */
+code, pre, .mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0;
+}
+
+/* Labels for form fields (global .label class) */
+.label, label {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--clr-text);
+}
+
+/* Inline hint / help text below fields */
+.hint {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--clr-text-muted);
+  line-height: 1.55;
+}
+
+/* Stat / KPI numbers — large bold figures on dashboards */
+.stat-number {
+  font-size: var(--text-2xl, 24px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--clr-text);
+}
+
+/* Stat label below a number */
+.stat-label {
+  font-size: var(--text-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+
+/* ── Dark mode typography refinements ────────────────────────────── */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3 {
+  /* Slightly reduce weight visually — bold appears heavier on dark bg */
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+[data-theme="dark"] .typo-caption,
+[data-theme="dark"] .hint {
+  color: var(--clr-text-muted);
+  opacity: 0.85;
+}
+
+/* ── Print: restore colors for printed documents ─────────────────── */
+@media print {
+  body { font-size: 12pt; line-height: 1.5; }
+  h1   { font-size: 18pt; }
+  h2   { font-size: 15pt; }
+  h3   { font-size: 13pt; }
 }

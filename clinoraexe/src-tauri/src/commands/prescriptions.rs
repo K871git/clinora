@@ -210,6 +210,7 @@ pub async fn list_prescriptions(
 
     let data: Vec<Value> = rows.iter().map(|r| json!({
         "id": r.get::<u64, _>("id"),
+        "visit_id": r.get::<Option<u64>, _>("visit_id"),
         "status": r.get::<String, _>("status"),
         "prescribed_at": r.get::<Option<String>, _>("prescribed_at").unwrap_or_default(),
         "sent_to_pharmacy_at": r.get::<Option<String>, _>("sent_to_pharmacy_at"),

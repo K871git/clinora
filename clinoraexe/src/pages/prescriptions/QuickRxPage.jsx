@@ -6,7 +6,8 @@ import { createVisit, saveFee } from '../../services/visitService'
 import { createPrescription, sendPrescription } from '../../services/prescriptionService'
 import { getPatientAllergies } from '../../services/medicalHistoryService'
 import { getVisit } from '../../services/visitService'
-import { searchMedicineTemplates } from '../../services/medicineTplService'
+import { searchMedicineTemplates, saveMedicineTemplate } from '../../services/medicineTplService'
+import { searchMedicines, createMedicine } from '../../services/medicineService'
 import { getSettings } from '../../services/settingsService'
 import { invoke } from '@tauri-apps/api/core'
 import { AuthContext } from '../../contexts/AuthContext'
@@ -335,8 +336,11 @@ export default function QuickRxPage() {
           })
           patientId = np.id
         }
+        const now = new Date()
+        const localDt = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+          .toISOString().slice(0, 19).replace('T', ' ')
         const { data: visit } = await createVisit(patientId, {
-          visited_at: new Date().toISOString(),
+          visited_at:         localDt,
           consultation_notes: doctorNotes.trim() || null,
         })
         visitId = visit.id
@@ -362,6 +366,41 @@ export default function QuickRxPage() {
       setSavedRxId(rx.id)
       // Persist language with this prescription so print page uses same lang
       try { localStorage.setItem('clinora:rx-lang-' + rx.id, lang) } catch {}
+      // Fire-and-forget: persist newly introduced medicines to the library
+      ;(async () => {
+        for (const m of filled) {
+          const name = m.name.trim()
+          try {
+            const { data: tpls } = await searchMedicineTemplates(name)
+            const hasTpl = (tpls || []).some(t => t.name.toLowerCase() === name.toLowerCase())
+            if (!hasTpl) {
+              const meal = m.beforeMeal && m.afterMeal ? 'both'
+                : m.beforeMeal ? 'before'
+                : m.afterMeal  ? 'after'
+                : ''
+              await saveMedicineTemplate({
+                name,
+                morning:   m.morning,
+                afternoon: m.afternoon,
+                evening:   m.evening,
+                meal,
+                days:     m.days ? Number(m.days) : null,
+                quantity: m.quantity?.trim() || null,
+                notes:    m.notes.trim() || null,
+                language: lang,
+              })
+            }
+          } catch {}
+          try {
+            const { data: res } = await searchMedicines(name, 5)
+            const list = res?.data ?? []
+            const hasMed = list.some(med => med.name.toLowerCase() === name.toLowerCase())
+            if (!hasMed) {
+              await createMedicine({ name })
+            }
+          } catch {}
+        }
+      })()
       setSubmitting(false)
     } catch (err) {
       const msg = typeof err === 'string' ? err : (err?.message ?? 'Could not save — please try again.')
@@ -383,23 +422,35 @@ export default function QuickRxPage() {
 
       {/* ── Top bar ── */}
       <div className="qrx-topbar">
-        <button className="btn-link detail-back" onClick={() => navigate(-1)}>
-          ← {visitMode ? (visitData?.patient?.name ?? 'Back') : 'New Prescription'}
-        </button>
+        <div className="qrx-topbar-left">
+          <button className="qrx-back-btn" onClick={() => navigate(-1)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            {visitMode ? (visitData?.patient?.name ?? 'Back') : 'Back'}
+          </button>
+          <div className="qrx-topbar-sep" />
+          <span className="qrx-topbar-title">
+            {visitMode
+              ? <>{visitData?.patient ? <span className="qrx-topbar-for">{visitData.patient.name}</span> : 'Add Prescription'}</>
+              : 'New Prescription'
+            }
+          </span>
+        </div>
         <div className="qrx-topbar-right">
-          {/* Language toggle */}
+          {!visitMode && (
+            <span className="qrx-draft-badge">
+              <span className="qrx-draft-dot" />
+              Draft auto-saved
+            </span>
+          )}
           <div className="qrx-lang-toggle">
             {['en', 'hi', 'mr'].map(l => (
-              <button
-                key={l}
-                className={`qrx-lang-btn${lang === l ? ' qrx-lang-btn--active' : ''}`}
-                onClick={() => switchLang(l)}
-              >
+              <button key={l} className={`qrx-lang-btn${lang === l ? ' qrx-lang-btn--active' : ''}`} onClick={() => switchLang(l)}>
                 {l.toUpperCase()}
               </button>
             ))}
           </div>
-          {!visitMode && <span className="qrx-draft-badge">Draft auto-saved</span>}
         </div>
       </div>
 
@@ -430,9 +481,14 @@ export default function QuickRxPage() {
       {!visitMode && (
         <div className="card qrx-section">
           <div className="qrx-section-label">
-            Patient
+            <span className="qrx-sec-icon qrx-sec-icon--patient">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <span>Patient</span>
             {selectedPatient && <span className="qrx-existing-badge">✓ Existing</span>}
-            {!selectedPatient && pt.name.trim() && <span className="qrx-new-badge">New Patient</span>}
+            {!selectedPatient && pt.name.trim() && <span className="qrx-new-badge">New</span>}
           </div>
 
           <div className="qrx-pt-row">
@@ -496,7 +552,14 @@ export default function QuickRxPage() {
 
       {/* ── Medicines ── */}
       <div className="card qrx-section">
-        <div className="qrx-section-label">Medicines</div>
+        <div className="qrx-section-label">
+          <span className="qrx-sec-icon qrx-sec-icon--med">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+            </svg>
+          </span>
+          <span>Medicines</span>
+        </div>
         {errors.medicines && <span className="field-error-msg qrx-med-err">{errors.medicines}</span>}
 
         <div className="qrx-med-table">
@@ -544,7 +607,15 @@ export default function QuickRxPage() {
 
       {/* ── Notes — auto-grow ── */}
       <div className="card qrx-section">
-        <div className="qrx-section-label">Notes <span className="qrx-opt">optional</span></div>
+        <div className="qrx-section-label">
+          <span className="qrx-sec-icon qrx-sec-icon--notes">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </span>
+          <span>Notes</span>
+          <span className="qrx-opt">optional</span>
+        </div>
         <AutoTextarea
           className="field qrx-notes-ta"
           placeholder="Diagnosis, instructions for pharmacist, clinical observations…"
@@ -556,7 +627,15 @@ export default function QuickRxPage() {
       {/* ── Fee ── */}
       {!visitMode && (
         <div className="card qrx-section qrx-fee-card">
-          <div className="qrx-section-label">Consultation Fee <span className="qrx-opt">optional</span></div>
+          <div className="qrx-section-label">
+            <span className="qrx-sec-icon qrx-sec-icon--fee">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </span>
+            <span>Consultation Fee</span>
+            <span className="qrx-opt">optional</span>
+          </div>
           <div className="qrx-fee-wrap">
             <span className="qrx-fee-sym">₹</span>
             <input type="number" className="field qrx-fee-input" min="0" step="0.01"
@@ -829,8 +908,8 @@ function MedRow({ row, idx, autoFocusName, onChange, onApplyTemplate, onRemove, 
 
       {/* Timing: M A E */}
       <div className="qrx-timing-group">
-        {[['morning', 'Morning'], ['afternoon', 'Afternoon'], ['evening', 'Evening']].map(([field, label]) => (
-          <label key={field} className={`qrx-chk${row[field] ? ' qrx-chk--on' : ''}`}>
+        {[['morning','Morning','qrx-chk--morning'],['afternoon','Afternoon','qrx-chk--afternoon'],['evening','Evening','qrx-chk--evening']].map(([field, label, mod]) => (
+          <label key={field} className={`qrx-chk ${mod}${row[field] ? ' qrx-chk--on' : ''}`}>
             <input type="checkbox" checked={row[field]} onChange={e => onChange(row.id, field, e.target.checked)} />
             {label}
           </label>
@@ -839,13 +918,13 @@ function MedRow({ row, idx, autoFocusName, onChange, onApplyTemplate, onRemove, 
 
       {/* Meal: Before / After — mutually exclusive */}
       <div className="qrx-meal-group">
-        {[['beforeMeal', 'Before'], ['afterMeal', 'After']].map(([field, label]) => {
+        {[['beforeMeal','Before','qrx-chk--before'],['afterMeal','After','qrx-chk--after']].map(([field, label, mod]) => {
           const other = field === 'beforeMeal' ? 'afterMeal' : 'beforeMeal'
           const isOn  = row[field]
           const dim   = !isOn && row[other]
           return (
             <label key={field}
-              className={`qrx-chk qrx-chk--meal${isOn ? ' qrx-chk--on' : ''}${dim ? ' qrx-chk--meal-dim' : ''}`}>
+              className={`qrx-chk qrx-chk--meal ${mod}${isOn ? ' qrx-chk--on' : ''}${dim ? ' qrx-chk--meal-dim' : ''}`}>
               <input type="checkbox" checked={isOn} onChange={e => {
                 onChange(row.id, field, e.target.checked)
                 if (e.target.checked) onChange(row.id, other, false)

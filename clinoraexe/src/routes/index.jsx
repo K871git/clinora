@@ -29,6 +29,7 @@ import DoctorRevenuePage from '../pages/revenue/DoctorRevenuePage'
 import PharmacyRevenuePage from '../pages/revenue/PharmacyRevenuePage'
 import AppointmentsPage from '../pages/appointments/AppointmentsPage'
 import OPDRegisterPage from '../pages/opd/OPDRegisterPage'
+import ClinicPage from '../pages/clinic/ClinicPage'
 import PharmacyLabelPage from '../pages/pharmacy/PharmacyLabelPage'
 import GamesHubPage from '../pages/games/GamesHubPage'
 import SnakeGame from '../pages/games/SnakeGame'
@@ -86,6 +87,7 @@ export default function AppRoutes() {
             <Route path="/prescriptions" element={<PrescriptionsPage />} />
             <Route path="/visits" element={<VisitsPage />} />
             <Route path="/medicines" element={<MedicinesPage />} />
+            <Route path="/clinic" element={<ClinicPage />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/opd" element={<OPDRegisterPage />} />
             <Route path="/revenue" element={<DoctorRevenuePage />} />

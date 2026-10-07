@@ -4,7 +4,6 @@ import { useAuth } from '../../hooks/useAuth'
 import { getDashboardStats, getTodayPatients, getDashboardPendingRx } from '../../services/dashboardService'
 import { listFollowups } from '../../services/visitService'
 import PatientSearchBox from './PatientSearchBox'
-import RevenueModal from './RevenueModal'
 import ErrorBoundary from '../../components/ErrorBoundary'
 import '../../styles/dashboard.css'
 
@@ -57,8 +56,6 @@ export default function DashboardPage() {
   const [followups,      setFollowups]      = useState([])
   const [followupStatus, setFollowupStatus] = useState('loading')
 
-  const [revenueOpen, setRevenueOpen] = useState(false)
-
   const fetchStats = useCallback(() => {
     getDashboardStats()
       .then(({ data }) => {
@@ -103,6 +100,9 @@ export default function DashboardPage() {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
+  const todayDate     = new Date().toISOString().split('T')[0]
+  const followupsToday = followups.filter(f => f.followup_date === todayDate).length
+
   const nameParts = (user?.name ?? '').split(' ').filter(p => !HONORIFICS.has(p))
   const firstName  = nameParts[0] ?? 'Doctor'
   const clinicName = user?.clinic?.name ?? null
@@ -128,6 +128,31 @@ export default function DashboardPage() {
           + New Prescription
         </button>
       </section>
+
+      {/* ── Right Now — operational strip ──────────────────────────────── */}
+      {statsStatus !== 'loading' && (
+        <div className="dash-now-strip">
+          <button className={`dash-now-chip${statsStatus === 'done' && (stats?.today_visits ?? 0) > 0 ? ' dash-now-chip--green' : ''}`} onClick={() => navigate('/opd')}>
+            <span className="dash-now-val">{statsStatus === 'done' ? (stats?.today_visits ?? 0) : '—'}</span>
+            <span className="dash-now-lbl">Seen Today</span>
+          </button>
+          <div className="dash-now-sep" />
+          <button className={`dash-now-chip${statsStatus === 'done' && (stats?.pending_rx ?? 0) > 0 ? ' dash-now-chip--blue' : ''}`} onClick={() => navigate('/prescriptions')}>
+            <span className="dash-now-val">{statsStatus === 'done' ? (stats?.pending_rx ?? 0) : '—'}</span>
+            <span className="dash-now-lbl">At Pharmacy</span>
+          </button>
+          <div className="dash-now-sep" />
+          <button className={`dash-now-chip${statsStatus === 'done' && (stats?.draft_rx ?? 0) > 0 ? ' dash-now-chip--amber' : ''}`} onClick={() => navigate('/prescriptions')}>
+            <span className="dash-now-val">{statsStatus === 'done' ? (stats?.draft_rx ?? 0) : '—'}</span>
+            <span className="dash-now-lbl">Drafts Unsent</span>
+          </button>
+          <div className="dash-now-sep" />
+          <button className={`dash-now-chip${followupStatus === 'done' && followupsToday > 0 ? ' dash-now-chip--purple' : ''}`} onClick={() => navigate('/opd')}>
+            <span className="dash-now-val">{followupStatus === 'done' ? followupsToday : '—'}</span>
+            <span className="dash-now-lbl">Follow-ups Today</span>
+          </button>
+        </div>
+      )}
 
       {/* ── Quick actions ─────────────────────────────────────────────── */}
       <div className="dash-actions">
@@ -172,16 +197,6 @@ export default function DashboardPage() {
           status={statsStatus}
           onClick={() => navigate('/prescriptions')}
         />
-        <StatCard
-          icon={<IconCoin />}
-          value={statsStatus === 'done'
-            ? `₹${Math.round(stats?.today_revenue ?? 0).toLocaleString('en-IN')}`
-            : null}
-          label="Today's Collection"
-          accent="success"
-          status={statsStatus}
-          onClick={() => setRevenueOpen(true)}
-        />
       </div>
 
       {/* Refresh indicator */}
@@ -202,31 +217,6 @@ export default function DashboardPage() {
 
       {/* ── Week activity strip ──────────────────────────────────────── */}
       <WeekStrip days={stats?.week_activity} loading={statsStatus === 'loading'} />
-
-      {/* ── Revenue card — secretive ─────────────────────────────────── */}
-      <button
-        className="dash-revenue-card"
-        onClick={() => setRevenueOpen(true)}
-        aria-label="Open revenue overview"
-      >
-        <div className="dash-revenue-card-left">
-          <span className="dash-revenue-card-icon"><IconCoin /></span>
-          <div>
-            <p className="dash-revenue-card-label">Revenue Overview</p>
-            <p className="dash-revenue-card-hint">Today · This week · This month · All time</p>
-          </div>
-        </div>
-        <div className="dash-revenue-card-right">
-          <span className="dash-revenue-card-amount">
-            <span className="dash-revenue-blur">Rs. ·····</span>
-          </span>
-          <span className="dash-revenue-card-cta">
-            <IconLock /> View details
-          </span>
-        </div>
-      </button>
-
-      <RevenueModal open={revenueOpen} onClose={() => setRevenueOpen(false)} />
 
       {/* ── New clinic onboarding ─────────────────────────────────────── */}
       {isNewClinic ? (
@@ -274,7 +264,7 @@ export default function DashboardPage() {
                     const extra = (rx.items?.length ?? 0) - 3
                     return (
                       <li key={rx.id}>
-                        <button className="dash-list-item" onClick={() => navigate(`/prescriptions/${rx.id}`)}>
+                        <button className="dash-list-item" onClick={() => navigate('/prescriptions')}>
                           <div className="dash-avatar rx-avatar"><IconRx /></div>
                           <div className="dash-item-body">
                             <div className="dash-item-name">
@@ -370,6 +360,33 @@ export default function DashboardPage() {
               </ErrorBoundary>
             )}
 
+          </div>
+
+          {/* ── Staff Overview ──────────────────────────────────────── */}
+          <div className="card dash-staff-card">
+            <div className="dash-staff-header">
+              <span className="dash-card-title">Staff Overview</span>
+              <span className="dash-staff-soon-badge">Coming Soon</span>
+            </div>
+            <div className="dash-staff-body">
+              <div className="dash-staff-clinic-info">
+                <div className="dash-staff-clinic-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V11h6v10"/>
+                  </svg>
+                </div>
+                <div>
+                  <div className="dash-staff-clinic-name">{clinicName ?? 'Your Clinic'}</div>
+                  <div className="dash-staff-clinic-sub">1 active doctor</div>
+                </div>
+              </div>
+              <p className="dash-staff-hint">
+                Employee tracking — region, headcount, and role stats — will appear here once staff members are added to the system.
+              </p>
+              <button className="dash-staff-cta" onClick={() => navigate('/settings')}>
+                Set up staff members →
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -589,26 +606,6 @@ function IconSettingsIcon() {
       strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="9" cy="9" r="2.5" />
       <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42" />
-    </svg>
-  )
-}
-
-function IconCoin() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v12M9 9.5h4.5a2 2 0 0 1 0 4H9.5a2 2 0 0 0 0 4H15" />
-    </svg>
-  )
-}
-
-function IconLock() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor"
-      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="8" width="12" height="9" rx="2" />
-      <path d="M6 8V5a3 3 0 0 1 6 0v3" />
     </svg>
   )
 }

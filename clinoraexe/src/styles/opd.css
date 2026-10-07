@@ -162,6 +162,40 @@
 }
 .opd-sort--active { opacity: 1; color: var(--clr-primary); }
 
+/* ── Clinic page (merged OPD + Appointments) ─────────────────────────── */
+.clinic-page {
+  padding: var(--space-lg);
+  max-width: 1200px;
+}
+
+.clinic-tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-lg);
+  border-bottom: 1.5px solid var(--clr-border);
+  padding-bottom: 0;
+}
+
+.clinic-tab-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px 10px;
+  border: none; border-bottom: 2.5px solid transparent;
+  background: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--clr-text-muted);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  margin-bottom: -1.5px;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.clinic-tab-btn:hover { color: var(--clr-text); background: color-mix(in srgb, var(--clr-primary) 5%, transparent); }
+.clinic-tab-btn--active { color: var(--clr-primary); border-bottom-color: var(--clr-primary); }
+
+.clinic-tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 99px; background: var(--clr-primary); color: #fff;
+  font-size: 10px; font-weight: 700;
+}
+
 /* ── Print: OPD Summary ───────────────────────────────────────────────── */
 @media print {
   /* Hide everything except the OPD page */

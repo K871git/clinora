@@ -13,7 +13,8 @@ import '../../styles/patients.css'
 
 const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#3b82f6']
 const avatarColor  = (name) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
-const isNew        = (d)    => Date.now() - new Date(d).getTime() < 2 * 24 * 60 * 60 * 1000
+const isNew         = (d)    => Date.now() - new Date(d).getTime() < 2 * 24 * 60 * 60 * 1000
+const isRevisitDue  = (d)    => d && Date.now() - new Date(d).getTime() > 180 * 24 * 60 * 60 * 1000
 const fmtDate      = (s)    => s
   ? new Date(s).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
   : null
@@ -235,6 +236,9 @@ export default function PatientsPage() {
                           </div>
                           <span className="pt-patient-name">{p.name}</span>
                           {isNew(p.created_at) && <span className="pt-new-badge">New</span>}
+                          {!isNew(p.created_at) && isRevisitDue(p.last_visit_at) && (
+                            <span className="pt-revisit-badge">Revisit Due</span>
+                          )}
                         </td>
                         <td className="pt-td-muted">{p.mobile || '—'}</td>
                         <td className="pt-td-muted">{p.age != null ? `${p.age} yrs` : '—'}</td>

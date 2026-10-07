@@ -32,6 +32,9 @@ function parseMed(item) {
   const dur = item.duration ?? ''
   const tim = d.match(/^(\d+)-(\d+)-(\d+)/)
   const days = (dur.match(/^(\d+)/) || [])[1] ?? ''
+  const timingCount = tim ? [tim[1],tim[2],tim[3]].filter(n => Number(n) > 0).length : 0
+  const dose = tim ? (Number(tim[1]) || Number(tim[2]) || Number(tim[3]) || 1) : 1
+  const qty = timingCount > 0 && days ? String(timingCount * dose * Number(days)) : ''
   return {
     id:         item.id,
     name:       item.medicine_name,
@@ -41,6 +44,7 @@ function parseMed(item) {
     beforeMeal: /before meal/i.test(d),
     afterMeal:  /after meal/i.test(d),
     days,
+    qty,
     notes:      item.instructions ?? '',
   }
 }
@@ -61,13 +65,16 @@ function MedicineList({ items, L }) {
             <tr key={m.id} className="rxp-med-tr">
               <td className="rxp-td rxp-td--name">
                 <span className="rxp-med-name">{m.name}</span>
+                {m.qty && <div className="rxp-med-qty">Qty: {m.qty} tab</div>}
                 {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
               </td>
               <td className="rxp-td rxp-td--timing">
                 {timingParts.length > 0 ? timingParts.join(' + ') : '—'}
               </td>
               <td className="rxp-td rxp-td--meal">{meal}</td>
-              <td className="rxp-td rxp-td--days">{m.days || '—'}</td>
+              <td className="rxp-td rxp-td--days">
+                {m.days ? <>{m.days}<div className="rxp-days-label">{L.days}</div></> : '—'}
+              </td>
             </tr>
           )
         })}
