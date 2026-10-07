@@ -204,13 +204,13 @@ html[data-theme="dark"] .dash-hero {
 /* ─── Stat cards ─────────────────────────────────────────────────────────── */
 .dash-stats {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-md);
   margin-bottom: var(--space-xl);
 }
 
 @media (max-width: 1100px) {
-  .dash-stats { grid-template-columns: repeat(3, 1fr); }
+  .dash-stats { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 720px) {
@@ -1504,6 +1504,159 @@ html[data-theme="dark"] .dash-draft-alert:hover {
 
   &:hover:not(:disabled) { background: var(--dash-sand-hover); }
 }
+
+/* ─── Right Now operational strip ───────────────────────────────────────────── */
+.dash-now-strip {
+  display: flex;
+  align-items: stretch;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-xl);
+  overflow: hidden;
+}
+
+.dash-now-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 16px 12px;
+  background: none;
+  border: none;
+  border-top: 3px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  transition: background-color 0.13s, border-top-color 0.2s;
+}
+
+.dash-now-chip:hover { background: var(--clr-surface-hover); }
+.dash-now-chip:focus-visible { outline: 2px solid var(--clr-primary); outline-offset: -2px; }
+
+.dash-now-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--clr-text);
+  letter-spacing: -1.2px;
+  line-height: 1;
+}
+
+.dash-now-lbl {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+}
+
+.dash-now-chip--green { border-top-color: var(--clr-success); }
+.dash-now-chip--blue  { border-top-color: var(--clr-primary); }
+.dash-now-chip--amber { border-top-color: var(--clr-warning); }
+.dash-now-chip--purple { border-top-color: #7c3aed; }
+
+.dash-now-chip--green  .dash-now-val { color: var(--clr-success); }
+.dash-now-chip--blue   .dash-now-val { color: var(--clr-primary); }
+.dash-now-chip--amber  .dash-now-val { color: var(--clr-warning); }
+.dash-now-chip--purple .dash-now-val { color: #7c3aed; }
+
+.dash-now-sep {
+  width: 1px;
+  background: var(--clr-border);
+  flex-shrink: 0;
+  margin: 10px 0;
+}
+
+@media (max-width: 640px) {
+  .dash-now-strip { display: grid; grid-template-columns: 1fr 1fr; }
+  .dash-now-sep   { display: none; }
+}
+
+/* ─── Staff overview card ────────────────────────────────────────────────────── */
+.dash-staff-card {
+  padding: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+.dash-staff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.dash-staff-soon-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--clr-surface-hover);
+  color: var(--clr-text-muted);
+  border: 1px solid var(--clr-border);
+}
+
+.dash-staff-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dash-staff-clinic-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-staff-clinic-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: var(--clr-primary-subtle);
+  color: var(--clr-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-staff-clinic-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.dash-staff-clinic-sub {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  margin-top: 2px;
+}
+
+.dash-staff-hint {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.dash-staff-cta {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+  transition: opacity 0.12s;
+}
+
+.dash-staff-cta:hover { opacity: 0.75; }
 
 /* ─── ErrorBoundary fallback ─────────────────────────────────────────────── */
 .error-boundary-fallback {

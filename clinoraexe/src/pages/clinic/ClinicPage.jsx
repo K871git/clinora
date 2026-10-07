@@ -5,6 +5,7 @@ import { listOpdRegister } from '../../services/visitService'
 import { listAppointments, createAppointment, updateAppointment, deleteAppointment } from '../../services/appointmentService'
 import { searchPatients, createPatient } from '../../services/patientService'
 import { sanitizeMobile, validateMobile, sanitizeAge, validateAge } from '../../lib/inputValidators'
+import { confirmDelete } from '../../lib/swal'
 import EmptyState from '../../components/ui/EmptyState'
 import '../../styles/opd.css'
 import '../../styles/appointments.css'
@@ -325,7 +326,8 @@ export default function ClinicPage() {
     } finally { setSaving(false) }
   }
   async function handleDelete(id) {
-    if (!window.confirm('Cancel this appointment?')) return
+    const ok = await confirmDelete({ title: 'Cancel this appointment?', text: 'This cannot be undone.' })
+    if (!ok) return
     try {
       await deleteAppointment(id)
       setAppointments(prev => prev.filter(a => a.id !== id))

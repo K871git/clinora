@@ -75,6 +75,11 @@ export default function SettingsPage() {
   const [tmplAmount,    setTmplAmount]    = useState('')
   const [savingTmpl,    setSavingTmpl]    = useState(false)
 
+  /* software language */
+  const [uiLang, setUiLang] = useState(() => {
+    try { return localStorage.getItem('clinora:ui-lang') || 'en' } catch { return 'en' }
+  })
+
   useEffect(() => {
     listFeeTemplates().then(r => setTemplates(r.data)).catch(() => {})
   }, [])
@@ -157,6 +162,14 @@ export default function SettingsPage() {
       await deleteFeeTemplate(id)
       setTemplates(prev => prev.filter(t => t.id !== id))
     } catch { /* silent */ }
+  }
+
+  function handleLangChange(code) {
+    setUiLang(code)
+    try {
+      localStorage.setItem('clinora:ui-lang', code)
+      localStorage.setItem('clinora:rx-lang', code)
+    } catch {}
   }
 
   async function handleSaveAll() {
@@ -379,6 +392,11 @@ export default function SettingsPage() {
           </form>
         </div>
       </div>
+
+      {/* ── Language & Regional — TODO: enable after i18n implementation ── */}
+      {/* <div className="card stg-card" style={{ marginTop: 'var(--space-md)' }}>
+        ...
+      </div> */}
 
       {/* ── Database Backup ────────────────────────────────────────────── */}
       <div className="stg-card" style={{ marginTop: 'var(--space-md)' }}>

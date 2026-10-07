@@ -1138,3 +1138,25 @@ html[data-theme="dark"] .pt-new-badge { color: #34d399; }
   .pt-td-patient, .pt-td-muted { color: #000 !important; }
   .pt-tr:hover td { background: none !important; }
 }
+
+/* ─── Revisit due badge ──────────────────────────────────────────────────── */
+.pt-revisit-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+
+html[data-theme="dark"] .pt-revisit-badge {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+}
