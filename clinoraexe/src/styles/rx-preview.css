@@ -156,35 +156,43 @@
 .rxp-med-tr:last-child { border-bottom: none; }
 
 .rxp-td {
-  font-size: 12.5px;
-  padding: 10px 8px;
+  font-size: 13.5px;
+  padding: 13px 8px;
   vertical-align: top;
   color: #1a1a6e;
 }
 
 .rxp-td--name   { width: 36%; padding-left: 0; }
-.rxp-td--timing { width: 30%; font-size: 12px; color: #1a1a6e; }
-.rxp-td--meal   { width: 20%; font-size: 12px; text-align: center; }
-.rxp-td--days   { width: 14%; font-size: 13px; font-weight: 700; text-align: center; }
+.rxp-td--timing { width: 30%; font-size: 13px; color: #1a1a6e; }
+.rxp-td--meal   { width: 20%; font-size: 13px; text-align: center; }
+.rxp-td--days   { width: 14%; font-size: 14px; font-weight: 700; text-align: center; }
 
 .rxp-med-name {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14.5px;
   color: #1a1a6e;
 }
 
-.rxp-med-calc {
-  font-size: 10px;
+.rxp-med-qty {
+  font-size: 10.5px;
   color: #7777aa;
-  font-style: italic;
+  font-weight: 600;
+  margin-top: 3px;
+  letter-spacing: 0.01em;
+}
+
+.rxp-days-label {
+  font-size: 9.5px;
+  font-weight: 400;
+  color: #9999bb;
   margin-top: 2px;
 }
 
 .rxp-med-note {
-  font-size: 11px;
+  font-size: 11.5px;
   color: #444499;
   font-style: italic;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .rxp-empty-meds {

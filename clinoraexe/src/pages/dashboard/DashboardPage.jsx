@@ -274,7 +274,7 @@ export default function DashboardPage() {
                     const extra = (rx.items?.length ?? 0) - 3
                     return (
                       <li key={rx.id}>
-                        <button className="dash-list-item" onClick={() => navigate(`/prescriptions/${rx.id}`)}>
+                        <button className="dash-list-item" onClick={() => navigate('/prescriptions')}>
                           <div className="dash-avatar rx-avatar"><IconRx /></div>
                           <div className="dash-item-body">
                             <div className="dash-item-name">

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPatient, getPatientVisits, getPatientPrescriptions } from '../../services/patientService'
+import { createVisit, saveFee, completeVisit } from '../../services/visitService'
+import { validateFee } from '../../lib/inputValidators'
 import { getPatientTimeline } from '../../services/timelineService'
 import { listPatientCertificates } from '../../services/certificateService'
 import '../../styles/certificate-print.css'
@@ -77,6 +79,56 @@ export default function PatientDetailPage() {
   const [timelineStatus, setTimelineStatus]   = useState('idle')
   const [certificates, setCertificates]       = useState([])
   const [certsStatus,  setCertsStatus]        = useState('idle')
+
+  /* ── New visit modal state ──────────────────────────────────────────── */
+  const [showNewVisit,    setShowNewVisit]    = useState(false)
+  const [nvVisitedAt,     setNvVisitedAt]     = useState('')
+  const [nvNotes,         setNvNotes]         = useState('')
+  const [nvDiagnosis,     setNvDiagnosis]     = useState('')
+  const [nvFee,           setNvFee]           = useState('')
+  const [nvSubmitting,    setNvSubmitting]    = useState(false)
+  const [nvActiveAction,  setNvActiveAction]  = useState(null)
+
+  function nowLocal() {
+    const d = new Date(); d.setSeconds(0, 0)
+    return d.toISOString().slice(0, 16)
+  }
+
+  function openNewVisit() {
+    setNvVisitedAt(nowLocal())
+    setNvNotes(''); setNvDiagnosis(''); setNvFee('')
+    setNvSubmitting(false); setNvActiveAction(null)
+    setShowNewVisit(true)
+  }
+
+  async function handleNewVisit(action) {
+    if (nvFee) {
+      const feeErr = validateFee(nvFee)
+      if (feeErr) { alert(feeErr); return }
+    }
+    setNvActiveAction(action); setNvSubmitting(true)
+    try {
+      const visitPayload = {
+        visited_at:         new Date(nvVisitedAt || nowLocal()).toISOString(),
+        consultation_notes: nvNotes.trim() || null,
+        diagnosis:          nvDiagnosis.trim() || null,
+      }
+      const { data: visit } = await createVisit(id, visitPayload)
+      const visitId = visit.id
+      const feeVal  = nvFee ? Number(nvFee) : null
+      if (feeVal) await saveFee(visitId, feeVal)
+      if (action === 'complete' || action === 'rx') await completeVisit(visitId, feeVal)
+      setShowNewVisit(false)
+      if (action === 'rx') {
+        navigate(`/visits/${visitId}/prescriptions/new`)
+      } else {
+        navigate(`/visits/${visitId}`)
+      }
+    } catch (e) {
+      alert(typeof e === 'string' ? e : 'Could not create visit')
+      setNvSubmitting(false); setNvActiveAction(null)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -214,7 +266,7 @@ export default function PatientDetailPage() {
           <button className="btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
           <button
             className="btn-primary pd-visit-btn"
-            onClick={() => navigate(`/patients/${id}/visits/new`)}
+            onClick={openNewVisit}
           >
             + Start Visit
           </button>
@@ -423,6 +475,45 @@ export default function PatientDetailPage() {
           onClose={() => setShowEdit(false)}
           onSaved={(updated) => { setPatient(updated); setShowEdit(false) }}
         />
+      )}
+
+      {/* ── New Visit modal ───────────────────────────────────────────── */}
+      {showNewVisit && (
+        <div className="emr-modal-backdrop" onClick={() => !nvSubmitting && setShowNewVisit(false)}>
+          <div className="emr-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+            <h4 className="emr-modal-title">Start New Visit — {patient.name}</h4>
+
+            <div className="emr-form-row">
+              <label>Date &amp; Time</label>
+              <input type="datetime-local" value={nvVisitedAt} onChange={e => setNvVisitedAt(e.target.value)} disabled={nvSubmitting} />
+            </div>
+            <div className="emr-form-row">
+              <label>Complaint / Notes</label>
+              <textarea value={nvNotes} onChange={e => setNvNotes(e.target.value)} placeholder="Chief complaint or visit notes…" disabled={nvSubmitting} rows={3} />
+            </div>
+            <div className="emr-form-row">
+              <label>Diagnosis</label>
+              <input value={nvDiagnosis} onChange={e => setNvDiagnosis(e.target.value)} placeholder="Preliminary diagnosis (optional)" disabled={nvSubmitting} />
+            </div>
+            <div className="emr-form-row">
+              <label>Consultation Fee (₹)</label>
+              <input type="number" value={nvFee} onChange={e => setNvFee(e.target.value)} placeholder="0" min={0} disabled={nvSubmitting} />
+            </div>
+
+            <div className="emr-modal-footer" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <button className="btn-secondary" onClick={() => setShowNewVisit(false)} disabled={nvSubmitting}>Cancel</button>
+              <button className="btn-secondary" onClick={() => handleNewVisit('save')} disabled={nvSubmitting}>
+                {nvSubmitting && nvActiveAction === 'save' ? 'Saving…' : 'Save Visit'}
+              </button>
+              <button className="btn-secondary" onClick={() => handleNewVisit('complete')} disabled={nvSubmitting}>
+                {nvSubmitting && nvActiveAction === 'complete' ? 'Saving…' : 'Complete Visit'}
+              </button>
+              <button className="btn-primary" onClick={() => handleNewVisit('rx')} disabled={nvSubmitting}>
+                {nvSubmitting && nvActiveAction === 'rx' ? 'Saving…' : '+ Prescription'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

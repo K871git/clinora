@@ -6,7 +6,8 @@ import { createVisit, saveFee } from '../../services/visitService'
 import { createPrescription, sendPrescription } from '../../services/prescriptionService'
 import { getPatientAllergies } from '../../services/medicalHistoryService'
 import { getVisit } from '../../services/visitService'
-import { searchMedicineTemplates } from '../../services/medicineTplService'
+import { searchMedicineTemplates, saveMedicineTemplate } from '../../services/medicineTplService'
+import { searchMedicines, createMedicine } from '../../services/medicineService'
 import { getSettings } from '../../services/settingsService'
 import { invoke } from '@tauri-apps/api/core'
 import { AuthContext } from '../../contexts/AuthContext'
@@ -335,8 +336,11 @@ export default function QuickRxPage() {
           })
           patientId = np.id
         }
+        const now = new Date()
+        const localDt = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+          .toISOString().slice(0, 19).replace('T', ' ')
         const { data: visit } = await createVisit(patientId, {
-          visited_at: new Date().toISOString(),
+          visited_at:         localDt,
           consultation_notes: doctorNotes.trim() || null,
         })
         visitId = visit.id
@@ -362,6 +366,41 @@ export default function QuickRxPage() {
       setSavedRxId(rx.id)
       // Persist language with this prescription so print page uses same lang
       try { localStorage.setItem('clinora:rx-lang-' + rx.id, lang) } catch {}
+      // Fire-and-forget: persist newly introduced medicines to the library
+      ;(async () => {
+        for (const m of filled) {
+          const name = m.name.trim()
+          try {
+            const { data: tpls } = await searchMedicineTemplates(name)
+            const hasTpl = (tpls || []).some(t => t.name.toLowerCase() === name.toLowerCase())
+            if (!hasTpl) {
+              const meal = m.beforeMeal && m.afterMeal ? 'both'
+                : m.beforeMeal ? 'before'
+                : m.afterMeal  ? 'after'
+                : ''
+              await saveMedicineTemplate({
+                name,
+                morning:   m.morning,
+                afternoon: m.afternoon,
+                evening:   m.evening,
+                meal,
+                days:     m.days ? Number(m.days) : null,
+                quantity: m.quantity?.trim() || null,
+                notes:    m.notes.trim() || null,
+                language: lang,
+              })
+            }
+          } catch {}
+          try {
+            const { data: res } = await searchMedicines(name, 5)
+            const list = res?.data ?? []
+            const hasMed = list.some(med => med.name.toLowerCase() === name.toLowerCase())
+            if (!hasMed) {
+              await createMedicine({ name })
+            }
+          } catch {}
+        }
+      })()
       setSubmitting(false)
     } catch (err) {
       const msg = typeof err === 'string' ? err : (err?.message ?? 'Could not save — please try again.')

@@ -169,21 +169,20 @@ function RxMedList({ filled, L }) {
           const dose = Number(m.dosePerIntake) || 1
           const qty  = m.quantity || (timingParts.length > 0 && m.days
             ? String(timingParts.length * dose * Number(m.days)) : '')
-          const calcNote = timingParts.length > 0 && m.days && qty
-            ? `${timingParts.join(' + ')} × ${m.days} ${L.days} = ${qty} tab`
-            : ''
           return (
             <tr key={m.id} className="rxp-med-tr">
               <td className="rxp-td rxp-td--name">
                 <span className="rxp-med-name">{m.name}</span>
-                {calcNote && <div className="rxp-med-calc">{calcNote}</div>}
+                {qty && <div className="rxp-med-qty">Qty: {qty} tab</div>}
                 {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
               </td>
               <td className="rxp-td rxp-td--timing">
                 {timingParts.length > 0 ? timingParts.join(' + ') : '—'}
               </td>
               <td className="rxp-td rxp-td--meal">{meal}</td>
-              <td className="rxp-td rxp-td--days">{m.days || '—'}</td>
+              <td className="rxp-td rxp-td--days">
+                {m.days ? <>{m.days}<div className="rxp-days-label">{L.days}</div></> : '—'}
+              </td>
             </tr>
           )
         })}

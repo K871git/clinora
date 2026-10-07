@@ -5,7 +5,9 @@
       "Bash(Remove-Item \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\pages\\\\prescriptions\\\\MedicineEditor.jsx\" -Force)",
       "Bash(Remove-Item \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\pages\\\\prescriptions\\\\medicineUtils.js\" -Force)",
       "Bash(node -e ' *)",
-      "Bash(dir \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\styles\" /b)"
+      "Bash(dir \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\styles\" /b)",
+      "Bash(dir \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\layouts\" /b)",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\pages\\\\clinic\")"
     ]
   }
 }
