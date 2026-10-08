@@ -52,27 +52,36 @@
   background: rgba(45,212,191,.12);
 }
 
-.rx-medicine-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--clr-text);
-  margin-bottom: 1px;
-  letter-spacing: -0.1px;
+.rx-med-row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  line-height: 1.4;
 }
 
-.rx-medicine-meta {
+.rx-medicine-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--clr-text);
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+}
+
+.rx-medicine-dosage {
   font-size: 12px;
+  font-weight: 400;
   color: var(--clr-text-muted);
-  line-height: 1.35;
 }
 
 .rx-medicine-instructions {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--clr-text-muted);
   font-style: italic;
   margin-top: 2px;
   padding-left: 8px;
   border-left: 2px solid var(--clr-border);
+  line-height: 1.4;
 }
 
 .history-empty {

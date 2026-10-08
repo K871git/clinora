@@ -703,7 +703,7 @@ html[data-theme="dark"] .pharma-tl-item:nth-child(3) .pharma-tl-label { color: #
   opacity: 0.7;
 }
 
-.pharma-med-row--checked .rx-medicine-meta {
+.pharma-med-row--checked .rx-medicine-dosage {
   opacity: 0.5;
 }
 

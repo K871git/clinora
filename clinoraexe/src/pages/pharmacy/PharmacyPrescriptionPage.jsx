@@ -521,12 +521,14 @@ export default function PharmacyPrescriptionPage() {
 
                   {/* Medicine info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="rx-medicine-name">{item.medicine_name}</div>
-                    {(item.dosage || item.frequency || item.duration) && (
-                      <div className="rx-medicine-meta">
-                        {[item.dosage, item.frequency, item.duration].filter(Boolean).join(' · ')}
-                      </div>
-                    )}
+                    <div className="rx-med-row-main">
+                      <span className="rx-medicine-name">{item.medicine_name}</span>
+                      {(item.dosage || item.frequency || item.duration) && (
+                        <span className="rx-medicine-dosage">
+                          {[item.dosage, item.frequency, item.duration].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
+                    </div>
                     {item.instructions && (
                       <div className="rx-medicine-instructions">{item.instructions}</div>
                     )}
@@ -755,7 +757,7 @@ export default function PharmacyPrescriptionPage() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
             {/* Consultation / Visit notes — read-only */}
             {prescription.consultation_notes && (
               <div>
