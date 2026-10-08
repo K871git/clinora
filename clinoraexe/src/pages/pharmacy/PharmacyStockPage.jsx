@@ -1,6 +1,7 @@
 import '../../styles/pharmacy-stock.css'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { invoke } from '@tauri-apps/api/core'
 import { toast } from 'sonner'
 import {
   getMedicines, patchMedicine, createMedicine, deleteMedicine, importMedicines, updateMedicine,
@@ -436,6 +437,7 @@ const STOCK_FILTERS = [
   { key: '',              label: 'All' },
   { key: 'out_of_stock',  label: 'Out of Stock',  color: '#ef4444' },
   { key: 'low_stock',     label: 'Low Stock',     color: '#f59e0b' },
+  { key: 'reorder',       label: 'Reorder List',  color: '#8b5cf6' },
   { key: 'expiring_soon', label: 'Expiring Soon', color: '#d97706' },
   { key: 'expired',       label: 'Expired',       color: '#dc2626' },
 ]
@@ -510,6 +512,8 @@ function MedicineTab({ preFilter: initialFilter }) {
         if (!m.expiry_date) return false
         return new Date(m.expiry_date) < today
       })
+    } else if (stockFilter === 'reorder') {
+      list = list.filter(m => (m.quantity ?? 0) <= (m.reorder_level ?? 10))
     }
     if (activeCat !== 'All') list = list.filter(m => m.category === activeCat)
     if (search.trim()) {
@@ -535,6 +539,7 @@ function MedicineTab({ preFilter: initialFilter }) {
         return days >= 0 && days <= 30
       }).length,
       expired:      medicines.filter(m => m.expiry_date && new Date(m.expiry_date) < today).length,
+      reorder:      medicines.filter(m => (m.quantity ?? 0) <= (m.reorder_level ?? 10)).length,
       value:        medicines.reduce((s, m) => {
         if (m.price != null && m.quantity > 0) return s + (parseFloat(m.price) * m.quantity)
         return s
@@ -628,8 +633,27 @@ function MedicineTab({ preFilter: initialFilter }) {
     '':              stats.total,
     'out_of_stock':  stats.outStock,
     'low_stock':     stats.lowStock,
+    'reorder':       stats.reorder,
     'expiring_soon': stats.expiringSoon,
     'expired':       stats.expired,
+  }
+
+  function handleExportReorder() {
+    const BOM = '﻿'
+    const header = 'Name,Generic Name,Category,Unit,Qty,Reorder Level,Price'
+    const rows = filtered.map(m => [
+      `"${(m.name ?? '').replace(/"/g, '""')}"`,
+      `"${(m.generic_name ?? '').replace(/"/g, '""')}"`,
+      `"${(m.category ?? '').replace(/"/g, '""')}"`,
+      `"${(m.unit ?? '').replace(/"/g, '""')}"`,
+      m.quantity ?? 0,
+      m.reorder_level ?? 10,
+      m.price != null ? parseFloat(m.price).toFixed(2) : '',
+    ].join(','))
+    const csv = BOM + [header, ...rows].join('\r\n')
+    invoke('write_text_to_downloads', { content: csv, filename: 'reorder_list.csv' })
+      .then(saved => toast.success(`Saved: ${saved}`))
+      .catch(() => toast.error('Export failed'))
   }
 
   return (
@@ -683,6 +707,14 @@ function MedicineTab({ preFilter: initialFilter }) {
           {status === 'loading' ? '…' : `${filtered.length} / ${total}`}
         </span>
         <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
+          {stockFilter === 'reorder' && filtered.length > 0 && (
+            <button className="btn-secondary" onClick={handleExportReorder}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 5 }}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export CSV
+            </button>
+          )}
           <button className="btn-secondary" onClick={() => setShowImport(true)}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>

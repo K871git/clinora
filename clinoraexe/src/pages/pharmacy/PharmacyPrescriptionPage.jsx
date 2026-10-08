@@ -486,7 +486,7 @@ export default function PharmacyPrescriptionPage() {
       </div>
 
       {/* ── Medicines + Invoice card ──────────────────────────────────── */}
-      <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+      <div className="card rx-content-card">
         <div className="rx-content-header">
           <span className="rx-content-label">Medicines</span>
           <span className="rx-content-count">{totalMeds}</span>
@@ -620,7 +620,7 @@ export default function PharmacyPrescriptionPage() {
 
       {/* ── Payment section — only for completed prescriptions ────────── */}
       {isCompleted && (
-        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="card rx-content-card">
           <div className="rx-content-header">
             <span className="rx-content-label">Payment</span>
             <span className={`px-pay-badge px-pay-badge--${paymentStatus}`}>
@@ -656,10 +656,13 @@ export default function PharmacyPrescriptionPage() {
               </div>
             )}
 
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', display: 'block', marginBottom: 4, marginTop: 8 }}>
+              Payment note <span style={{ fontWeight: 400 }}>(optional — for internal use)</span>
+            </label>
             <textarea
               className="field px-pay-notes"
               rows={1}
-              placeholder="Payment notes (optional)…"
+              placeholder="e.g. Cash received, insurance claim, discount applied…"
               value={paymentNotes}
               onChange={e => setPaymentNotes(e.target.value)}
             />
@@ -678,7 +681,7 @@ export default function PharmacyPrescriptionPage() {
 
       {/* ── Patient Medication History ────────────────────────────────── */}
       {medHistory.length > 0 && (
-        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="card rx-content-card">
           <div
             className="rx-content-header"
             style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -735,7 +738,7 @@ export default function PharmacyPrescriptionPage() {
 
       {/* ── Notes panel ───────────────────────────────────────────────── */}
       {(prescription.consultation_notes || prescription.doctor_notes || !isCompleted || true) && (
-        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="card rx-content-card">
           <div className="rx-content-header" style={{ justifyContent: 'space-between' }}>
             <span className="rx-content-label">Notes</span>
             <button
@@ -756,7 +759,7 @@ export default function PharmacyPrescriptionPage() {
             {/* Consultation / Visit notes — read-only */}
             {prescription.consultation_notes && (
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)', marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', marginBottom: 4 }}>
                   Visit / Consultation Notes
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
@@ -768,7 +771,7 @@ export default function PharmacyPrescriptionPage() {
             {/* Doctor notes — read-only */}
             {prescription.doctor_notes && (
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)', marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', marginBottom: 4 }}>
                   Doctor Notes
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
@@ -780,7 +783,7 @@ export default function PharmacyPrescriptionPage() {
             {/* Pharmacist notes — editable */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)' }}>
                   Pharmacist Notes
                 </div>
                 {savingNotes && (

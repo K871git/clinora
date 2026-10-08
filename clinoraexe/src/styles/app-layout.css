@@ -148,12 +148,63 @@ html[data-theme="dark"] .shell-header {
   transition: box-shadow 0.15s;
 }
 
-.shell-user-name {
+.shell-user-chip-text {
   display: none;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.25;
 }
 
 @media (min-width: 640px) {
-  .shell-user-name { display: inline; }
+  .shell-user-chip-text { display: flex; }
+}
+
+.shell-chip-greeting {
+  font-size: 9.5px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.shell-user-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+}
+
+/* ─── Header clock ───────────────────────────────────────────────────────── */
+.shell-clock {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--clr-surface-hover);
+  border: 1px solid var(--clr-border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .shell-clock { display: flex; }
+}
+.shell-clock-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clr-text);
+  letter-spacing: 0.01em;
+}
+.shell-clock-sep {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  opacity: 0.5;
+}
+.shell-clock-day {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
 }
 
 /* ─── Content area ───────────────────────────────────────────────────────── */
@@ -322,7 +373,7 @@ html[data-theme="dark"] .sidebar-logo-img {
 
 /* ─── Sidebar quick-actions block ───────────────────────────────────────── */
 .sidebar-quick {
-  padding: 12px 14px 14px;
+  padding: 10px 14px 12px;
   border-bottom: 1px solid var(--clr-border);
   flex-shrink: 0;
 }
@@ -481,10 +532,11 @@ html[data-theme="dark"] .sidebar-logo-img {
     left: -10px;
     top: 50%;
     transform: translateY(-50%);
-    height: 52%;
+    height: 44%;
     width: 3px;
     background: var(--clr-primary);
-    border-radius: 0 3px 3px 0;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 2px 0 8px color-mix(in srgb, var(--clr-primary) 40%, transparent);
   }
 
   &:hover {
@@ -525,24 +577,23 @@ html[data-theme="dark"] .sidebar-logo-img {
 .nav-section-label {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--clr-text-muted);
-  opacity: 0.6;
+  opacity: 0.55;
   white-space: nowrap;
 }
 
 .nav-section-label::before {
   content: '';
   display: block;
-  width: 16px;
-  height: 2px;
-  background: var(--clr-primary);
+  width: 12px;
+  height: 1.5px;
+  background: var(--clr-border);
   border-radius: 2px;
-  opacity: 0.5;
   flex-shrink: 0;
 }
 
@@ -620,10 +671,11 @@ html[data-theme="dark"] .sidebar-logo-img {
 }
 
 .sidebar-user-role {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--clr-text-muted);
   margin: 1px 0 0;
-  font-weight: 400;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .sidebar-profile-arrow {
@@ -914,6 +966,97 @@ html[data-theme="dark"] .profile-menu {
     padding: 10px 0 8px;
   }
   .shell-sidebar.collapsed .sidebar-role-label { display: none; }
+}
+
+/* ─── Sidebar greeting block ─────────────────────────────────────────────── */
+.sidebar-greet {
+  padding: 14px 16px 13px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.sidebar-greet--doctor {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, #2563eb 5%, var(--clr-surface)) 0%,
+    var(--clr-surface) 80%
+  );
+}
+
+.sidebar-greet--pharmacy {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, #0d9488 5%, var(--clr-surface)) 0%,
+    var(--clr-surface) 80%
+  );
+}
+
+html[data-theme="dark"] .sidebar-greet--doctor,
+html[data-theme="dark"] .sidebar-greet--pharmacy {
+  background: var(--clr-surface);
+}
+
+.sidebar-greet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.sidebar-greet-role {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.sidebar-greet--doctor .sidebar-greet-role {
+  background: rgba(37,99,235,0.1);
+  color: #2563eb;
+}
+
+html[data-theme="dark"] .sidebar-greet--doctor .sidebar-greet-role {
+  background: rgba(96,165,250,0.15);
+  color: #93c5fd;
+}
+
+.sidebar-greet--pharmacy .sidebar-greet-role {
+  background: rgba(13,148,136,0.12);
+  color: #0d9488;
+}
+
+html[data-theme="dark"] .sidebar-greet--pharmacy .sidebar-greet-role {
+  background: rgba(45,212,191,0.15);
+  color: #2dd4bf;
+}
+
+.sidebar-greet-time {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.sidebar-greet-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-greet-day {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-greet { display: none; }
 }
 
 /* ─── Pharmacy role — teal avatar & nav accents ──────────────────────── */

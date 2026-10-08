@@ -39,6 +39,38 @@ function OfflineBanner() {
 const STORAGE_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/api$/, '') + '/storage'
 function avatarUrl(path) { return path ? `${STORAGE_BASE}/${path}` : null }
 
+/* ── Live greeting / clock ────────────────────────────────────────────── */
+function useGreeting() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+  const h = now.getHours()
+  const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Good night'
+  const timeStr  = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  const dayDate  = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })
+  const shortDay = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+  return { greeting, timeStr, dayDate, shortDay }
+}
+
+function SidebarGreetingBlock({ user, collapsed, greeting, timeStr, dayDate }) {
+  if (collapsed) return null
+  const isPharmacy = user?.role === 'pharmacy'
+  const firstName  = user?.name?.split(' ')[0] ?? ''
+  const title      = isPharmacy ? 'Mr.' : 'Dr.'
+  const displayGreet = `${greeting}, ${title} ${firstName}`
+  return (
+    <div className={`sidebar-greet sidebar-greet--${isPharmacy ? 'pharmacy' : 'doctor'}`}>
+      <div className="sidebar-greet-top">
+        <span className="sidebar-greet-time">{timeStr}</span>
+      </div>
+      <div className="sidebar-greet-msg">{displayGreet}</div>
+      <div className="sidebar-greet-day">{dayDate}</div>
+    </div>
+  )
+}
+
 const DOCTOR_NAV = [
   { to: '/',              label: 'Dashboard',     icon: IconDashboard },
   { section: 'Clinical' },
@@ -55,8 +87,9 @@ const DOCTOR_NAV = [
 
 const PHARMACY_NAV = [
   { to: '/pharmacy',         label: 'Queue',   icon: IconQueue,   end: true },
-  { to: '/pharmacy/history', label: 'History', icon: IconHistory },
   { to: '/pharmacy/stock',   label: 'Stock',   icon: IconStock },
+  { to: '/pharmacy/history', label: 'History', icon: IconHistory },
+  { section: 'More' },
   { to: '/pharmacy/revenue', label: 'Revenue', icon: IconRevenue },
   { to: '/pharmacy/notes',   label: 'Notes',   icon: IconNotes },
   { to: '/pharmacy/games',   label: 'Games',   icon: IconGames },
@@ -227,6 +260,7 @@ export default function AppLayout() {
   }
 
   const imgSrc = avatarUrl(user?.avatar)
+  const { greeting, timeStr, dayDate, shortDay } = useGreeting()
 
   return (
     <div>
@@ -283,27 +317,18 @@ export default function AppLayout() {
           </div>
         </div>
 
-        {/* Role label strip */}
-        {user?.role === 'pharmacy' ? (
-          <div className="sidebar-role-strip sidebar-role-strip--pharmacy">
-            <IconRx />
-            <span className="sidebar-role-label">Rx Dispensary</span>
-          </div>
-        ) : (
-          <div className={`sidebar-role-strip sidebar-role-strip--doctor${collapsed ? ' sidebar-role-strip--collapsed' : ''}`}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-            </svg>
-            <span className="sidebar-role-label">Doctor Portal</span>
-          </div>
-        )}
+        {/* Greeting block — replaces role strip */}
+        <SidebarGreetingBlock
+          user={user}
+          collapsed={collapsed}
+          greeting={greeting}
+          timeStr={timeStr}
+          dayDate={dayDate}
+        />
 
         {/* Quick actions — doctor only, hidden when collapsed */}
         {!collapsed && user?.role !== 'pharmacy' && (
           <div className="sidebar-quick">
-            <div className="sidebar-quick-date">
-              {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}
-            </div>
             <div className="sidebar-quick-grid">
               <button className="sidebar-q-btn sidebar-q-btn--patient"
                 onClick={() => { navigate('/patients?new=1'); setMobileOpen(false) }}>
@@ -506,6 +531,13 @@ export default function AppLayout() {
 
           <h1 className="shell-page-title">{pageTitle}</h1>
 
+          {/* Live clock */}
+          <div className="shell-clock">
+            <span className="shell-clock-time">{timeStr}</span>
+            <span className="shell-clock-sep">·</span>
+            <span className="shell-clock-day">{shortDay}</span>
+          </div>
+
           {/* Search trigger */}
           <button
             className="gs-trigger-btn"
@@ -531,7 +563,11 @@ export default function AppLayout() {
           {/* User chip */}
           <div className="shell-user-chip">
             <UserAvatar imgSrc={imgSrc} name={user?.name} />
-            <span className="shell-user-name">{user?.name}</span>
+            <span className="shell-user-name">
+              {user?.role !== 'pharmacy'
+                ? `Dr. ${user?.name?.split(' ')[0] ?? user?.name}`
+                : `Mr. ${user?.name?.split(' ')[0] ?? user?.name}`}
+            </span>
           </div>
         </header>
 
