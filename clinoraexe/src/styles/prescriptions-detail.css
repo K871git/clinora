@@ -2,8 +2,6 @@
 .rx-section-title {
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--clr-primary);
   margin-bottom: var(--space-md);
   padding-bottom: 8px;
@@ -18,22 +16,87 @@
   flex-direction: column;
 }
 
-.rx-medicine-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 8px;
-  border-bottom: 1px solid var(--clr-border-subtle);
-  border-radius: var(--radius-sm);
-  transition: background 0.14s;
+/* ── Dispensing table layout ────────────────────────────────────────── */
+/* 7 cols: check | name | timing | meal | qty | days | price(optional) */
+.rx-tbl-head,
+.rx-tbl-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 72px 86px 36px 56px;
+  column-gap: 14px;
+  align-items: center;
 }
-.rx-medicine-item:hover {
-  background: color-mix(in srgb, var(--clr-primary) 4%, transparent);
+.rx-tbl-head--invoice,
+.rx-tbl-row--invoice {
+  grid-template-columns: 26px 1fr 72px 86px 36px 56px 106px;
 }
 
-.rx-medicine-item:last-child {
-  border-bottom: none;
+.rx-tbl-head {
+  padding: 6px 8px 7px;
+  border-bottom: 2px solid var(--clr-border);
+  margin-bottom: 4px;
+  background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface-hover));
+  border-radius: 8px 8px 0 0;
+  margin-left: -4px;
+  margin-right: -4px;
 }
+
+.rx-tbl-lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+  opacity: 0.85;
+}
+.rx-tbl-c { text-align: center; }
+.rx-tbl-r { text-align: right; }
+
+.rx-tbl-row {
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--clr-border-subtle);
+  transition: background 0.15s;
+}
+.rx-tbl-row:hover {
+  background: color-mix(in srgb, var(--clr-primary) 4%, transparent);
+}
+.rx-tbl-row:last-child { border-bottom: none; }
+
+.rx-tbl-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rx-tbl-cell {
+  font-size: 13px;
+  color: var(--clr-text);
+  font-weight: 500;
+  line-height: 1.35;
+  align-self: flex-start;
+  padding-top: 2px;
+}
+
+.rx-tbl-cell--timing {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--clr-primary);
+  letter-spacing: 0.02em;
+}
+
+.rx-tbl-cell--meal {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+}
+
+.rx-tbl-cell--days {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+}
+
+/* keep old class harmless */
+.rx-medicine-item { display: contents; }
 
 .rx-medicine-num {
   display: flex;
@@ -54,27 +117,41 @@
   background: rgba(45,212,191,.12);
 }
 
-.rx-medicine-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--clr-text);
-  margin-bottom: 3px;
-  letter-spacing: -0.2px;
+.rx-med-block {
+  flex: 1;
+  min-width: 0;
 }
 
-.rx-medicine-meta {
-  font-size: 13px;
+.rx-med-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.rx-medicine-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+}
+
+.rx-medicine-dosage {
+  font-size: 12px;
+  font-weight: 400;
   color: var(--clr-text-muted);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .rx-medicine-instructions {
-  font-size: 12.5px;
+  font-size: 11px;
   color: var(--clr-text-muted);
   font-style: italic;
   margin-top: 3px;
-  padding-left: 10px;
-  border-left: 2px solid var(--clr-border);
+  line-height: 1.4;
+  opacity: 0.75;
 }
 
 .history-empty {
@@ -87,7 +164,7 @@
 .rx-detail-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 10px;
 }
 
 .rx-detail-page .detail-back {
@@ -97,30 +174,30 @@
 /* Header card */
 .rx-hcard {
   overflow: hidden;
-  border-top: 3px solid var(--clr-primary);
+  border-top: 2px solid color-mix(in srgb, var(--clr-primary) 22%, transparent);
 }
 
 .rx-hcard-patient {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 22px 24px;
+  gap: 14px;
+  padding: 14px 18px;
   flex-wrap: wrap;
 }
 
 .rx-hcard-avatar {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--clr-primary) 0%, #0891b2 100%);
   color: #fff;
-  font-size: 21px;
+  font-size: 17px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(13,148,136,0.28);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clr-primary) 18%, transparent);
 }
 
 .rx-hcard-info {
@@ -129,11 +206,11 @@
 }
 
 .rx-hcard-name {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   color: var(--clr-text);
-  letter-spacing: -0.35px;
-  margin-bottom: 5px;
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
 }
 
 .rx-hcard-meta {
@@ -176,9 +253,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 9px 18px;
   border-top: 1px solid var(--clr-border);
-  background: var(--clr-surface-hover);
   flex-wrap: wrap;
 }
 
@@ -296,49 +372,58 @@ html[data-theme="dark"] .rx-hcard-alert {
 
 /* Content cards (medicines, notes) */
 .rx-content-card {
-  padding: 20px 24px;
+  padding: 14px 18px;
 }
 
 .rx-content-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--clr-border);
 }
 
-.rx-content-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+.rx-symbol {
+  font-size: 16px;
+  font-weight: 800;
+  font-style: italic;
   color: var(--clr-primary);
+  letter-spacing: -0.5px;
+  opacity: 0.85;
+  margin-right: 1px;
+}
+
+.rx-content-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.1px;
 }
 
 .rx-content-count {
   display: inline-flex;
   align-items: center;
   height: 18px;
-  padding: 0 6px;
+  padding: 0 7px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 100px;
-  background: var(--clr-surface-hover);
-  color: var(--clr-text-muted);
-  border: 1px solid var(--clr-border);
+  background: color-mix(in srgb, var(--clr-primary) 12%, transparent);
+  color: var(--clr-primary);
+  border: 1px solid color-mix(in srgb, var(--clr-primary) 25%, transparent);
 }
 
 /* Status timeline */
 .rx-timeline-card {
-  padding: 0 24px;
+  padding: 0 18px;
 }
 
 .rx-timeline-step {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 14px 0;
+  gap: 12px;
+  padding: 10px 0;
   position: relative;
 }
 
@@ -403,9 +488,6 @@ html[data-theme="dark"] .rx-hcard-alert {
   color: var(--clr-text-muted);
 }
 
-html[data-theme="dark"] .rx-hcard-actions {
-  background: rgba(255, 255, 255, 0.025);
-}
 
 /* Inline send confirmation strip */
 .rx-send-confirm {
@@ -587,19 +669,21 @@ html[data-theme="dark"] .rx-hcard-actions {
 }
 
 .rx-price-currency {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--clr-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--clr-primary);
   letter-spacing: 0.02em;
   flex-shrink: 0;
+  opacity: 0.8;
 }
 
 .rx-price-input {
   width: 90px;
   padding: 5px 8px;
-  border: 1px solid var(--clr-border);
+  border: 1.5px solid var(--clr-border);
   border-radius: 6px;
   font-size: 13px;
+  font-weight: 600;
   text-align: right;
   background: var(--clr-bg);
   color: var(--clr-text);
@@ -637,17 +721,16 @@ html[data-theme="dark"] .rx-hcard-actions {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 14px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid var(--clr-border);
 }
 
 .rx-invoice-total-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--clr-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
 }
 
 .rx-invoice-total-amount {

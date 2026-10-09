@@ -40,6 +40,16 @@ function groupHistory(list) {
   return { today, yesterday, older }
 }
 
+function groupOlderByDate(list) {
+  const map = new Map()
+  for (const rx of list) {
+    const key = rx.completed_at ? fmtDate(rx.completed_at) : 'Earlier'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(rx)
+  }
+  return [...map.entries()].map(([label, items]) => ({ label, items }))
+}
+
 /* ── Icons ──────────────────────────────────────────────────────────────── */
 
 function IconCheck() {
@@ -552,14 +562,16 @@ export default function PharmacyHistoryPage() {
                 />
               )}
               {older.length > 0 && (
-                <HistoryGroup
-                  label="Older"
-                  items={older}
-                  navigate={navigate}
-                  showDate
-                  onReturn={openReturn}
-                  returnedIds={returnedIds}
-                />
+                groupOlderByDate(older).map(({ label, items }) => (
+                  <HistoryGroup
+                    key={label}
+                    label={label}
+                    items={items}
+                    navigate={navigate}
+                    onReturn={openReturn}
+                    returnedIds={returnedIds}
+                  />
+                ))
               )}
             </>
           )}

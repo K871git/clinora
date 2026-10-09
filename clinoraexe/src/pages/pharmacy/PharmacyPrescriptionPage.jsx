@@ -35,6 +35,20 @@ function doctorLabel(name) {
   return /^dr\.?\s/i.test(name) ? name : `Dr. ${name}`
 }
 
+/* Parse "0-1-1 Before meal 6" into structured fields */
+function parseDosageStructured(str) {
+  if (!str) return { morning: 0, afternoon: 0, evening: 0, meal: null, qty: null }
+  const m = str.match(/^(\d+)-(\d+)-(\d+)/)
+  if (!m) return { morning: 0, afternoon: 0, evening: 0, meal: null, qty: str }
+  const [mo, af, ev] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const rest  = str.slice(m[0].length).trim()
+  const mealM = rest.match(/(Before meal|After meal|Before food|After food)/i)
+  const meal  = mealM ? mealM[1] : null
+  const left  = mealM ? rest.replace(mealM[0], '').trim() : rest
+  const qty   = /^\d+$/.test(left) ? left : (left || null)
+  return { morning: mo, afternoon: af, evening: ev, meal, qty }
+}
+
 /* ── Icons ───────────────────────────────────────────────────────────── */
 
 function IconCheck({ size = 14 }) {
@@ -486,75 +500,99 @@ export default function PharmacyPrescriptionPage() {
       </div>
 
       {/* ── Medicines + Invoice card ──────────────────────────────────── */}
-      <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+      <div className="card rx-content-card">
         <div className="rx-content-header">
+          <span className="rx-symbol">Rx</span>
           <span className="rx-content-label">Medicines</span>
           <span className="rx-content-count">{totalMeds}</span>
-          {isDispensing && totalMeds > 0 && (
-            <span className="pharma-check-hint">{checkedCount} of {totalMeds} checked</span>
-          )}
-          {hasInvoice && totalMeds > 0 && (
-            <span className="pharma-check-hint" style={{ marginLeft: 'auto' }}>Invoice</span>
-          )}
         </div>
 
         {prescription.items?.length > 0 ? (
           <>
+            {/* Column headers */}
+            <div className={`rx-tbl-head${hasInvoice ? ' rx-tbl-head--invoice' : ''}`}>
+              <span />
+              <span className="rx-tbl-lbl">Medicine</span>
+              <span className="rx-tbl-lbl">Timing</span>
+              <span className="rx-tbl-lbl">Meal</span>
+              <span className="rx-tbl-lbl rx-tbl-c">Qty</span>
+              <span className="rx-tbl-lbl">Days</span>
+              {hasInvoice && <span className="rx-tbl-lbl rx-tbl-r">Price</span>}
+            </div>
+
             <ul className="rx-medicine-list">
-              {prescription.items.map((item, idx) => (
-                <li
-                  key={item.id ?? idx}
-                  className={`rx-medicine-item pharma-med-row${checked.has(idx) ? ' pharma-med-row--checked' : ''}`}
-                >
-                  {/* Check button or number */}
-                  {isDispensing ? (
-                    <button
-                      className={`pharma-check-btn${checked.has(idx) ? ' pharma-check-btn--checked' : ''}`}
-                      onClick={() => toggleCheck(idx)}
-                      title={checked.has(idx) ? 'Uncheck' : 'Mark as dispensed'}
-                    >
-                      {checked.has(idx) && <IconCheck size={10} />}
-                    </button>
-                  ) : (
-                    <div className="rx-medicine-num">{idx + 1}</div>
-                  )}
+              {prescription.items.map((item, idx) => {
+                const ds = parseDosageStructured(item.dosage)
+                const timingStr = [
+                  ds.morning   > 0 && (ds.morning   > 1 ? `${ds.morning}M`   : 'M'),
+                  ds.afternoon > 0 && (ds.afternoon > 1 ? `${ds.afternoon}A` : 'A'),
+                  ds.evening   > 0 && (ds.evening   > 1 ? `${ds.evening}E`   : 'E'),
+                ].filter(Boolean).join(' · ') || '—'
+                const meal = ds.meal || item.frequency || '—'
+                const qty  = ds.qty  || '—'
+                const days = item.duration || '—'
 
-                  {/* Medicine info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="rx-medicine-name">{item.medicine_name}</div>
-                    {(item.dosage || item.frequency || item.duration) && (
-                      <div className="rx-medicine-meta">
-                        {[item.dosage, item.frequency, item.duration].filter(Boolean).join(' · ')}
-                      </div>
-                    )}
-                    {item.instructions && (
-                      <div className="rx-medicine-instructions">{item.instructions}</div>
-                    )}
-                  </div>
-
-                  {/* Price — dispensing: editable input; completed: read-only */}
-                  {isDispensing && (
-                    <div className="rx-price-wrap">
-                      <span className="rx-price-currency">₹</span>
-                      <input
-                        className="rx-price-input"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={prices[item.id] ?? ''}
-                        onChange={e => setItemPrice(item.id, e.target.value)}
-                      />
+                return (
+                  <li
+                    key={item.id ?? idx}
+                    className={`rx-tbl-row pharma-med-row${checked.has(idx) ? ' pharma-med-row--checked' : ''}${hasInvoice ? ' rx-tbl-row--invoice' : ''}`}
+                  >
+                    {/* Check or number */}
+                    <div className="rx-tbl-check">
+                      {isDispensing ? (
+                        <button
+                          className={`pharma-check-btn${checked.has(idx) ? ' pharma-check-btn--checked' : ''}`}
+                          onClick={() => toggleCheck(idx)}
+                          title={checked.has(idx) ? 'Uncheck' : 'Mark as dispensed'}
+                        >
+                          {checked.has(idx) && <IconCheck size={10} />}
+                        </button>
+                      ) : (
+                        <div className="rx-medicine-num">{idx + 1}</div>
+                      )}
                     </div>
-                  )}
 
-                  {isCompleted && item.unit_price != null && (
-                    <div className="rx-price-wrap">
-                      <span className="rx-price-display">{fmtPrice(item.unit_price)}</span>
+                    {/* Name + instructions */}
+                    <div>
+                      <div className="rx-medicine-name">{item.medicine_name}</div>
+                      {item.instructions && (
+                        <div className="rx-medicine-instructions">{item.instructions}</div>
+                      )}
                     </div>
-                  )}
-                </li>
-              ))}
+
+                    {/* Timing */}
+                    <div className="rx-tbl-cell rx-tbl-cell--timing">{timingStr}</div>
+
+                    {/* Meal */}
+                    <div className="rx-tbl-cell rx-tbl-cell--meal">{meal}</div>
+
+                    {/* Qty */}
+                    <div className="rx-tbl-cell rx-tbl-c">{qty}</div>
+
+                    {/* Days */}
+                    <div className="rx-tbl-cell rx-tbl-cell--days">{days}</div>
+
+                    {/* Price */}
+                    {hasInvoice && (
+                      isDispensing ? (
+                        <div className="rx-price-wrap">
+                          <span className="rx-price-currency">₹</span>
+                          <input
+                            className="rx-price-input"
+                            type="number" min="0" step="0.01" placeholder="0.00"
+                            value={prices[item.id] ?? ''}
+                            onChange={e => setItemPrice(item.id, e.target.value)}
+                          />
+                        </div>
+                      ) : isCompleted && item.unit_price != null ? (
+                        <div className="rx-price-wrap">
+                          <span className="rx-price-display">{fmtPrice(item.unit_price)}</span>
+                        </div>
+                      ) : <div />
+                    )}
+                  </li>
+                )
+              })}
             </ul>
 
             {/* Extra items — pharmacist-added (water bottle, inhaler, gadgets…) */}
@@ -562,13 +600,17 @@ export default function PharmacyPrescriptionPage() {
               <div className="rx-extra-section">
                 <div className="rx-extra-header">Additional Items</div>
 
-                {extraItems.map(item => (
-                  <div key={item.uid} className="rx-extra-row">
-                    <span className="rx-extra-name">{item.name}</span>
-                    <span className="rx-extra-price">{fmtPrice(item.price)}</span>
-                    <button className="rx-extra-remove" onClick={() => removeExtraItem(item.uid)} title="Remove">×</button>
+                {extraItems.length > 0 && (
+                  <div className="rx-extra-grid">
+                    {extraItems.map(item => (
+                      <div key={item.uid} className="rx-extra-cell">
+                        <span className="rx-extra-cell-name">{item.name}</span>
+                        <span className="rx-extra-cell-price">{fmtPrice(item.price)}</span>
+                        <button className="rx-extra-remove" onClick={() => removeExtraItem(item.uid)} title="Remove">×</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
 
                 <div className="rx-extra-form">
                   <input
@@ -620,7 +662,7 @@ export default function PharmacyPrescriptionPage() {
 
       {/* ── Payment section — only for completed prescriptions ────────── */}
       {isCompleted && (
-        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="card rx-content-card">
           <div className="rx-content-header">
             <span className="rx-content-label">Payment</span>
             <span className={`px-pay-badge px-pay-badge--${paymentStatus}`}>
@@ -656,10 +698,13 @@ export default function PharmacyPrescriptionPage() {
               </div>
             )}
 
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', display: 'block', marginBottom: 4, marginTop: 8 }}>
+              Payment note <span style={{ fontWeight: 400 }}>(optional — for internal use)</span>
+            </label>
             <textarea
               className="field px-pay-notes"
               rows={1}
-              placeholder="Payment notes (optional)…"
+              placeholder="e.g. Cash received, insurance claim, discount applied…"
               value={paymentNotes}
               onChange={e => setPaymentNotes(e.target.value)}
             />
@@ -678,7 +723,7 @@ export default function PharmacyPrescriptionPage() {
 
       {/* ── Patient Medication History ────────────────────────────────── */}
       {medHistory.length > 0 && (
-        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="card rx-content-card">
           <div
             className="rx-content-header"
             style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -735,7 +780,7 @@ export default function PharmacyPrescriptionPage() {
 
       {/* ── Notes panel ───────────────────────────────────────────────── */}
       {(prescription.consultation_notes || prescription.doctor_notes || !isCompleted || true) && (
-        <div className="card rx-content-card" style={{ marginTop: 'var(--space-md)' }}>
+        <div className="card rx-content-card">
           <div className="rx-content-header" style={{ justifyContent: 'space-between' }}>
             <span className="rx-content-label">Notes</span>
             <button
@@ -752,11 +797,11 @@ export default function PharmacyPrescriptionPage() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
             {/* Consultation / Visit notes — read-only */}
             {prescription.consultation_notes && (
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)', marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', marginBottom: 4 }}>
                   Visit / Consultation Notes
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
@@ -768,7 +813,7 @@ export default function PharmacyPrescriptionPage() {
             {/* Doctor notes — read-only */}
             {prescription.doctor_notes && (
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)', marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', marginBottom: 4 }}>
                   Doctor Notes
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
@@ -778,24 +823,18 @@ export default function PharmacyPrescriptionPage() {
             )}
 
             {/* Pharmacist notes — editable */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', color: 'var(--clr-text-muted)' }}>
-                  Pharmacist Notes
-                </div>
-                {savingNotes && (
-                  <span style={{ fontSize: 10, color: 'var(--clr-text-muted)' }}>saving…</span>
-                )}
-              </div>
-              <textarea
-                className="field"
-                rows={3}
-                style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
-                placeholder="Add pharmacist notes, dispensing remarks, substitutions…"
-                value={pharmNotes}
-                onChange={e => handlePharmNotesChange(e.target.value)}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              {savingNotes && (
+                <span style={{ fontSize: 10, color: 'var(--clr-text-muted)', marginLeft: 'auto' }}>saving…</span>
+              )}
             </div>
+            <textarea
+              className="rx-pharma-notes"
+              rows={2}
+              placeholder="Dispensing remarks, substitutions, notes…"
+              value={pharmNotes}
+              onChange={e => handlePharmNotesChange(e.target.value)}
+            />
           </div>
         </div>
       )}
