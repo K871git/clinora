@@ -20,37 +20,53 @@
 /* ── Extra items (pharmacist-added) ───────────────────────────────────── */
 .rx-extra-section {
   border-top: 1px dashed var(--clr-border);
-  margin-top: 8px;
-  padding-top: 10px;
+  margin-top: 6px;
+  padding-top: 8px;
 }
 
 .rx-extra-header {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--clr-text-muted);
   margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.rx-extra-row {
+/* 2-column grid for added items — clean table-row style */
+.rx-extra-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+  margin-bottom: 4px;
+}
+
+.rx-extra-cell {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--clr-border);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--clr-border-subtle);
+  min-width: 0;
 }
 
-.rx-extra-name {
+.rx-extra-cell-name {
   flex: 1;
   font-size: 13px;
+  font-weight: 500;
   color: var(--clr-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rx-extra-price {
+.rx-extra-cell-price {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--clr-text);
-  min-width: 72px;
-  text-align: right;
+  font-weight: 700;
+  color: var(--clr-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .rx-extra-remove {
@@ -58,24 +74,28 @@
   border: none;
   color: var(--clr-text-muted);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
-  padding: 0 2px;
-  border-radius: 4px;
-  transition: color .15s, background .15s;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0.35;
+  transition: color .15s, opacity .15s;
 }
-.rx-extra-remove:hover { color: #dc2626; background: #fef2f2; }
+.rx-extra-remove:hover { color: #dc2626; opacity: 1; }
 
+/* Add form row */
 .rx-extra-form {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .rx-extra-input {
   flex: 1;
-  height: 32px;
+  min-width: 0;
+  max-width: 240px;
+  height: 30px;
   padding: 0 8px;
   border: 1px solid var(--clr-border);
   border-radius: 6px;
@@ -84,24 +104,49 @@
   color: var(--clr-text);
   outline: none;
 }
-.rx-extra-input:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 2px rgba(99,102,241,.12); }
+.rx-extra-input:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 2px rgba(13,148,136,.12); }
 
 .rx-extra-add-btn {
-  height: 32px;
+  height: 30px;
   padding: 0 12px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   font-family: inherit;
   color: var(--clr-primary);
-  background: rgba(99,102,241,.08);
-  border: 1px solid rgba(99,102,241,.25);
+  background: color-mix(in srgb, var(--clr-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--clr-primary) 25%, transparent);
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   transition: background .15s, border-color .15s;
 }
-.rx-extra-add-btn:hover:not(:disabled) { background: rgba(99,102,241,.15); border-color: rgba(99,102,241,.4); }
-.rx-extra-add-btn:disabled { opacity: .45; cursor: default; }
+.rx-extra-add-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--clr-primary) 15%, transparent);
+  border-color: color-mix(in srgb, var(--clr-primary) 40%, transparent);
+}
+.rx-extra-add-btn:disabled { opacity: .4; cursor: default; }
+
+/* Pharmacist notes textarea */
+.rx-pharma-notes {
+  width: 100%;
+  resize: vertical;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  background: transparent;
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--clr-text);
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  min-height: 56px;
+}
+.rx-pharma-notes:focus {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--clr-primary) 12%, transparent);
+}
+.rx-pharma-notes::placeholder { color: var(--clr-text-muted); opacity: 0.6; }
 
 /* Keep unused old names harmless */
 .pt-meta-arrow {
@@ -577,9 +622,9 @@ html[data-theme="dark"] .pharma-empty-refresh-btn:hover {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 10px 24px;
-  border-top: 1px solid var(--clr-border);
-  background: var(--clr-bg);
+  padding: 7px 18px;
+  border-top: 1px solid var(--clr-border-subtle);
+  background: color-mix(in srgb, var(--clr-primary) 2%, var(--clr-surface));
   overflow-x: auto;
   flex-wrap: wrap;
 }
@@ -606,26 +651,27 @@ html[data-theme="dark"] .pharma-empty-refresh-btn:hover {
 }
 
 .pharma-tl-dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: 0 0 0 3px transparent;
 }
 
-.pharma-tl-dot--sent        { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.18); }
-.pharma-tl-dot--dispensing  { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
-.pharma-tl-dot--done        { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.18); }
+.pharma-tl-dot--sent        { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+.pharma-tl-dot--dispensing  { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+.pharma-tl-dot--done        { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
 
 .pharma-tl-content {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .pharma-tl-label {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .pharma-tl-item:nth-child(1) .pharma-tl-label { color: #3b82f6; }
@@ -674,37 +720,43 @@ html[data-theme="dark"] .pharma-tl-item:nth-child(3) .pharma-tl-label { color: #
 /* Medicine row checklist */
 .pharma-check-btn {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border: 1.5px solid var(--clr-border);
-  border-radius: 4px;
+  border-radius: 5px;
   background: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   padding: 0;
 }
 
 .pharma-check-btn:hover {
   border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clr-primary) 12%, transparent);
 }
 
 .pharma-check-btn--checked {
   background: var(--clr-primary);
   border-color: var(--clr-primary);
   color: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clr-primary) 15%, transparent);
 }
 
 .pharma-med-row--checked .rx-medicine-name {
   text-decoration: line-through;
   color: var(--clr-text-muted);
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .pharma-med-row--checked .rx-medicine-dosage {
-  opacity: 0.5;
+  opacity: 0.45;
+}
+
+.pharma-med-row--checked .rx-price-input {
+  opacity: 0.45;
 }
 
 .pharma-med-row--checked .rx-price-display {
@@ -715,8 +767,9 @@ html[data-theme="dark"] .pharma-tl-item:nth-child(3) .pharma-tl-label { color: #
 .pharma-check-hint {
   margin-left: auto;
   font-size: 12px;
-  color: var(--clr-text-muted);
-  font-weight: 500;
+  color: var(--clr-primary);
+  font-weight: 600;
+  opacity: 0.8;
 }
 
 /* Done pill */

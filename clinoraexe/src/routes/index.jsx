@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import ProtectedRoute from './ProtectedRoute'
 import AppLayout from '../layouts/AppLayout'
 import LoginPage from '../pages/auth/LoginPage'
@@ -45,6 +46,13 @@ import CertificatePrintPage from '../pages/visits/CertificatePrintPage'
 function KeyedPatientDetail() {
   const { id } = useParams()
   return <PatientDetailPage key={id} />
+}
+
+/* Role-aware fallback for unmatched routes */
+function HomeRedirect() {
+  const { user } = useAuth()
+  const home = user?.role === 'pharmacy' ? '/pharmacy' : '/'
+  return <Navigate to={home} replace />
 }
 
 /**
@@ -134,8 +142,8 @@ export default function AppRoutes() {
         <Route path="/pharmacy/prescriptions/:prescriptionId/label" element={<PharmacyLabelPage />} />
       </Route>
 
-      {/* Unknown paths go to root; ProtectedRoute redirects from there */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Unknown paths — redirect to role-appropriate home */}
+      <Route path="*" element={<HomeRedirect />} />
     </Routes>
   )
 }

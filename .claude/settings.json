@@ -10,7 +10,8 @@
       "PowerShell(New-Item -ItemType Directory -Force -Path \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\pages\\\\clinic\")",
       "Bash(Get-Content \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\styles\\\\patients.css\")",
       "Bash(Select-Object -Last 15)",
-      "Bash(Get-Content \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\styles\\\\prescriptions.css\")"
+      "Bash(Get-Content \"d:\\\\new_live\\\\clinora\\\\clinoraexe\\\\src\\\\styles\\\\prescriptions.css\")",
+      "Bash(grep -v \"//.*navigate\")"
     ]
   }
 }

@@ -242,56 +242,55 @@ export default function PatientDetailPage() {
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <div className="pd-hero">
-        <div
-          className="pd-hero-avatar"
-          style={{ backgroundColor: avatarColor(patient.name) }}
-          aria-hidden="true"
-        >
-          {(patient.name?.[0] ?? '?').toUpperCase()}
-        </div>
-
-        <div className="pd-hero-info">
-          <h1 className="pd-hero-name">{patient.name}</h1>
-          <div className="pd-hero-contact">{patient.mobile ?? 'No contact on file'}</div>
-          {heroTags.length > 0 && (
-            <div className="pd-hero-tags">
-              {heroTags.map((tag) => (
-                <span key={tag} className="pd-hero-tag">{tag}</span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="pd-hero-actions">
-          <button className="btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
-          <button
-            className="btn-primary pd-visit-btn"
-            onClick={openNewVisit}
+        <div className="pd-hero-main">
+          <div
+            className="pd-hero-avatar"
+            style={{ backgroundColor: avatarColor(patient.name) }}
+            aria-hidden="true"
           >
-            + Start Visit
-          </button>
-        </div>
-      </div>
+            {(patient.name?.[0] ?? '?').toUpperCase()}
+          </div>
 
-      {/* ── Stats ────────────────────────────────────────────────────── */}
-      <div className="pd-stats">
-        <div className="pd-stat">
-          <div className="pd-stat-value">
-            {historyStatus === 'loading' ? '—' : totalVisits}
+          <div className="pd-hero-info">
+            <h1 className="pd-hero-name">{patient.name}</h1>
+            <div className="pd-hero-contact">{patient.mobile ?? 'No contact on file'}</div>
+            {heroTags.length > 0 && (
+              <div className="pd-hero-tags">
+                {heroTags.map((tag) => (
+                  <span key={tag} className="pd-hero-tag">{tag}</span>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="pd-stat-label">Visits</div>
+
+          <div className="pd-hero-actions">
+            <button className="btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
+            <button className="btn-primary pd-visit-btn" onClick={openNewVisit}>
+              + Start Visit
+            </button>
+          </div>
         </div>
-        <div className="pd-stat">
-          <div className="pd-stat-value">
-            {historyStatus === 'loading' ? '—' : totalRx}
+
+        {/* Stats strip */}
+        <div className="pd-hero-strip">
+          <div className="pd-hero-stat">
+            <span className="pd-hero-stat-val" style={{ color: 'var(--clr-primary)' }}>
+              {historyStatus === 'loading' ? '—' : totalVisits}
+            </span>
+            <span className="pd-hero-stat-lbl">Visits</span>
           </div>
-          <div className="pd-stat-label">Prescriptions</div>
-        </div>
-        <div className="pd-stat">
-          <div className={`pd-stat-value ${totalVisits > 0 ? 'pd-stat-value--sm' : ''}`}>
-            {historyStatus === 'loading' ? '—' : fmtShortDate(lastVisit)}
+          <div className="pd-hero-stat">
+            <span className="pd-hero-stat-val" style={{ color: '#0d9488' }}>
+              {historyStatus === 'loading' ? '—' : totalRx}
+            </span>
+            <span className="pd-hero-stat-lbl">Prescriptions</span>
           </div>
-          <div className="pd-stat-label">Last Visit</div>
+          <div className="pd-hero-stat">
+            <span className={`pd-hero-stat-val${totalVisits > 0 ? ' pd-hero-stat-val--sm' : ''}`} style={{ color: '#f59e0b' }}>
+              {historyStatus === 'loading' ? '—' : fmtShortDate(lastVisit)}
+            </span>
+            <span className="pd-hero-stat-lbl">Last Visit</span>
+          </div>
         </div>
       </div>
 

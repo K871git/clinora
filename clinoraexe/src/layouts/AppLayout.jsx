@@ -72,7 +72,7 @@ function SidebarGreetingBlock({ user, collapsed, greeting, timeStr, dayDate }) {
 }
 
 const DOCTOR_NAV = [
-  { to: '/',              label: 'Dashboard',     icon: IconDashboard },
+  { to: '/',              label: 'Dashboard',     icon: IconDashboard, end: true },
   { section: 'Clinical' },
   { to: '/prescriptions', label: 'Prescriptions', icon: IconPrescription },
   { to: '/patients',      label: 'Patients',      icon: IconPatients },
@@ -305,6 +305,9 @@ export default function AppLayout() {
               src={collapsed ? '/logos/logo1.png' : '/logos/brand2.png'}
               alt="Clinora"
               className="sidebar-logo-img"
+              onClick={() => navigate(user?.role === 'pharmacy' ? '/pharmacy' : '/')}
+              style={{ cursor: 'pointer' }}
+              title="Go to home"
             />
             {/* Expand button — visible on hover when collapsed only */}
             <button
@@ -649,9 +652,18 @@ function GlobalSearch({ role, onClose, onNavigate }) {
     return () => clearTimeout(timerRef.current)
   }, [q, role])
 
+  const isPharmacy = role === 'pharmacy'
   const results = [
-    ...patients.map(p => ({ type: 'patient', id: p.id, label: p.name, sub: p.mobile || (p.age ? `${p.age} yrs` : ''), path: `/patients/${p.id}` })),
-    ...visits.map(v => ({ type: 'visit', id: v.id, label: v.patient?.name ?? '—', sub: v.visited_at ? new Date(v.visited_at + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '', path: `/patients/${v.patient_id}` })),
+    ...patients.map(p => ({
+      type: 'patient', id: p.id, label: p.name,
+      sub: p.mobile || (p.age ? `${p.age} yrs` : ''),
+      path: isPharmacy ? `/pharmacy` : `/patients/${p.id}`,
+    })),
+    ...visits.map(v => ({
+      type: 'visit', id: v.id, label: v.patient?.name ?? '—',
+      sub: v.visited_at ? new Date(v.visited_at + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+      path: `/patients/${v.patient_id}`,
+    })),
   ]
 
   function handleKey(e) {
