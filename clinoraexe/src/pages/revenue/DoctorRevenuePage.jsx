@@ -1,4 +1,5 @@
 import '../../styles/revenue-page.css'
+import '../../styles/dr-revenue.css'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -7,173 +8,100 @@ import { getRevenueDetails, getVisitStatsByDoctor } from '../../services/dashboa
 import { recordVisitPayment, getRevenueTransactions } from '../../services/visitService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
-import EmptyState from '../../components/ui/EmptyState'
 
 async function exportCsv(txs, period, filter) {
   const BOM  = '﻿'
   const head = ['Patient', 'Visit Date', 'Status', 'Fee (Rs)', 'Paid (Rs)', 'Due (Rs)']
   const rows = txs.map(tx => {
     const due = Math.max(0, tx.consultation_fee - tx.amount_paid)
-    return [
-      tx.patient?.name ?? '',
-      tx.visited_at ? new Date(tx.visited_at).toLocaleDateString('en-IN') : '',
-      tx.payment_status,
-      tx.consultation_fee.toFixed(2),
-      tx.amount_paid.toFixed(2),
-      due.toFixed(2),
-    ]
+    return [tx.patient?.name ?? '', tx.visited_at ? new Date(tx.visited_at).toLocaleDateString('en-IN') : '',
+      tx.payment_status, tx.consultation_fee.toFixed(2), tx.amount_paid.toFixed(2), due.toFixed(2)]
   })
   const body = [head, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
-  const filename = `revenue-${filter}-${period}.csv`
   try {
-    const saved = await invoke('write_text_to_downloads', { content: BOM + body, filename })
+    const saved = await invoke('write_text_to_downloads', { content: BOM + body, filename: `revenue-${filter}-${period}.csv` })
     toast.success(`Exported to Downloads: ${saved}`)
-  } catch {
-    toast.error('Export failed — could not write file.')
-  }
+  } catch { toast.error('Export failed.') }
 }
 
 const PERIODS = [
   { key: 'today',      label: 'Today' },
-  { key: 'this_week',  label: 'This Week' },
-  { key: 'this_month', label: 'This Month' },
+  { key: 'this_week',  label: 'Week' },
+  { key: 'this_month', label: 'Month' },
   { key: 'all_time',   label: 'All Time' },
 ]
 
-const FILTER_LABELS = {
-  all:         'All Transactions',
-  collected:   'Collected — Paid Visits',
-  outstanding: 'Outstanding Payments',
+function fmt(n) {
+  return '₹' + parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-
-function fmtMoney(n) {
-  return '₹' + parseFloat(n || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
-  })
-}
-
 function fmtDate(iso) {
   if (!iso) return '—'
   const utc = iso.endsWith('Z') ? iso : iso + 'Z'
-  return new Date(utc).toLocaleDateString('en-IN', {
-    year: 'numeric', month: 'short', day: 'numeric',
-  })
+  return new Date(utc).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function RevenueChart({ txs, period }) {
-  const canvasRef = useRef(null)
-
-  const chartData = useMemo(() => {
+  const ref = useRef(null)
+  const data = useMemo(() => {
     if (!txs.length) return null
     const byDate = {}
     txs.forEach(tx => {
-      const date = tx.visited_at ? tx.visited_at.slice(0, 10) : null
-      if (!date) return
-      byDate[date] = (byDate[date] || 0) + tx.consultation_fee
+      const d = tx.visited_at?.slice(0, 10); if (d) byDate[d] = (byDate[d] || 0) + tx.consultation_fee
     })
     let entries = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b))
     if (period === 'all_time' && entries.length > 31) {
-      const byMonth = {}
-      entries.forEach(([date, val]) => {
-        const month = date.slice(0, 7)
-        byMonth[month] = (byMonth[month] || 0) + val
-      })
-      entries = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b))
+      const byM = {}
+      entries.forEach(([d, v]) => { const m = d.slice(0, 7); byM[m] = (byM[m] || 0) + v })
+      entries = Object.entries(byM).sort(([a], [b]) => a.localeCompare(b))
     }
     return entries
   }, [txs, period])
 
   useEffect(() => {
-    if (!chartData || !canvasRef.current) return
-    const canvas = canvasRef.current
-    const dpr  = window.devicePixelRatio || 1
-    const W    = canvas.offsetWidth
-    const H    = 160
-    canvas.width  = W * dpr
-    canvas.height = H * dpr
-    const ctx  = canvas.getContext('2d')
-    ctx.scale(dpr, dpr)
-
-    const isDark   = document.documentElement.dataset.theme === 'dark'
-    const barClr   = isDark ? '#60a5fa' : '#2563eb'
-    const gridClr  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
-    const labelClr = isDark ? '#64748b' : '#94a3b8'
-
-    const PAD_L = 56, PAD_R = 12, PAD_T = 16, PAD_B = 32
-    const plotW = W - PAD_L - PAD_R
-    const plotH = H - PAD_T - PAD_B
-
-    const vals   = chartData.map(([, v]) => v)
-    const maxVal = Math.max(...vals, 1)
-
+    if (!data || !ref.current) return
+    const canvas = ref.current, dpr = window.devicePixelRatio || 1
+    const W = canvas.offsetWidth, H = 140
+    canvas.width = W * dpr; canvas.height = H * dpr
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr)
+    const isDark = document.documentElement.dataset.theme === 'dark'
+    const barClr = '#2563eb', gridClr = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', lblClr = '#94a3b8'
+    const PL = 52, PR = 12, PT = 12, PB = 28, plotW = W - PL - PR, plotH = H - PT - PB
+    const vals = data.map(([, v]) => v), maxVal = Math.max(...vals, 1)
     ctx.clearRect(0, 0, W, H)
-
-    // Grid + Y labels
-    ctx.lineWidth = 1
-    ctx.font = '9px system-ui, sans-serif'
+    ctx.font = '9px system-ui,sans-serif'
     for (let i = 0; i <= 4; i++) {
-      const y = PAD_T + (plotH / 4) * i
-      ctx.strokeStyle = gridClr
-      ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(PAD_L + plotW, y); ctx.stroke()
-      const val = maxVal * (1 - i / 4)
-      ctx.fillStyle = labelClr
-      ctx.textAlign = 'right'
-      ctx.fillText(val >= 1000 ? (val / 1000).toFixed(1) + 'k' : Math.round(val), PAD_L - 5, y + 3.5)
+      const y = PT + (plotH / 4) * i
+      ctx.strokeStyle = gridClr; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PL + plotW, y); ctx.stroke()
+      ctx.fillStyle = lblClr; ctx.textAlign = 'right'
+      const v = maxVal * (1 - i / 4)
+      ctx.fillText(v >= 1000 ? (v / 1000).toFixed(1) + 'k' : Math.round(v), PL - 5, y + 3.5)
     }
-
-    // Bars + X labels
-    const n    = chartData.length
-    const gap  = plotW / n
-    const barW = Math.max(4, Math.min(28, gap * 0.6))
-    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-    const showEvery   = Math.ceil(n / 10)
-
-    chartData.forEach(([label, val], i) => {
-      const cx   = PAD_L + gap * i + gap / 2
-      const barH = (val / maxVal) * plotH
-      const bx   = cx - barW / 2
-      const by   = PAD_T + plotH - barH
-
-      // Rounded top bar
+    const n = data.length, gap = plotW / n, barW = Math.max(4, Math.min(32, gap * 0.55))
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const se = Math.ceil(n / 10)
+    data.forEach(([lbl, val], i) => {
+      const cx = PL + gap * i + gap / 2, bH = (val / maxVal) * plotH
+      const bx = cx - barW / 2, by = PT + plotH - bH
+      const r = Math.min(3, barW / 2, bH)
       ctx.fillStyle = barClr
-      const r = Math.min(3, barW / 2, barH)
       ctx.beginPath()
-      ctx.moveTo(bx + r, by)
-      ctx.lineTo(bx + barW - r, by)
+      ctx.moveTo(bx + r, by); ctx.lineTo(bx + barW - r, by)
       ctx.quadraticCurveTo(bx + barW, by, bx + barW, by + r)
-      ctx.lineTo(bx + barW, by + barH)
-      ctx.lineTo(bx, by + barH)
-      ctx.lineTo(bx, by + r)
-      ctx.quadraticCurveTo(bx, by, bx + r, by)
-      ctx.fill()
-
-      // X label (skip some when crowded)
-      if (i % showEvery === 0) {
-        let lbl = label
-        if (label.length === 10) {
-          const d = new Date(label + 'T12:00:00')
-          lbl = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-        } else if (label.length === 7) {
-          const [, m] = label.split('-')
-          lbl = MONTH_NAMES[parseInt(m, 10) - 1]
-        }
-        ctx.fillStyle = labelClr
-        ctx.textAlign = 'center'
-        ctx.fillText(lbl, cx, H - PAD_B + 13)
+      ctx.lineTo(bx + barW, by + bH); ctx.lineTo(bx, by + bH); ctx.lineTo(bx, by + r)
+      ctx.quadraticCurveTo(bx, by, bx + r, by); ctx.fill()
+      if (i % se === 0) {
+        let l = lbl
+        if (lbl.length === 10) l = new Date(lbl + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+        else if (lbl.length === 7) l = MN[parseInt(lbl.split('-')[1], 10) - 1]
+        ctx.fillStyle = lblClr; ctx.textAlign = 'center'
+        ctx.fillText(l, cx, H - PB + 12)
       }
     })
-  }, [chartData])
+  }, [data])
 
-  if (!chartData || chartData.length < 2) return null
-
-  const byMonthLabel = period === 'all_time' && chartData.length > 12 ? 'Month' : 'Day'
-
-  return (
-    <div className="card rv-chart-card">
-      <div className="rv-chart-title">Revenue by {byMonthLabel}</div>
-      <canvas ref={canvasRef} className="rv-chart-canvas" />
-    </div>
-  )
+  if (!data || data.length < 2) return null
+  return <canvas ref={ref} className="drv-chart" />
 }
 
 export default function DoctorRevenuePage() {
@@ -202,9 +130,7 @@ export default function DoctorRevenuePage() {
       .finally(() => setTxLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (status === 'done') loadTxs(period, filter)
-  }, [period, filter, status, loadTxs])
+  useEffect(() => { if (status === 'done') loadTxs(period, filter) }, [period, filter, status, loadTxs])
 
   useEffect(() => {
     if (status !== 'done') return
@@ -216,128 +142,130 @@ export default function DoctorRevenuePage() {
   async function markPaid(tx) {
     setSavingId(tx.id)
     try {
-      await recordVisitPayment(tx.id, {
-        payment_status: 'paid',
-        amount_paid:    tx.consultation_fee,
-      })
+      await recordVisitPayment(tx.id, { payment_status: 'paid', amount_paid: tx.consultation_fee })
       toast.success(`Marked paid — ${tx.patient?.name}`)
-      loadStats()
-      loadTxs(period, filter)
-    } catch {
-      toast.error('Could not update payment — try again.')
-    } finally {
-      setSavingId(null)
-    }
+      loadStats(); loadTxs(period, filter)
+    } catch { toast.error('Could not update payment.') }
+    finally { setSavingId(null) }
   }
 
   if (status === 'loading') return <PageLoader />
   if (status === 'error') return <div className="card state-panel">Could not load revenue data.</div>
 
   const p = data[period] ?? {}
+  const collRate = p.revenue > 0 ? Math.round((p.amount_collected / p.revenue) * 100) : 0
+  const avgFee   = p.total_visits > 0 ? p.revenue / p.total_visits : 0
+
+  const TABS = [
+    { key: 'all',         label: 'All Visits',   count: p.total_visits ?? 0 },
+    { key: 'outstanding', label: 'Unpaid',        count: p.unpaid_count ?? 0 },
+    { key: 'collected',   label: 'Paid',          count: p.paid_visits ?? 0 },
+  ]
+
+  const totalFee  = txs.reduce((s, t) => s + t.consultation_fee, 0)
+  const totalPaid = txs.reduce((s, t) => s + t.amount_paid, 0)
+  const totalDue  = txs.reduce((s, t) => s + Math.max(0, t.consultation_fee - t.amount_paid), 0)
 
   return (
-    <div className="rv-page">
+    <div className="rv2-page drv-page">
 
-      {/* Period tabs */}
-      <div className="rv-period-tabs">
-        {PERIODS.map(({ key, label }) => (
-          <button
-            key={key}
-            className={`rv-period-tab${period === key ? ' rv-period-tab--on' : ''}`}
-            onClick={() => setPeriod(key)}
-          >
-            {label}
-          </button>
-        ))}
+      {/* ── Page header ── */}
+      <div className="drv-hdr">
+        <div>
+          <h1 className="drv-title">Revenue</h1>
+          <p className="drv-sub">Consultation fees &amp; payment status</p>
+        </div>
+        <div className="drv-period-seg">
+          {PERIODS.map(({ key, label }) => (
+            <button
+              key={key}
+              className={`drv-period-btn${period === key ? ' drv-period-btn--on' : ''}`}
+              onClick={() => setPeriod(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Stat cards — clickable to filter transactions */}
-      <div className="rv-cards">
-        <div
-          className={`rv-card rv-card--blue rv-card--clickable${filter === 'all' ? ' rv-card--active-blue' : ''}`}
-          onClick={() => setFilter('all')}
-          role="button" tabIndex={0}
-          onKeyDown={e => e.key === 'Enter' && setFilter('all')}
-        >
-          <span className="rv-card-label">Total Earned</span>
-          <span className="rv-card-value">{fmtMoney(p.revenue)}</span>
-          <span className="rv-card-sub">{p.total_visits ?? 0} visits</span>
-          <span className="rv-card-hint">{filter === 'all' ? '● Viewing all' : 'Click to view all'}</span>
+      {/* ── Stat strip ── */}
+      <div className="drv-strip">
+        <div className="drv-stat drv-stat--blue" onClick={() => setFilter('all')} role="button" tabIndex={0}>
+          <div className="drv-stat-val">{fmt(p.revenue)}</div>
+          <div className="drv-stat-lbl">Total Billed</div>
+          <div className="drv-stat-sub">{p.total_visits ?? 0} visits</div>
         </div>
-        <div
-          className={`rv-card rv-card--green rv-card--clickable${filter === 'collected' ? ' rv-card--active-green' : ''}`}
-          onClick={() => setFilter('collected')}
-          role="button" tabIndex={0}
-          onKeyDown={e => e.key === 'Enter' && setFilter('collected')}
-        >
-          <span className="rv-card-label">Collected</span>
-          <span className="rv-card-value">{fmtMoney(p.amount_collected)}</span>
-          <span className="rv-card-sub">{p.paid_visits ?? 0} paid visits</span>
-          <span className="rv-card-hint">{filter === 'collected' ? '● Viewing paid' : 'Click to view paid'}</span>
+        <div className="drv-stat-divider" />
+        <div className="drv-stat drv-stat--green" onClick={() => setFilter('collected')} role="button" tabIndex={0}>
+          <div className="drv-stat-val">{fmt(p.amount_collected)}</div>
+          <div className="drv-stat-lbl">Collected</div>
+          <div className="drv-stat-sub">{collRate}% collection rate</div>
         </div>
-        <div
-          className={`rv-card rv-card--amber rv-card--clickable${filter === 'outstanding' ? ' rv-card--active-amber' : ''}`}
-          onClick={() => setFilter('outstanding')}
-          role="button" tabIndex={0}
-          onKeyDown={e => e.key === 'Enter' && setFilter('outstanding')}
-        >
-          <span className="rv-card-label">Outstanding</span>
-          <span className="rv-card-value">{fmtMoney(p.debt_amount)}</span>
-          <span className="rv-card-sub">{p.unpaid_count ?? 0} unpaid</span>
-          <span className="rv-card-hint">{filter === 'outstanding' ? '● Viewing unpaid' : 'Click to view unpaid'}</span>
+        <div className="drv-stat-divider" />
+        <div className={`drv-stat drv-stat--amber${(p.unpaid_count ?? 0) > 0 ? ' drv-stat--alert' : ''}`} onClick={() => setFilter('outstanding')} role="button" tabIndex={0}>
+          <div className="drv-stat-val">{fmt(p.debt_amount)}</div>
+          <div className="drv-stat-lbl">Outstanding</div>
+          <div className="drv-stat-sub">{p.unpaid_count ?? 0} unpaid</div>
         </div>
-        {period === 'all_time' && (
-          <div className="rv-card">
-            <span className="rv-card-label">Avg. Fee</span>
-            <span className="rv-card-value">{fmtMoney(p.avg_fee)}</span>
-            <span className="rv-card-sub">per visit</span>
+        <div className="drv-stat-divider" />
+        <div className="drv-stat">
+          <div className="drv-stat-val drv-stat-val--sm">{fmt(avgFee)}</div>
+          <div className="drv-stat-lbl">Avg. Fee</div>
+          <div className="drv-stat-sub">per visit</div>
+        </div>
+      </div>
+
+      {/* ── Chart row ── */}
+      {!txLoading && (
+        <div className="drv-chart-row">
+          <div className="drv-chart-card card">
+            <div className="drv-chart-title">Revenue Trend</div>
+            <RevenueChart txs={txs} period={period} />
+            {(!txs.length || txs.length < 2) && (
+              <div className="drv-chart-empty">Not enough data to render chart</div>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Revenue chart */}
-      {!txLoading && <RevenueChart txs={txs} period={period} />}
-
-      {/* Doctor performance */}
-      {doctorStats.length > 0 && (
-        <div className="card rv-doctor-card">
-          <div className="rv-doctor-title">Visits by Doctor</div>
-          <table className="rv-doctor-table">
-            <thead>
-              <tr>
-                <th>Doctor</th>
-                <th style={{ textAlign: 'right' }}>Visits</th>
-                <th style={{ textAlign: 'right' }}>Completed</th>
-                <th style={{ textAlign: 'right' }}>Collected</th>
-              </tr>
-            </thead>
-            <tbody>
+          {doctorStats.length > 0 && (
+            <div className="drv-doctors card">
+              <div className="drv-doctors-title">By Doctor</div>
               {doctorStats.map(d => (
-                <tr key={d.doctor_id} className="rv-doctor-row">
-                  <td className="rv-doctor-name">{d.doctor_name}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{d.total_visits}</td>
-                  <td style={{ textAlign: 'right', color: 'var(--clr-text-muted)' }}>{d.completed}</td>
-                  <td style={{ textAlign: 'right', color: '#059669', fontWeight: 600 }}>{fmtMoney(d.revenue_collected)}</td>
-                </tr>
+                <div key={d.doctor_id} className="drv-doctor-row">
+                  <div>
+                    <div className="drv-doctor-name">{d.doctor_name}</div>
+                    <div className="drv-doctor-sub">{d.total_visits} visits · {d.paid_visits ?? 0} paid</div>
+                  </div>
+                  <div className="drv-doctor-val">{fmt(d.revenue_collected)}</div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Transaction list */}
-      <div className="card rv-debt-card" style={{ marginTop: 'var(--space-md)' }}>
-        <div className="rv-debt-header">
-          <span className="rv-debt-title">{FILTER_LABELS[filter]}</span>
-          {txLoading
-            ? <Spinner size={14} />
-            : <span className={`rv-debt-count${filter === 'outstanding' ? '' : ' rv-debt-count--neutral'}`}>
-                {txs.length}
-              </span>
-          }
+      {/* ── Transaction table ── */}
+      <div className="drv-txn card">
+
+        {/* Table toolbar */}
+        <div className="drv-txn-toolbar">
+          <div className="drv-tabs">
+            {TABS.map(t => (
+              <button
+                key={t.key}
+                className={`drv-tab${filter === t.key ? ' drv-tab--on' : ''}`}
+                onClick={() => setFilter(t.key)}
+              >
+                {t.label}
+                {t.count > 0 && (
+                  <span className={`drv-tab-badge${t.key === 'outstanding' && t.count > 0 ? ' drv-tab-badge--warn' : ''}`}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
           {txs.length > 0 && !txLoading && (
-            <button className="rv-export-btn" onClick={() => exportCsv(txs, period, filter)} title="Export CSV">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <button className="drv-export" onClick={() => exportCsv(txs, period, filter)}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               Export CSV
@@ -345,92 +273,75 @@ export default function DoctorRevenuePage() {
           )}
         </div>
 
+        {/* Table */}
         {txLoading ? (
-          <div style={{ padding: '48px', display: 'flex', justifyContent: 'center' }}>
-            <Spinner size={24} />
-          </div>
+          <div className="drv-loading"><Spinner size={22} /></div>
         ) : txs.length === 0 ? (
-          <EmptyState
-            icon={filter === 'outstanding' ? '✅' : '📋'}
-            title={filter === 'outstanding' ? 'All payments collected' : filter === 'collected' ? 'No collected payments' : 'No billed visits'}
-            description={filter === 'outstanding' ? 'No outstanding payments for this period.' : filter === 'collected' ? 'No paid visits in this period.' : 'No visits recorded for this period.'}
-          />
+          <div className="drv-empty">
+            {filter === 'outstanding' ? '✅  All payments collected for this period'
+              : filter === 'collected' ? 'No paid visits in this period'
+              : 'No billed visits in this period'}
+          </div>
         ) : (
-          <div className="rv-debt-table-wrap">
-            <table className="rv-debt-table">
+          <div className="drv-table-wrap">
+            <table className="drv-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Visit Date</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Fee</th>
-                  <th style={{ textAlign: 'right' }}>Paid</th>
-                  <th style={{ textAlign: 'right' }}>Due</th>
-                  <th></th>
+                  <th className="drv-th-patient">Patient</th>
+                  <th className="drv-th-date">Visit Date</th>
+                  <th className="drv-th-status">Status</th>
+                  <th className="drv-th-num">Fee</th>
+                  <th className="drv-th-num">Paid</th>
+                  <th className="drv-th-num">Due</th>
+                  <th className="drv-th-act">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {txs.map(tx => {
-                  const due      = Math.max(0, tx.consultation_fee - tx.amount_paid)
-                  const isSaving = savingId === tx.id
+                  const due = Math.max(0, tx.consultation_fee - tx.amount_paid)
                   return (
-                    <tr key={tx.id} className="rv-debt-row">
+                    <tr key={tx.id} className="drv-row">
                       <td>
-                        <Link className="rv-debt-patient" to={`/patients/${tx.patient_id}`}>
+                        <Link className="drv-patient-link" to={`/patients/${tx.patient_id}`}>
                           {tx.patient?.name ?? '—'}
                         </Link>
                       </td>
-                      <td className="rv-debt-muted">{fmtDate(tx.visited_at)}</td>
+                      <td className="drv-muted">{fmtDate(tx.visited_at)}</td>
                       <td>
-                        <span className={`rv-status-pill rv-status-pill--${tx.payment_status}`}>
+                        <span className={`drv-pill drv-pill--${tx.payment_status}`}>
                           {tx.payment_status === 'paid' ? 'Paid' : tx.payment_status === 'partial' ? 'Partial' : 'Unpaid'}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>{fmtMoney(tx.consultation_fee)}</td>
-                      <td style={{ textAlign: 'right' }} className="rv-debt-muted">{fmtMoney(tx.amount_paid)}</td>
-                      <td style={{ textAlign: 'right' }} className={due > 0 ? 'rv-debt-due' : 'rv-debt-muted'}>
-                        {fmtMoney(due)}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <Link className="rv-view-btn" to={`/visits/${tx.id}`}>View</Link>
-                          {tx.payment_status !== 'paid' && (
-                            <button
-                              className="rv-mark-paid-btn"
-                              onClick={() => markPaid(tx)}
-                              disabled={isSaving}
-                            >
-                              {isSaving ? <Spinner size={11} /> : 'Mark Paid'}
-                            </button>
-                          )}
-                        </div>
+                      <td className="drv-num">{fmt(tx.consultation_fee)}</td>
+                      <td className="drv-num drv-muted">{tx.amount_paid > 0 ? fmt(tx.amount_paid) : '—'}</td>
+                      <td className={`drv-num${due > 0 ? ' drv-due' : ' drv-muted'}`}>{due > 0 ? fmt(due) : '—'}</td>
+                      <td className="drv-act-cell">
+                        <Link className="drv-view-btn" to={`/visits/${tx.id}`}>View</Link>
+                        {tx.payment_status !== 'paid' && (
+                          <button
+                            className="drv-pay-btn"
+                            onClick={() => markPaid(tx)}
+                            disabled={savingId === tx.id}
+                          >
+                            {savingId === tx.id ? <Spinner size={10} /> : '✓ Mark Paid'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   )
                 })}
               </tbody>
               <tfoot>
-                <tr className="rv-totals-row">
-                  <td colSpan={3} style={{ fontWeight: 600, fontSize: '12px', color: 'var(--clr-text-muted)' }}>
-                    Total ({txs.length})
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 700 }}>
-                    {fmtMoney(txs.reduce((s, t) => s + t.consultation_fee, 0))}
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#059669' }}>
-                    {fmtMoney(txs.reduce((s, t) => s + t.amount_paid, 0))}
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>
-                    {fmtMoney(txs.reduce((s, t) => s + Math.max(0, t.consultation_fee - t.amount_paid), 0))}
-                  </td>
+                <tr className="drv-total-row">
+                  <td colSpan={3} className="drv-total-label">{txs.length} visit{txs.length !== 1 ? 's' : ''}</td>
+                  <td className="drv-num drv-total-fee">{fmt(totalFee)}</td>
+                  <td className="drv-num drv-total-paid">{fmt(totalPaid)}</td>
+                  <td className="drv-num drv-total-due">{totalDue > 0 ? fmt(totalDue) : '—'}</td>
                   <td />
                 </tr>
               </tfoot>
             </table>
           </div>
-        )}
-        {txs.length === 100 && (
-          <p className="rv-debt-hint">Showing latest 100 transactions.</p>
         )}
       </div>
     </div>

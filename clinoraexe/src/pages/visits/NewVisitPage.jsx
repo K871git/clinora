@@ -2,7 +2,7 @@ import '../../styles/new-visit.css'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPatient } from '../../services/patientService'
-import { createVisit, saveFee, completeVisit } from '../../services/visitService'
+import { createVisit, saveFee } from '../../services/visitService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import { confirmDiscard } from '../../lib/swal'
@@ -63,7 +63,6 @@ export default function NewVisitPage() {
   const [fieldErrors,   setFieldErrors]   = useState({})
   const [apiError,      setApiError]      = useState(null)
   const [submitting,    setSubmitting]    = useState(false)
-  const [activeAction,  setActiveAction]  = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -85,14 +84,13 @@ export default function NewVisitPage() {
     navigate(-1)
   }
 
-  async function submit(action) {
+  async function submit() {
     const errs = {}
     if (!visitedAt) errs.visitedAt = 'Visit date and time is required.'
     const feeErr = validateFee(fee)
     if (feeErr) errs.fee = feeErr
     if (Object.keys(errs).length) { setFieldErrors(errs); return }
     setSubmitting(true)
-    setActiveAction(action)
     setApiError(null)
     setFieldErrors({})
     try {
@@ -103,17 +101,8 @@ export default function NewVisitPage() {
       })
       const visitId = data.id
       const feeVal  = fee ? parseFloat(fee) : null
-
-      if (action === 'complete') {
-        await completeVisit(visitId, feeVal)
-        navigate(`/visits/${visitId}`, { replace: true })
-      } else if (action === 'prescription') {
-        if (feeVal) await saveFee(visitId, feeVal)
-        navigate(`/visits/${visitId}/prescriptions/new`, { replace: true })
-      } else {
-        if (feeVal) await saveFee(visitId, feeVal)
-        navigate(`/visits/${visitId}`, { replace: true })
-      }
+      if (feeVal) await saveFee(visitId, feeVal)
+      navigate(`/visits/${visitId}/prescriptions/new`, { replace: true })
     } catch (err) {
       const body = err.response?.data
       if (err.response?.status === 422 && body?.errors) {
@@ -125,7 +114,6 @@ export default function NewVisitPage() {
       }
     } finally {
       setSubmitting(false)
-      setActiveAction(null)
     }
   }
 
@@ -249,7 +237,7 @@ export default function NewVisitPage() {
           </div>
 
           {/* Actions */}
-          <div className="nvp-actions nvp-actions--multi">
+          <div className="nvp-actions">
             <button
               type="button"
               className="btn-secondary"
@@ -258,34 +246,14 @@ export default function NewVisitPage() {
             >
               Cancel
             </button>
-
-            <div className="nvp-primary-actions">
-              <button
-                type="button"
-                className="btn-secondary nvp-btn-complete"
-                onClick={() => submit('complete')}
-                disabled={submitting}
-              >
-                {submitting && activeAction === 'complete' ? <><Spinner size={12} /> Completing…</> : 'Complete Visit'}
-              </button>
-              <button
-                type="button"
-                className="btn-secondary nvp-btn-rx"
-                onClick={() => submit('prescription')}
-                disabled={submitting}
-              >
-                {submitting && activeAction === 'prescription' ? <><Spinner size={12} /> Saving…</> : '+ Prescription'}
-              </button>
-              <span className="nvp-action-sep" aria-hidden="true" />
-              <button
-                type="button"
-                className="btn-primary nvp-submit"
-                onClick={() => submit('save')}
-                disabled={submitting}
-              >
-                {submitting && activeAction === 'save' ? <><Spinner size={12} /> Saving…</> : 'Save Visit'}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn-primary nvp-submit"
+              onClick={submit}
+              disabled={submitting}
+            >
+              {submitting ? <><Spinner size={12} /> Saving…</> : '+ Prescription'}
+            </button>
           </div>
 
         </div>

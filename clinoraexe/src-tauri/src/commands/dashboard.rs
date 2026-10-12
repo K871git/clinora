@@ -123,31 +123,31 @@ pub async fn get_revenue(state: State<'_, AppState>) -> AppResult<Value> {
     // explicit complete_visit) still appear under the correct date.
     let row = sqlx::query(
         "SELECT
-            COALESCE(SUM(CASE WHEN DATE(COALESCE(invoiced_at,updated_at))=CURDATE() AND (status='completed' OR payment_status IN ('paid','partial')) THEN consultation_fee ELSE 0 END),0)*1e0 as t_rev,
-            COUNT(CASE WHEN DATE(COALESCE(invoiced_at,updated_at))=CURDATE() AND (status='completed' OR payment_status IN ('paid','partial')) THEN 1 END) as t_visits,
-            COALESCE(SUM(CASE WHEN DATE(COALESCE(invoiced_at,updated_at))=CURDATE() AND payment_status='paid' THEN amount_paid ELSE 0 END),0)*1e0 as t_coll,
-            COUNT(CASE WHEN DATE(COALESCE(invoiced_at,updated_at))=CURDATE() AND payment_status='paid' THEN 1 END) as t_paid,
-            COALESCE(SUM(CASE WHEN DATE(COALESCE(invoiced_at,updated_at))=CURDATE() AND (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as t_debt,
-            COUNT(CASE WHEN DATE(COALESCE(invoiced_at,updated_at))=CURDATE() AND (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN 1 END) as t_unpaid,
-            COALESCE(SUM(CASE WHEN YEARWEEK(COALESCE(invoiced_at,updated_at))=YEARWEEK(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) THEN consultation_fee ELSE 0 END),0)*1e0 as w_rev,
-            COUNT(CASE WHEN YEARWEEK(COALESCE(invoiced_at,updated_at))=YEARWEEK(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) THEN 1 END) as w_visits,
-            COALESCE(SUM(CASE WHEN YEARWEEK(COALESCE(invoiced_at,updated_at))=YEARWEEK(CURDATE()) AND payment_status='paid' THEN amount_paid ELSE 0 END),0)*1e0 as w_coll,
-            COUNT(CASE WHEN YEARWEEK(COALESCE(invoiced_at,updated_at))=YEARWEEK(CURDATE()) AND payment_status='paid' THEN 1 END) as w_paid,
-            COALESCE(SUM(CASE WHEN YEARWEEK(COALESCE(invoiced_at,updated_at))=YEARWEEK(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as w_debt,
-            COUNT(CASE WHEN YEARWEEK(COALESCE(invoiced_at,updated_at))=YEARWEEK(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN 1 END) as w_unpaid,
-            COALESCE(SUM(CASE WHEN MONTH(COALESCE(invoiced_at,updated_at))=MONTH(CURDATE()) AND YEAR(COALESCE(invoiced_at,updated_at))=YEAR(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) THEN consultation_fee ELSE 0 END),0)*1e0 as m_rev,
-            COUNT(CASE WHEN MONTH(COALESCE(invoiced_at,updated_at))=MONTH(CURDATE()) AND YEAR(COALESCE(invoiced_at,updated_at))=YEAR(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) THEN 1 END) as m_visits,
-            COALESCE(SUM(CASE WHEN MONTH(COALESCE(invoiced_at,updated_at))=MONTH(CURDATE()) AND YEAR(COALESCE(invoiced_at,updated_at))=YEAR(CURDATE()) AND payment_status='paid' THEN amount_paid ELSE 0 END),0)*1e0 as m_coll,
-            COUNT(CASE WHEN MONTH(COALESCE(invoiced_at,updated_at))=MONTH(CURDATE()) AND YEAR(COALESCE(invoiced_at,updated_at))=YEAR(CURDATE()) AND payment_status='paid' THEN 1 END) as m_paid,
-            COALESCE(SUM(CASE WHEN MONTH(COALESCE(invoiced_at,updated_at))=MONTH(CURDATE()) AND YEAR(COALESCE(invoiced_at,updated_at))=YEAR(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as m_debt,
-            COUNT(CASE WHEN MONTH(COALESCE(invoiced_at,updated_at))=MONTH(CURDATE()) AND YEAR(COALESCE(invoiced_at,updated_at))=YEAR(CURDATE()) AND (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN 1 END) as m_unpaid,
-            COALESCE(SUM(CASE WHEN (status='completed' OR payment_status IN ('paid','partial')) THEN consultation_fee ELSE 0 END),0)*1e0 as a_rev,
-            COUNT(CASE WHEN (status='completed' OR payment_status IN ('paid','partial')) THEN 1 END) as a_visits,
+            COALESCE(SUM(CASE WHEN DATE(visited_at)=CURDATE() AND consultation_fee>0 THEN consultation_fee ELSE 0 END),0)*1e0 as t_rev,
+            COUNT(CASE WHEN DATE(visited_at)=CURDATE() AND consultation_fee>0 THEN 1 END) as t_visits,
+            COALESCE(SUM(CASE WHEN DATE(visited_at)=CURDATE() AND payment_status='paid' THEN amount_paid ELSE 0 END),0)*1e0 as t_coll,
+            COUNT(CASE WHEN DATE(visited_at)=CURDATE() AND payment_status='paid' THEN 1 END) as t_paid,
+            COALESCE(SUM(CASE WHEN DATE(visited_at)=CURDATE() AND consultation_fee>0 AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as t_debt,
+            COUNT(CASE WHEN DATE(visited_at)=CURDATE() AND consultation_fee>0 AND payment_status!='paid' THEN 1 END) as t_unpaid,
+            COALESCE(SUM(CASE WHEN YEARWEEK(visited_at)=YEARWEEK(CURDATE()) AND consultation_fee>0 THEN consultation_fee ELSE 0 END),0)*1e0 as w_rev,
+            COUNT(CASE WHEN YEARWEEK(visited_at)=YEARWEEK(CURDATE()) AND consultation_fee>0 THEN 1 END) as w_visits,
+            COALESCE(SUM(CASE WHEN YEARWEEK(visited_at)=YEARWEEK(CURDATE()) AND payment_status='paid' THEN amount_paid ELSE 0 END),0)*1e0 as w_coll,
+            COUNT(CASE WHEN YEARWEEK(visited_at)=YEARWEEK(CURDATE()) AND payment_status='paid' THEN 1 END) as w_paid,
+            COALESCE(SUM(CASE WHEN YEARWEEK(visited_at)=YEARWEEK(CURDATE()) AND consultation_fee>0 AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as w_debt,
+            COUNT(CASE WHEN YEARWEEK(visited_at)=YEARWEEK(CURDATE()) AND consultation_fee>0 AND payment_status!='paid' THEN 1 END) as w_unpaid,
+            COALESCE(SUM(CASE WHEN MONTH(visited_at)=MONTH(CURDATE()) AND YEAR(visited_at)=YEAR(CURDATE()) AND consultation_fee>0 THEN consultation_fee ELSE 0 END),0)*1e0 as m_rev,
+            COUNT(CASE WHEN MONTH(visited_at)=MONTH(CURDATE()) AND YEAR(visited_at)=YEAR(CURDATE()) AND consultation_fee>0 THEN 1 END) as m_visits,
+            COALESCE(SUM(CASE WHEN MONTH(visited_at)=MONTH(CURDATE()) AND YEAR(visited_at)=YEAR(CURDATE()) AND payment_status='paid' THEN amount_paid ELSE 0 END),0)*1e0 as m_coll,
+            COUNT(CASE WHEN MONTH(visited_at)=MONTH(CURDATE()) AND YEAR(visited_at)=YEAR(CURDATE()) AND payment_status='paid' THEN 1 END) as m_paid,
+            COALESCE(SUM(CASE WHEN MONTH(visited_at)=MONTH(CURDATE()) AND YEAR(visited_at)=YEAR(CURDATE()) AND consultation_fee>0 AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as m_debt,
+            COUNT(CASE WHEN MONTH(visited_at)=MONTH(CURDATE()) AND YEAR(visited_at)=YEAR(CURDATE()) AND consultation_fee>0 AND payment_status!='paid' THEN 1 END) as m_unpaid,
+            COALESCE(SUM(CASE WHEN consultation_fee>0 THEN consultation_fee ELSE 0 END),0)*1e0 as a_rev,
+            COUNT(CASE WHEN consultation_fee>0 THEN 1 END) as a_visits,
             COALESCE(SUM(CASE WHEN payment_status='paid' THEN amount_paid ELSE 0 END),0)*1e0 as a_coll,
             COUNT(CASE WHEN payment_status='paid' THEN 1 END) as a_paid,
-            COALESCE(SUM(CASE WHEN (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as a_debt,
-            COUNT(CASE WHEN (status='completed' OR payment_status IN ('paid','partial')) AND payment_status!='paid' THEN 1 END) as a_unpaid,
-            COALESCE(AVG(CASE WHEN (status='completed' OR payment_status IN ('paid','partial')) THEN consultation_fee END),0)*1e0 as a_avg
+            COALESCE(SUM(CASE WHEN consultation_fee>0 AND payment_status!='paid' THEN GREATEST(0,consultation_fee-amount_paid) ELSE 0 END),0)*1e0 as a_debt,
+            COUNT(CASE WHEN consultation_fee>0 AND payment_status!='paid' THEN 1 END) as a_unpaid,
+            COALESCE(AVG(CASE WHEN consultation_fee>0 THEN consultation_fee END),0)*1e0 as a_avg
          FROM visits WHERE clinic_id = ? AND deleted_at IS NULL"
     ).bind(cid).fetch_one(db).await?;
 
@@ -231,14 +231,15 @@ pub async fn get_revenue_transactions(
     let period = period.unwrap_or_else(|| "this_month".to_string());
 
     let date_filter = match period.as_str() {
-        "today"     => "AND DATE(COALESCE(v.invoiced_at,v.updated_at)) = CURDATE()".to_string(),
-        "this_week" => "AND YEARWEEK(COALESCE(v.invoiced_at,v.updated_at)) = YEARWEEK(CURDATE())".to_string(),
-        _ => "AND MONTH(COALESCE(v.invoiced_at,v.updated_at)) = MONTH(CURDATE()) AND YEAR(COALESCE(v.invoiced_at,v.updated_at)) = YEAR(CURDATE())".to_string(),
+        "today"    => "AND DATE(v.visited_at) = CURDATE()".to_string(),
+        "this_week"=> "AND YEARWEEK(v.visited_at) = YEARWEEK(CURDATE())".to_string(),
+        "all_time" => "".to_string(),
+        _          => "AND MONTH(v.visited_at) = MONTH(CURDATE()) AND YEAR(v.visited_at) = YEAR(CURDATE())".to_string(),
     };
 
     let payment_filter = match filter.unwrap_or_default().as_str() {
-        "paid" | "collected"       => "AND v.payment_status = 'paid'",
-        "unpaid" | "outstanding"   => "AND v.payment_status != 'paid'",
+        "paid" | "collected"     => "AND v.payment_status = 'paid'",
+        "unpaid" | "outstanding" => "AND v.payment_status != 'paid'",
         _ => "",
     };
 
@@ -251,9 +252,9 @@ pub async fn get_revenue_transactions(
          FROM visits v
          JOIN patients p ON p.id = v.patient_id
          WHERE v.clinic_id = ? AND v.deleted_at IS NULL
-           AND (v.status = 'completed' OR v.payment_status IN ('paid','partial'))
+           AND v.consultation_fee > 0
          {} {}
-         ORDER BY COALESCE(v.invoiced_at,v.updated_at) DESC LIMIT 200",
+         ORDER BY v.visited_at DESC LIMIT 200",
         date_filter, payment_filter
     );
 

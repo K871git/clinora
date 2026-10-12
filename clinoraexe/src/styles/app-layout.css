@@ -227,6 +227,34 @@ html[data-theme="dark"] .shell-header {
   padding: 0;
 }
 
+/* Revenue pages — wider, no inner max-width cap */
+.shell-content:has(.rv2-page) {
+  max-width: 1440px;
+}
+
+/* Clinic page — wider canvas, keep top/bottom shell padding, kill horizontal only */
+.shell-content:has(.cpd-page) {
+  max-width: 1440px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Medicine library — flush horizontal, header owns its own padding */
+.shell-content:has(.mlib-page) {
+  max-width: 1440px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+/* Patients list — flush, header owns padding */
+.shell-content:has(.ptl-page) {
+  max-width: 1440px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
 /* ─── Icon button (hamburger, theme toggle) ──────────────────────────────── */
 .icon-btn {
   display: flex;

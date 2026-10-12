@@ -210,6 +210,15 @@ html[data-theme="dark"] .vst-billing-head { background: rgba(255,255,255,0.02); 
   letter-spacing: -0.03em;
 }
 
+.vst-billing-pharmacy-note {
+  display: flex; align-items: center; gap: 6px;
+  margin: 6px 0 4px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--clr-primary) 5%, transparent);
+  border-radius: var(--radius-md);
+  font-size: 12px; color: var(--clr-text-muted); font-weight: 500;
+}
+
 .vst-billing-actions {
   display: flex;
   align-items: center;

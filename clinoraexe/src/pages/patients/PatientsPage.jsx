@@ -72,6 +72,19 @@ function doExportExcel(rows) {
     .catch(() => toast.error('Export failed'))
 }
 
+/* ── Time-ago helper ─────────────────────────────────────────────────── */
+
+function timeAgo(dateStr) {
+  if (!dateStr) return null
+  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
+  if (days === 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 7)  return `${days}d ago`
+  if (days < 30) return `${Math.floor(days / 7)}w ago`
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`
+  return `${Math.floor(days / 365)}y ago`
+}
+
 /* ── Sorting ─────────────────────────────────────────────────────────── */
 
 const PAGE_SIZE = 15
@@ -143,49 +156,76 @@ export default function PatientsPage() {
 
   useEffect(() => { setPage(1) }, [search])
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages  = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const newCount    = patients.filter(p => isNew(p.created_at)).length
+  const revisitCount = patients.filter(p => !isNew(p.created_at) && isRevisitDue(p.last_visit_at)).length
 
   return (
-    <div>
-      {/* Header */}
-      <div className="pt-header">
-        <div className="pt-header-left">
-          <h1 className="pt-title">Patients</h1>
-          {patients.length > 0 && (
-            <span className="pt-count-badge">{patients.length.toLocaleString()}</span>
-          )}
+    <div className="ptl-page">
+
+      {/* ── Page header ── */}
+      <div className="ptl-hdr">
+        <div className="ptl-hdr-info">
+          <h1 className="ptl-title">Patients</h1>
+          <p className="ptl-sub">Registry · records · visit history</p>
         </div>
-        <button className="btn-primary pt-add-btn" onClick={() => setShowAdd(true)}>
+
+        {status === 'done' && patients.length > 0 && (
+          <div className="ptl-hdr-stats">
+            <div className="ptl-stat">
+              <span className="ptl-stat-val">{patients.length.toLocaleString()}</span>
+              <span className="ptl-stat-lbl">Total</span>
+            </div>
+            {newCount > 0 && (
+              <div className="ptl-stat">
+                <span className="ptl-stat-val ptl-stat-val--green">{newCount}</span>
+                <span className="ptl-stat-lbl">New (48h)</span>
+              </div>
+            )}
+            {revisitCount > 0 && (
+              <div className="ptl-stat">
+                <span className="ptl-stat-val ptl-stat-val--amber">{revisitCount}</span>
+                <span className="ptl-stat-lbl">Revisit Due</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <button className="btn-primary ptl-add-btn" onClick={() => setShowAdd(true)}>
           <IconPlus /> Add Patient
         </button>
       </div>
 
-      {status === 'loading' && <PageLoader />}
+      {status === 'loading' && <div className="ptl-loader"><PageLoader /></div>}
 
       {status === 'error' && (
-        <div className="card state-panel">Could not load patients — check your connection.</div>
+        <div className="ptl-body">
+          <div className="card state-panel">Could not load patients — check your connection.</div>
+        </div>
       )}
 
       {status === 'done' && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="ptl-body">
 
-          {/* Toolbar: search + exports */}
-          <div className="pt-toolbar">
-            <div className="pt-search-wrap">
-              <svg className="pt-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          {/* ── Search + export row ── */}
+          <div className="ptl-search-row">
+            <div className="ptl-search-wrap">
+              <svg className="ptl-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input
-                className="pt-search"
+                className="ptl-search-input"
                 type="search"
-                placeholder="Search patients…"
+                placeholder="Search by name, phone or gender…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <div className="pt-export-btns">
-              <span className="pt-result-count">{filtered.length} / {patients.length}</span>
+            <span className="ptl-count-tag">
+              {filtered.length} of {patients.length}
+            </span>
+            <div className="ptl-export-row">
               <button className="pt-exp-btn" onClick={() => doExportCopy(filtered)}>⎘ Copy</button>
               <button className="pt-exp-btn" onClick={() => doExportCsv(filtered)}>↓ CSV</button>
               <button className="pt-exp-btn pt-exp-btn--excel" onClick={() => doExportExcel(filtered)}>↓ Excel</button>
@@ -193,93 +233,122 @@ export default function PatientsPage() {
             </div>
           </div>
 
-          {/* Table */}
-          {filtered.length === 0 ? (
-            <EmptyState
-              icon="🧑‍⚕️"
-              title={search ? 'No patients match your search' : 'No patients registered yet'}
-              description={search ? 'Try a different name or phone number.' : 'Add your first patient using the button above.'}
-            />
-          ) : (
-            <>
-              <div className="pt-scroll-wrap">
-                <table className="pt-table">
-                  <thead>
-                    <tr>
-                      <th className="pt-th pt-th--sortable" onClick={() => toggleSort('name')}>
-                        Patient <SortChevron col="name" sortCol={sortCol} sortDir={sortDir} />
-                      </th>
-                      <th className="pt-th">Contact</th>
-                      <th className="pt-th pt-th--sortable pt-th--narrow" onClick={() => toggleSort('age')}>
-                        Age <SortChevron col="age" sortCol={sortCol} sortDir={sortDir} />
-                      </th>
-                      <th className="pt-th pt-th--sortable pt-th--narrow" onClick={() => toggleSort('gender')}>
-                        Gender <SortChevron col="gender" sortCol={sortCol} sortDir={sortDir} />
-                      </th>
-                      <th className="pt-th pt-th--sortable" onClick={() => toggleSort('last_visit')}>
-                        Last Visit <SortChevron col="last_visit" sortCol={sortCol} sortDir={sortDir} />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginated.map(p => (
-                      <tr
-                        key={p.id}
-                        className="pt-tr"
-                        onClick={() => navigate(`/patients/${p.id}`)}
-                        tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && navigate(`/patients/${p.id}`)}
-                      >
-                        <td className="pt-td-patient">
-                          <div className="pt-avatar" style={{ background: avatarColor(p.name) }}>
-                            {(p.name?.[0] ?? '?').toUpperCase()}
-                          </div>
-                          <span className="pt-patient-name">{p.name}</span>
-                          {isNew(p.created_at) && <span className="pt-new-badge">New</span>}
-                          {!isNew(p.created_at) && isRevisitDue(p.last_visit_at) && (
-                            <span className="pt-revisit-badge">Revisit Due</span>
-                          )}
-                        </td>
-                        <td className="pt-td-muted">{p.mobile || '—'}</td>
-                        <td className="pt-td-muted">{p.age != null ? `${p.age} yrs` : '—'}</td>
-                        <td className="pt-td-muted">{capitalize(p.gender) ?? '—'}</td>
-                        <td className="pt-td-muted">
-                          {p.last_visit_at
-                            ? fmtDate(p.last_visit_at)
-                            : <span className="pt-never">Never visited</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="pt-table-footer">
-                <span className="pt-footer-info">
-                  {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
-                  {filtered.length !== patients.length ? ` (${patients.length} total)` : ''}
-                </span>
-                {totalPages > 1 && (
-                  <div className="pt-pagination">
-                    <button className="pt-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹ Prev</button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
-                      .reduce((acc, n, i, arr) => {
-                        if (i > 0 && n - arr[i - 1] > 1) acc.push('…')
-                        acc.push(n)
-                        return acc
-                      }, [])
-                      .map((n, i) => n === '…'
-                        ? <span key={`e${i}`} className="pt-page-ellipsis">…</span>
-                        : <button key={n} className={`pt-page-btn${n === page ? ' pt-page-btn--active' : ''}`} onClick={() => setPage(n)}>{n}</button>
-                      )
-                    }
-                    <button className="pt-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next ›</button>
-                  </div>
+          {/* ── Table card ── */}
+          <div className="ptl-table-card">
+            {filtered.length === 0 ? (
+              <div className="ptl-empty">
+                <div className="ptl-empty-icon">🧑‍⚕️</div>
+                <div className="ptl-empty-title">
+                  {search ? 'No patients match your search' : 'No patients registered yet'}
+                </div>
+                <div className="ptl-empty-sub">
+                  {search ? 'Try a different name or phone number' : 'Add your first patient using the button above'}
+                </div>
+                {!search && (
+                  <button className="btn-primary" style={{ marginTop: 14, fontSize: 13, width: 'auto' }} onClick={() => setShowAdd(true)}>
+                    <IconPlus /> Add First Patient
+                  </button>
                 )}
               </div>
-            </>
-          )}
+            ) : (
+              <>
+                <div className="pt-scroll-wrap">
+                  <table className="pt-table ptl-tbl">
+                    <thead>
+                      <tr>
+                        <th className="pt-th pt-th--sortable ptl-th-patient" onClick={() => toggleSort('name')}>
+                          Patient <SortChevron col="name" sortCol={sortCol} sortDir={sortDir} />
+                        </th>
+                        <th className="pt-th">Contact</th>
+                        <th className="pt-th pt-th--sortable ptl-th-narrow" onClick={() => toggleSort('age')}>
+                          Age <SortChevron col="age" sortCol={sortCol} sortDir={sortDir} />
+                        </th>
+                        <th className="pt-th pt-th--sortable ptl-th-narrow" onClick={() => toggleSort('gender')}>
+                          Gender <SortChevron col="gender" sortCol={sortCol} sortDir={sortDir} />
+                        </th>
+                        <th className="pt-th pt-th--sortable ptl-th-visit" onClick={() => toggleSort('last_visit')}>
+                          Last Visit <SortChevron col="last_visit" sortCol={sortCol} sortDir={sortDir} />
+                        </th>
+                        <th className="pt-th ptl-th-arrow"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map(p => {
+                        const rowNew     = isNew(p.created_at)
+                        const rowRevisit = !rowNew && isRevisitDue(p.last_visit_at)
+                        return (
+                          <tr
+                            key={p.id}
+                            className={`pt-tr ptl-tr${rowRevisit ? ' ptl-tr--revisit' : ''}`}
+                            onClick={() => navigate(`/patients/${p.id}`)}
+                            tabIndex={0}
+                            onKeyDown={e => e.key === 'Enter' && navigate(`/patients/${p.id}`)}
+                          >
+                            <td className="pt-td-patient ptl-td-patient">
+                              <div className="ptl-avatar" style={{ background: avatarColor(p.name) }}>
+                                {(p.name?.[0] ?? '?').toUpperCase()}
+                              </div>
+                              <div className="ptl-patient-info">
+                                <span className="ptl-patient-name">{p.name}</span>
+                                <div className="ptl-patient-badges">
+                                  {rowNew     && <span className="ptl-badge ptl-badge--new">New</span>}
+                                  {rowRevisit && <span className="ptl-badge ptl-badge--revisit">Revisit Due</span>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="pt-td-muted ptl-td-contact">{p.mobile || '—'}</td>
+                            <td className="pt-td-muted">{p.age != null ? `${p.age} yrs` : '—'}</td>
+                            <td className="pt-td-muted">{capitalize(p.gender) ?? '—'}</td>
+                            <td className="ptl-td-visit">
+                              {p.last_visit_at ? (
+                                <>
+                                  <span className="ptl-visit-date">{fmtDate(p.last_visit_at)}</span>
+                                  <span className="ptl-visit-ago">{timeAgo(p.last_visit_at)}</span>
+                                </>
+                              ) : (
+                                <span className="pt-never">Never</span>
+                              )}
+                            </td>
+                            <td className="ptl-td-arrow">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ptl-row-arrow">
+                                <path d="M9 18l6-6-6-6"/>
+                              </svg>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="pt-table-footer ptl-footer">
+                  <span className="pt-footer-info">
+                    {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                    {filtered.length !== patients.length ? ` (${patients.length} total)` : ''}
+                  </span>
+                  {totalPages > 1 && (
+                    <div className="pt-pagination">
+                      <button className="pt-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹ Prev</button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                        .reduce((acc, n, i, arr) => {
+                          if (i > 0 && n - arr[i - 1] > 1) acc.push('…')
+                          acc.push(n)
+                          return acc
+                        }, [])
+                        .map((n, i) => n === '…'
+                          ? <span key={`e${i}`} className="pt-page-ellipsis">…</span>
+                          : <button key={n} className={`pt-page-btn${n === page ? ' pt-page-btn--active' : ''}`} onClick={() => setPage(n)}>{n}</button>
+                        )
+                      }
+                      <button className="pt-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next ›</button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
         </div>
       )}
 

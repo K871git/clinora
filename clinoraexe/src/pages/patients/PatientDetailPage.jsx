@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPatient, getPatientVisits, getPatientPrescriptions } from '../../services/patientService'
-import { createVisit, saveFee, completeVisit } from '../../services/visitService'
+import { createVisit, saveFee } from '../../services/visitService'
 import { validateFee } from '../../lib/inputValidators'
 import { getPatientTimeline } from '../../services/timelineService'
 import { listPatientCertificates } from '../../services/certificateService'
@@ -87,7 +87,6 @@ export default function PatientDetailPage() {
   const [nvDiagnosis,     setNvDiagnosis]     = useState('')
   const [nvFee,           setNvFee]           = useState('')
   const [nvSubmitting,    setNvSubmitting]    = useState(false)
-  const [nvActiveAction,  setNvActiveAction]  = useState(null)
 
   function nowLocal() {
     const d = new Date(); d.setSeconds(0, 0)
@@ -97,16 +96,16 @@ export default function PatientDetailPage() {
   function openNewVisit() {
     setNvVisitedAt(nowLocal())
     setNvNotes(''); setNvDiagnosis(''); setNvFee('')
-    setNvSubmitting(false); setNvActiveAction(null)
+    setNvSubmitting(false)
     setShowNewVisit(true)
   }
 
-  async function handleNewVisit(action) {
+  async function handleNewVisit() {
     if (nvFee) {
       const feeErr = validateFee(nvFee)
       if (feeErr) { alert(feeErr); return }
     }
-    setNvActiveAction(action); setNvSubmitting(true)
+    setNvSubmitting(true)
     try {
       const visitPayload = {
         visited_at:         new Date(nvVisitedAt || nowLocal()).toISOString(),
@@ -117,16 +116,11 @@ export default function PatientDetailPage() {
       const visitId = visit.id
       const feeVal  = nvFee ? Number(nvFee) : null
       if (feeVal) await saveFee(visitId, feeVal)
-      if (action === 'complete' || action === 'rx') await completeVisit(visitId, feeVal)
       setShowNewVisit(false)
-      if (action === 'rx') {
-        navigate(`/visits/${visitId}/prescriptions/new`)
-      } else {
-        navigate(`/visits/${visitId}`)
-      }
+      navigate(`/visits/${visitId}/prescriptions/new`)
     } catch (e) {
       alert(typeof e === 'string' ? e : 'Could not create visit')
-      setNvSubmitting(false); setNvActiveAction(null)
+      setNvSubmitting(false)
     }
   }
 
@@ -499,16 +493,10 @@ export default function PatientDetailPage() {
               <input type="number" value={nvFee} onChange={e => setNvFee(e.target.value)} placeholder="0" min={0} disabled={nvSubmitting} />
             </div>
 
-            <div className="emr-modal-footer" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <div className="emr-modal-footer">
               <button className="btn-secondary" onClick={() => setShowNewVisit(false)} disabled={nvSubmitting}>Cancel</button>
-              <button className="btn-secondary" onClick={() => handleNewVisit('save')} disabled={nvSubmitting}>
-                {nvSubmitting && nvActiveAction === 'save' ? 'Saving…' : 'Save Visit'}
-              </button>
-              <button className="btn-secondary" onClick={() => handleNewVisit('complete')} disabled={nvSubmitting}>
-                {nvSubmitting && nvActiveAction === 'complete' ? 'Saving…' : 'Complete Visit'}
-              </button>
-              <button className="btn-primary" onClick={() => handleNewVisit('rx')} disabled={nvSubmitting}>
-                {nvSubmitting && nvActiveAction === 'rx' ? 'Saving…' : '+ Prescription'}
+              <button className="btn-primary" onClick={handleNewVisit} disabled={nvSubmitting}>
+                {nvSubmitting ? 'Saving…' : '+ Prescription'}
               </button>
             </div>
           </div>

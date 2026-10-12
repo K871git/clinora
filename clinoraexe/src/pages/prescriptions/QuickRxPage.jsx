@@ -100,7 +100,7 @@ export default function QuickRxPage() {
 
   /* Notes + fee */
   const [doctorNotes, setDoctorNotes] = useState('')
-  const [fee, setFee]                 = useState('')
+  const [fee, setFee]                 = useState('100')
 
   /* Language */
   const [lang, setLang] = useState(loadLang)

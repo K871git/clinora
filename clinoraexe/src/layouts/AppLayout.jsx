@@ -114,7 +114,7 @@ const PAGE_TITLES = {
   '/pharmacy/revenue':    'Revenue',
   '/clinic':              'Clinic',
   '/appointments':        'Appointments',
-  '/opd':                 'OPD Register',
+  '/opd':                 'Clinic',
   '/notes':               'My Notes',
   '/pharmacy/notes':      'My Notes',
   '/games':               'Game Room',

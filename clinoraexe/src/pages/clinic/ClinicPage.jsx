@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { listOpdRegister } from '../../services/visitService'
+import { listOpdRegister, recordVisitPayment } from '../../services/visitService'
 import { listAppointments, createAppointment, updateAppointment, deleteAppointment } from '../../services/appointmentService'
 import { searchPatients, createPatient } from '../../services/patientService'
 import { sanitizeMobile, validateMobile, sanitizeAge, validateAge } from '../../lib/inputValidators'
 import { confirmDelete } from '../../lib/swal'
 import EmptyState from '../../components/ui/EmptyState'
+import '../../styles/clinic.css'
 import '../../styles/opd.css'
 import '../../styles/appointments.css'
 
@@ -236,12 +237,29 @@ export default function ClinicPage() {
     })
   }, [visits, sortCol, sortDir])
 
+  /* ── OPD quick pay ── */
+  const [markingPaidId, setMarkingPaidId] = useState(null)
+  async function handleMarkPaid(v, e) {
+    e.stopPropagation()
+    if (!v.consultation_fee || v.consultation_fee <= 0) { toast.error('No fee set — go to visit to add fee first'); return }
+    setMarkingPaidId(v.id)
+    try {
+      await recordVisitPayment(v.id, { payment_status: 'paid', amount_paid: v.consultation_fee })
+      setVisits(prev => prev.map(x => x.id === v.id ? { ...x, payment_status: 'paid', amount_paid: v.consultation_fee } : x))
+      toast.success(`Marked paid — ₹${v.consultation_fee}`)
+    } catch {
+      toast.error('Could not record payment — try again.')
+    } finally {
+      setMarkingPaidId(null)
+    }
+  }
+
   /* ── OPD date nav ── */
   function pickOpdDate(offset) {
     const d = new Date(opdDate); d.setDate(d.getDate() + offset)
     setOpdDate(d.toISOString().split('T')[0])
   }
-  const isToday = opdDate === todayStr()
+  const isOpdToday = opdDate === todayStr()
   const totalFee  = visits.reduce((s, v) => s + (v.consultation_fee || 0), 0)
   const openCount = visits.filter(v => v.status === 'open').length
   const doneCount = visits.filter(v => v.status === 'completed').length
@@ -340,18 +358,20 @@ export default function ClinicPage() {
       const updated = await updateAppointment(appt.id, { status })
       setAppointments(prev => prev.map(a => a.id === appt.id ? updated : a))
       setWeekAppts(prev => prev.map(a => a.id === appt.id ? { ...a, status } : a))
-    } catch { toast.error('Failed to update') }
+      const label = status === 'confirmed' ? 'Confirmed' : status === 'completed' ? 'Marked done' : 'Updated'
+      toast.success(`${label} — ${appt.patient?.name ?? 'Appointment'}`)
+    } catch { toast.error('Failed to update status') }
   }
   const weekDays = getWeekDays(selectedDate)
 
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
-    <div className="clinic-page">
+    <div className="cpd-page">
 
       {/* ── Tab bar ── */}
-      <div className="clinic-tab-bar">
+      <div className="cpd-tabs">
         <button
-          className={`clinic-tab-btn${activeTab === 'opd' ? ' clinic-tab-btn--active' : ''}`}
+          className={`cpd-tab${activeTab === 'opd' ? ' cpd-tab--on' : ''}`}
           onClick={() => setActiveTab('opd')}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -360,11 +380,11 @@ export default function ClinicPage() {
           </svg>
           OPD Register
           {visits.length > 0 && activeTab !== 'opd' && (
-            <span className="clinic-tab-badge">{visits.length}</span>
+            <span className="cpd-tab-badge">{visits.length}</span>
           )}
         </button>
         <button
-          className={`clinic-tab-btn${activeTab === 'appointments' ? ' clinic-tab-btn--active' : ''}`}
+          className={`cpd-tab${activeTab === 'appointments' ? ' cpd-tab--on' : ''}`}
           onClick={() => setActiveTab('appointments')}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -373,7 +393,7 @@ export default function ClinicPage() {
           </svg>
           Appointments
           {appointments.length > 0 && activeTab !== 'appointments' && (
-            <span className="clinic-tab-badge">{appointments.length}</span>
+            <span className="cpd-tab-badge">{appointments.length}</span>
           )}
         </button>
       </div>
@@ -382,183 +402,236 @@ export default function ClinicPage() {
           OPD TAB
           ═══════════════════════════════════════════════ */}
       {activeTab === 'opd' && (
-        <div className="opd-page" style={{ paddingTop: 0 }}>
-
-          <div className="opd-header">
-            <div>
-              <h1 className="opd-title">OPD Register</h1>
-              <div className="opd-date-label">{fmtDateFull(opdDate)}</div>
+        <>
+          {/* Header */}
+          <div className="cpd-hdr">
+            <div className="cpd-hdr-left">
+              <h1 className="cpd-title">OPD Register</h1>
+              <span className="cpd-date-full">{fmtDateFull(opdDate)}</span>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div className="cpd-date-nav">
+              <button className="cpd-nav-btn" onClick={() => pickOpdDate(-1)}>‹ Prev</button>
+              <input type="date" className="cpd-date-input" value={opdDate} onChange={e => setOpdDate(e.target.value)} />
+              <button className="cpd-nav-btn" onClick={() => pickOpdDate(1)} disabled={isOpdToday}>Next ›</button>
+              {!isOpdToday && (
+                <button className="cpd-nav-btn cpd-nav-btn--today" onClick={() => setOpdDate(todayStr())}>Today</button>
+              )}
+            </div>
+            <div className="cpd-hdr-right">
               {visits.length > 0 && (
-                <button className="btn-secondary opd-print-btn" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <button className="btn-secondary opd-print-btn" onClick={() => window.print()}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
                     <rect x="6" y="14" width="12" height="8"/>
                   </svg>
                   Print
                 </button>
               )}
-              <button className="btn-primary opd-new-btn" onClick={() => navigate('/patients')}>
-                + New Visit
+              <button className="btn-primary" style={{ fontSize: 13 }} onClick={() => navigate('/prescriptions/new')}>
+                + Prescription
               </button>
             </div>
           </div>
 
-          <div className="opd-date-nav">
-            <button className="opd-nav-btn" onClick={() => pickOpdDate(-1)}>‹ Prev</button>
-            <input type="date" className="opd-date-input" value={opdDate} onChange={e => setOpdDate(e.target.value)} />
-            <button className="opd-nav-btn" onClick={() => pickOpdDate(1)} disabled={isToday}>Next ›</button>
-            {!isToday && (
-              <button className="opd-nav-btn opd-nav-btn--today" onClick={() => setOpdDate(todayStr())}>Today</button>
+          {/* Gray body zone */}
+          <div className="cpd-body">
+
+            {/* Stat strip — card */}
+            {visits.length > 0 && (
+              <div className="cpd-strip">
+                <div className="cpd-stat">
+                  <div className="cpd-stat-val">{visits.length}</div>
+                  <div className="cpd-stat-lbl">Total</div>
+                </div>
+                <div className={`cpd-stat${openCount > 0 ? ' cpd-stat--warn' : ''}`}>
+                  <div className="cpd-stat-val">{openCount}</div>
+                  <div className="cpd-stat-lbl">Open</div>
+                </div>
+                <div className={`cpd-stat${doneCount > 0 ? ' cpd-stat--ok' : ''}`}>
+                  <div className="cpd-stat-val">{doneCount}</div>
+                  <div className="cpd-stat-lbl">Done</div>
+                </div>
+                <div className="cpd-stat cpd-stat--blue">
+                  <div className="cpd-stat-val">₹{totalFee.toLocaleString('en-IN')}</div>
+                  <div className="cpd-stat-lbl">Billed</div>
+                </div>
+                <div className={`cpd-stat${paidFee > 0 ? ' cpd-stat--green' : ''}`}>
+                  <div className="cpd-stat-val">₹{paidFee.toLocaleString('en-IN')}</div>
+                  <div className="cpd-stat-lbl">Collected</div>
+                </div>
+              </div>
             )}
-          </div>
 
-          {visits.length > 0 && (
-            <div className="opd-stats">
-              <div className="opd-stat"><span className="opd-stat-val">{visits.length}</span><span className="opd-stat-lbl">Total</span></div>
-              <div className="opd-stat opd-stat--open"><span className="opd-stat-val">{openCount}</span><span className="opd-stat-lbl">Open</span></div>
-              <div className="opd-stat opd-stat--done"><span className="opd-stat-val">{doneCount}</span><span className="opd-stat-lbl">Done</span></div>
-              <div className="opd-stat opd-stat--fee"><span className="opd-stat-val">₹{totalFee.toLocaleString('en-IN')}</span><span className="opd-stat-lbl">Billed</span></div>
-              <div className="opd-stat opd-stat--paid"><span className="opd-stat-val">₹{paidFee.toLocaleString('en-IN')}</span><span className="opd-stat-lbl">Collected</span></div>
-            </div>
-          )}
+            {/* Table / states — card */}
+            {opdLoading ? (
+              <div className="cpd-loading">Loading visits…</div>
+            ) : visits.length === 0 ? (
+              <div className="cpd-empty">
+                <div className="cpd-empty-icon">📋</div>
+                <div className="cpd-empty-title">No visits for {isOpdToday ? 'today' : fmtDateShort(opdDate)}</div>
+                <div className="cpd-empty-sub">Start a new prescription to record a visit</div>
+                {isOpdToday && (
+                  <button className="btn-primary" style={{ marginTop: 12, fontSize: 13 }} onClick={() => navigate('/prescriptions/new')}>
+                    + Start First Visit
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="cpd-table-card">
+                <table className="opd-table">
+                  <thead>
+                    <tr>
+                      <th className="opd-th-num">#</th>
+                      <th className="opd-th--sortable" onClick={() => toggleSort('name')}>
+                        Patient <OpdSort col="name" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                      <th className="opd-th-time opd-th--sortable" onClick={() => toggleSort('time')}>
+                        Time <OpdSort col="time" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                      <th className="opd-th-age">Age / Sex</th>
+                      <th>Notes / Complaint</th>
+                      <th className="opd-th-status opd-th--sortable" onClick={() => toggleSort('status')}>
+                        Status <OpdSort col="status" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                      <th className="opd-th-fee opd-th--sortable" onClick={() => toggleSort('fee')}>
+                        Fee <OpdSort col="fee" sortCol={sortCol} sortDir={sortDir} />
+                      </th>
+                      <th className="opd-th-pay">Payment</th>
+                      <th className="opd-th-fu">Follow-up</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((v, idx) => {
+                      const name   = v.patient?.name ?? '—'
+                      const isOpen = v.status === 'open'
+                      return (
+                        <tr key={v.id} className="opd-tr" onClick={() => navigate(`/visits/${v.id}`)}>
+                          <td className="opd-td-num">{idx + 1}</td>
+                          <td className="opd-td-name">
+                            <div className="opd-avatar" style={{ background: avatarColor(name) }}>{name[0]?.toUpperCase()}</div>
+                            <div>
+                              <div className="opd-patient-name">{name}</div>
+                              {v.patient?.mobile && <div className="opd-patient-mob">{v.patient.mobile}</div>}
+                            </div>
+                          </td>
+                          <td className="opd-td-time">{fmtTime(v.visited_at)}</td>
+                          <td className="opd-td-age">
+                            {v.patient?.age ? `${v.patient.age}y` : '—'}
+                            {v.patient?.gender && <span className="opd-gender"> {v.patient.gender[0].toUpperCase()}</span>}
+                          </td>
+                          <td className="opd-td-notes">
+                            {v.consultation_notes
+                              ? <span title={v.consultation_notes.length > 60 ? v.consultation_notes : undefined}>
+                                  {v.consultation_notes.length > 60 ? v.consultation_notes.slice(0, 58) + '…' : v.consultation_notes}
+                                </span>
+                              : <span className="opd-muted">—</span>}
+                          </td>
+                          <td className="opd-td-status">
+                            <span className={`opd-status-pill opd-status-pill--${v.status}`}>{isOpen ? 'Open' : 'Done'}</span>
+                          </td>
+                          <td className="opd-td-fee">
+                            {v.consultation_fee > 0 ? `₹${v.consultation_fee.toLocaleString('en-IN')}` : <span className="opd-muted">—</span>}
+                          </td>
+                          <td className="opd-td-pay" onClick={e => e.stopPropagation()}>
+                            {v.consultation_fee > 0 ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span className="opd-pay-dot" style={{ color: PAY_COLOR[v.payment_status] ?? PAY_COLOR.unpaid }}>● {v.payment_status}</span>
+                                {v.payment_status !== 'paid' && (
+                                  <button
+                                    className="opd-mark-paid-btn"
+                                    onClick={e => handleMarkPaid(v, e)}
+                                    disabled={markingPaidId === v.id}
+                                    title="Mark as paid"
+                                  >
+                                    {markingPaidId === v.id ? '…' : 'Paid'}
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="opd-muted">—</span>
+                            )}
+                          </td>
+                          <td className="opd-td-fu">
+                            {v.followup_date
+                              ? <span className="opd-fu-badge">{fmtDateShort(v.followup_date)}</span>
+                              : <span className="opd-muted">—</span>}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          {opdLoading ? (
-            <div className="opd-empty">Loading…</div>
-          ) : visits.length === 0 ? (
-            <div className="opd-empty">
-              No visits recorded for {isToday ? 'today' : fmtDateShort(opdDate)}.
-              {isToday && (
-                <button className="btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/patients')}>
-                  Start First Visit
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="opd-table-wrap">
-              <table className="opd-table">
-                <thead>
-                  <tr>
-                    <th className="opd-th-num">#</th>
-                    <th className="opd-th--sortable" onClick={() => toggleSort('name')}>Patient <OpdSort col="name" sortCol={sortCol} sortDir={sortDir} /></th>
-                    <th className="opd-th-time opd-th--sortable" onClick={() => toggleSort('time')}>Time <OpdSort col="time" sortCol={sortCol} sortDir={sortDir} /></th>
-                    <th className="opd-th-age">Age / Sex</th>
-                    <th>Notes / Complaint</th>
-                    <th className="opd-th-status opd-th--sortable" onClick={() => toggleSort('status')}>Status <OpdSort col="status" sortCol={sortCol} sortDir={sortDir} /></th>
-                    <th className="opd-th-fee opd-th--sortable" onClick={() => toggleSort('fee')}>Fee <OpdSort col="fee" sortCol={sortCol} sortDir={sortDir} /></th>
-                    <th className="opd-th-pay">Payment</th>
-                    <th className="opd-th-fu">Follow-up</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sorted.map((v, idx) => {
-                    const name = v.patient?.name ?? '—'
-                    const isOpen = v.status === 'open'
-                    return (
-                      <tr key={v.id} className="opd-tr" onClick={() => navigate(`/visits/${v.id}`)}>
-                        <td className="opd-td-num">{idx + 1}</td>
-                        <td className="opd-td-name">
-                          <div className="opd-avatar" style={{ background: avatarColor(name) }}>{name[0]?.toUpperCase()}</div>
-                          <div>
-                            <div className="opd-patient-name">{name}</div>
-                            {v.patient?.mobile && <div className="opd-patient-mob">{v.patient.mobile}</div>}
-                          </div>
-                        </td>
-                        <td className="opd-td-time">{fmtTime(v.visited_at)}</td>
-                        <td className="opd-td-age">
-                          {v.patient?.age ? `${v.patient.age}y` : '—'}
-                          {v.patient?.gender && <span className="opd-gender"> {v.patient.gender[0].toUpperCase()}</span>}
-                        </td>
-                        <td className="opd-td-notes">
-                          {v.consultation_notes
-                            ? <span title={v.consultation_notes.length > 60 ? v.consultation_notes : undefined}>
-                                {v.consultation_notes.length > 60 ? v.consultation_notes.slice(0, 58) + '…' : v.consultation_notes}
-                              </span>
-                            : <span className="opd-muted">—</span>}
-                        </td>
-                        <td className="opd-td-status">
-                          <span className={`opd-status-pill opd-status-pill--${v.status}`}>{isOpen ? 'Open' : 'Done'}</span>
-                        </td>
-                        <td className="opd-td-fee">
-                          {v.consultation_fee > 0 ? `₹${v.consultation_fee.toLocaleString('en-IN')}` : <span className="opd-muted">—</span>}
-                        </td>
-                        <td className="opd-td-pay">
-                          {v.consultation_fee > 0
-                            ? <span className="opd-pay-dot" style={{ color: PAY_COLOR[v.payment_status] ?? PAY_COLOR.unpaid }}>● {v.payment_status}</span>
-                            : <span className="opd-muted">—</span>}
-                        </td>
-                        <td className="opd-td-fu">
-                          {v.followup_date
-                            ? <span className="opd-fu-badge">{fmtDateShort(v.followup_date)}</span>
-                            : <span className="opd-muted">—</span>}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </div>{/* end cpd-body */}
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════
           APPOINTMENTS TAB
           ═══════════════════════════════════════════════ */}
       {activeTab === 'appointments' && (
-        <div className="appt-page" style={{ paddingTop: 0 }}>
-
-          <div className="appt-toolbar">
-            <h2 className="appt-toolbar-title">Appointments</h2>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div className="appt-view-toggle">
-                <button className={`appt-view-btn${apptView === 'list' ? ' appt-view-btn--active' : ''}`} onClick={() => setApptView('list')}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <>
+          {/* Header */}
+          <div className="cpd-hdr">
+            <div className="cpd-hdr-left">
+              <h1 className="cpd-title">Appointments</h1>
+              {apptView === 'list'
+                ? <span className="cpd-date-full">{fmtApptDateFull(selectedDate)}</span>
+                : <span className="cpd-date-full">
+                    {new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    {' — '}
+                    {new Date(weekDays[6] + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+              }
+            </div>
+            <div className="cpd-date-nav">
+              {apptView === 'list' ? (
+                <>
+                  <button className="cpd-nav-btn" onClick={() => pickApptDate(-1)}>‹ Prev</button>
+                  <button className="cpd-nav-btn" onClick={() => pickApptDate(1)}>Next ›</button>
+                  <button className="cpd-nav-btn cpd-nav-btn--today" onClick={() => setSelectedDate(todayStr())}>Today</button>
+                </>
+              ) : (
+                <>
+                  <button className="cpd-nav-btn" onClick={() => pickWeek(-1)}>‹ Prev</button>
+                  <button className="cpd-nav-btn" onClick={() => pickWeek(1)}>Next ›</button>
+                  <button className="cpd-nav-btn cpd-nav-btn--today" onClick={() => setSelectedDate(todayStr())}>This Week</button>
+                </>
+              )}
+            </div>
+            <div className="cpd-hdr-right">
+              <div className="cpd-view-seg">
+                <button className={`cpd-view-btn${apptView === 'list' ? ' cpd-view-btn--on' : ''}`} onClick={() => setApptView('list')}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
                     <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
                   </svg>
                   List
                 </button>
-                <button className={`appt-view-btn${apptView === 'week' ? ' appt-view-btn--active' : ''}`} onClick={() => setApptView('week')}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <button className={`cpd-view-btn${apptView === 'week' ? ' cpd-view-btn--on' : ''}`} onClick={() => setApptView('week')}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
                     <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                    <line x1="3" y1="14.5" x2="8" y2="14.5"/><line x1="3" y1="18" x2="8" y2="18"/>
                   </svg>
                   Week
                 </button>
               </div>
-              <button className="emr-add-btn" onClick={() => openAdd()}>+ Book Appointment</button>
+              <button className="btn-primary" style={{ fontSize: 13 }} onClick={() => openAdd()}>
+                + Book Appointment
+              </button>
             </div>
           </div>
 
-          {apptView === 'list' ? (
-            <div className="appt-date-nav">
-              <button onClick={() => pickApptDate(-1)}>‹ Prev</button>
-              <span className="appt-date-label">{fmtApptDateFull(selectedDate)}</span>
-              <button onClick={() => pickApptDate(1)}>Next ›</button>
-              <button onClick={() => setSelectedDate(todayStr())} style={{ marginLeft: 4, fontSize: 12 }}>Today</button>
-            </div>
-          ) : (
-            <div className="appt-date-nav">
-              <button onClick={() => pickWeek(-1)}>‹ Prev Week</button>
-              <span className="appt-date-label">
-                {new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                {' — '}
-                {new Date(weekDays[6] + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </span>
-              <button onClick={() => pickWeek(1)}>Next Week ›</button>
-              <button onClick={() => setSelectedDate(todayStr())} style={{ marginLeft: 4, fontSize: 12 }}>This Week</button>
-            </div>
-          )}
-
+          {/* Status filter tabs (list view only) */}
           {apptView === 'list' && (
-            <div className="appt-filters">
+            <div className="cpd-filter-bar">
               {['', ...APPT_STATUSES].map(s => (
                 <button
                   key={s}
-                  className={`appt-filter-btn${statusFilter === s ? ' appt-filter-btn--active' : ''}`}
+                  className={`cpd-filter-btn${statusFilter === s ? ' cpd-filter-btn--on' : ''}`}
                   onClick={() => setStatusFilter(s)}
                 >
                   {s ? s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'All'}
@@ -567,52 +640,77 @@ export default function ClinicPage() {
             </div>
           )}
 
-          {apptView === 'list' && (
-            <>
-              {apptLoading && <div className="emr-empty">Loading…</div>}
-              {!apptLoading && appointments.length === 0 && (
-                <EmptyState icon="📅" title="No appointments for this day" description="Book a new appointment using the button above." />
-              )}
-              {!apptLoading && appointments.length > 0 && (
-                <div className="appt-list">
+          {/* Gray body zone */}
+          <div className="cpd-body">
+
+            {/* List view */}
+            {apptView === 'list' && (
+              apptLoading ? (
+                <div className="cpd-loading">Loading appointments…</div>
+              ) : appointments.length === 0 ? (
+                <div className="cpd-empty">
+                  <div className="cpd-empty-icon">📅</div>
+                  <div className="cpd-empty-title">No appointments for this day</div>
+                  <div className="cpd-empty-sub">Book a new appointment using the button above</div>
+                </div>
+              ) : (
+                <div className="cpd-appt-card">
                   {appointments.map(appt => (
-                    <div key={appt.id} className="appt-item">
-                      <div className="appt-time-col">
-                        <div className="appt-time">{fmtApptTime(appt.scheduled_at)}</div>
-                        <div className="appt-date">{appt.duration_minutes}min</div>
+                    <div key={appt.id} className="cpd-appt-row">
+                      <div className={`cpd-appt-accent cpd-appt-accent--${appt.status}`} />
+                      <div className="cpd-appt-time-blk">
+                        <div className="cpd-appt-time">{fmtApptTime(appt.scheduled_at)}</div>
+                        <div className="cpd-appt-dur">{appt.duration_minutes} min</div>
                       </div>
-                      <div className="appt-divider" />
-                      <div className="appt-info">
-                        <div className="appt-patient">{appt.patient?.name}</div>
-                        <div className="appt-type">{appt.title || appt.type.replace('_', ' ')}</div>
+                      <div className="cpd-appt-info">
+                        <div className="cpd-appt-patient">{appt.patient?.name}</div>
+                        <div className="cpd-appt-sub">
+                          <span>{appt.title || appt.type.replace('_', ' ')}</span>
+                          {appt.notes && (
+                            <>
+                              <span className="cpd-appt-sub-dot" />
+                              <span>{appt.notes.length > 50 ? appt.notes.slice(0, 48) + '…' : appt.notes}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <span className={`appt-status-badge appt-status-${appt.status}`}>
+                      <span className={`cpd-appt-badge cpd-appt-badge--${appt.status}`}>
                         {appt.status.replace('_', ' ')}
                       </span>
-                      <div className="appt-actions">
+                      <div className="cpd-appt-actions">
                         {appt.status === 'scheduled' && (
-                          <button className="emr-icon-btn" onClick={() => quickStatus(appt, 'confirmed')} title="Confirm">✓</button>
+                          <button className="cpd-act-btn cpd-act-btn--confirm" onClick={() => quickStatus(appt, 'confirmed')}>
+                            ✓ Confirm
+                          </button>
                         )}
                         {(appt.status === 'scheduled' || appt.status === 'confirmed') && (
-                          <button className="emr-icon-btn" onClick={() => quickStatus(appt, 'completed')} title="Mark done">Done</button>
+                          <button className="cpd-act-btn cpd-act-btn--done" onClick={() => quickStatus(appt, 'completed')}>
+                            Done
+                          </button>
                         )}
-                        <button className="emr-icon-btn" onClick={() => openEdit(appt)}>Edit</button>
-                        <button className="emr-icon-btn emr-icon-btn--danger" onClick={() => handleDelete(appt.id)}>✕</button>
+                        <button className="cpd-act-btn" onClick={() => openEdit(appt)}>Edit</button>
+                        <button className="cpd-act-btn cpd-act-btn--del" onClick={() => handleDelete(appt.id)}>✕</button>
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </>
-          )}
+              )
+            )}
 
-          {apptView === 'week' && (
-            weekLoading ? (
-              <div className="emr-empty">Loading week…</div>
-            ) : (
-              <WeekGrid days={weekDays} appts={weekAppts} onBookSlot={openAdd} onEdit={openEdit} onQuickStatus={quickStatus} onDelete={handleDelete} />
-            )
-          )}
+            {/* Week view */}
+            {apptView === 'week' && (
+              weekLoading ? (
+                <div className="cpd-loading">Loading week…</div>
+              ) : (
+                <WeekGrid
+                  days={weekDays} appts={weekAppts}
+                  onBookSlot={openAdd} onEdit={openEdit}
+                  onQuickStatus={quickStatus} onDelete={handleDelete}
+                />
+              )
+            )}
+
+          </div>{/* end cpd-body */}
 
           {/* Book / Edit modal */}
           {showAdd && (
@@ -635,7 +733,8 @@ export default function ClinicPage() {
                       <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-md)', zIndex: 10, maxHeight: 220, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,.12)' }}>
                         {patResults.length > 0
                           ? patResults.map(p => (
-                              <div key={p.id} onClick={() => { setForm(f => ({ ...f, patient_id: p.id, patient_name: p.name })); setPatSearch(p.name); setPatResults([]); setShowNewPat(false) }}
+                              <div key={p.id}
+                                onClick={() => { setForm(f => ({ ...f, patient_id: p.id, patient_name: p.name })); setPatSearch(p.name); setPatResults([]); setShowNewPat(false) }}
                                 style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--clr-border)' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'var(--clr-bg)'}
                                 onMouseLeave={e => e.currentTarget.style.background = ''}
@@ -645,7 +744,8 @@ export default function ClinicPage() {
                             ))
                           : <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--clr-text-muted)' }}>No patient found.</div>
                         }
-                        <div onClick={() => { setShowNewPat(true); setNewPat(n => ({ ...n, name: patSearch })); setPatResults([]) }}
+                        <div
+                          onClick={() => { setShowNewPat(true); setNewPat(n => ({ ...n, name: patSearch })); setPatResults([]) }}
                           style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--clr-primary)', fontWeight: 600, borderTop: '1px solid var(--clr-border)', background: 'var(--clr-bg)' }}
                           onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
                           onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -710,12 +810,12 @@ export default function ClinicPage() {
 
                 <div className="emr-modal-footer">
                   <button className="btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
-                  <button className="btn-primary" onClick={handleSaveAppt} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+                  <button className="btn-primary" onClick={handleSaveAppt} disabled={saving}>{saving ? 'Saving…' : 'Save Appointment'}</button>
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   )

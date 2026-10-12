@@ -1,5 +1,5 @@
 /* ─── Revenue pages — Doctor & Pharmacy (rv-*) ─────────────────────────── */
-.rv-page { max-width: 920px; }
+.rv-page { width: 100%; }
 .rv-period-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
 .rv-period-tab {
   padding: 7px 18px; border-radius: 20px;
@@ -156,10 +156,8 @@
   font-size: 14px;
 }
 
-/* ─── PharmacyRevenuePage v2 redesign (rv2-*) ───────────────────────────── */
-
-/* Page header */
-.rv2-page { max-width: 1040px; }
+/* ─── Revenue v2 (rv2-*) — used by Doctor & Pharmacy revenue pages ─────── */
+.rv2-page { width: 100%; }
 
 .rv2-hdr {
   display: flex;

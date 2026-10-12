@@ -372,59 +372,50 @@ function AddMedicineModal({ onClose, onDone, categories = [], existingNames = []
 
   return (
     <div className="ml-modal-backdrop">
-      <div className="ml-modal ml-add-modal">
+      <div className="ml-modal mlam-modal">
         <div className="ml-modal-head">
           <span className="ml-modal-title">Add Medicines to Library</span>
           <button className="ml-modal-close-btn" onClick={onClose} type="button">✕</button>
         </div>
 
         <form onSubmit={handleSave}>
-          <div className="ml-add-body">
-            {rows.map((row, idx) => (
-              <div key={row.id} className="ml-entry-card">
-                <div className="ml-entry-hdr">
-                  <span className="ml-entry-hdr-num">Medicine {idx + 1}</span>
-                  {rows.length > 1 && (
-                    <button
-                      type="button"
-                      className="ml-entry-hdr-rm"
-                      title="Remove this entry"
-                      onClick={() => removeRow(row.id)}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+          <div className="mlam-table-wrap">
+            {/* Column headers */}
+            <div className="mlam-col-hdr">
+              <span className="mlam-lbl mlam-c-name">Name <span className="mlam-req">*</span></span>
+              <span className="mlam-lbl mlam-c-generic">Generic</span>
+              <span className="mlam-lbl mlam-c-cat">Category</span>
+              <span className="mlam-lbl mlam-c-unit">Unit / Form</span>
+              <span className="mlam-lbl mlam-c-qty">Qty</span>
+              <span className="mlam-lbl mlam-c-price">Price (₹)</span>
+              <span className="mlam-c-del" />
+            </div>
 
-                <div className="ml-entry-fields">
-                  <div className="field-group">
-                    <label className="field-label">
-                      Name <span style={{ color: 'var(--clr-danger)' }}>*</span>
-                    </label>
+            {/* One row per medicine */}
+            {rows.map((row, idx) => {
+              const isDup = existingNames.includes(row.name.trim().toLowerCase()) && row.name.trim()
+              return (
+                <div key={row.id} className={`mlam-row${isDup ? ' mlam-row--dup' : ''}`}>
+                  <div className="mlam-c-name">
                     <input
-                      className={`field${existingNames.includes(row.name.trim().toLowerCase()) && row.name.trim() ? ' field--warn' : ''}`}
-                      placeholder="e.g. Paracetamol 500mg"
+                      className="mlam-input"
+                      placeholder="Paracetamol 500mg"
                       value={row.name}
                       onChange={e => updateRow(row.id, 'name', e.target.value)}
                       autoFocus={idx === 0}
+                      title={isDup ? 'Already in library' : undefined}
                     />
-                    {existingNames.includes(row.name.trim().toLowerCase()) && row.name.trim() && (
-                      <p className="phs-dup-warn">⚠ Already in library — will be skipped or overwrite.</p>
-                    )}
+                    {isDup && <span className="mlam-dup-dot" title="Already in library">!</span>}
                   </div>
 
-                  <div className="field-group">
-                    <label className="field-label">Generic Name</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. Paracetamol"
-                      value={row.generic_name}
-                      onChange={e => updateRow(row.id, 'generic_name', e.target.value)}
-                    />
-                  </div>
+                  <input
+                    className="mlam-input mlam-c-generic"
+                    placeholder="Paracetamol"
+                    value={row.generic_name}
+                    onChange={e => updateRow(row.id, 'generic_name', e.target.value)}
+                  />
 
-                  <div className="field-group">
-                    <label className="field-label">Category</label>
+                  <div className="mlam-c-cat">
                     <CategoryCombobox
                       value={row.category}
                       onChange={v => updateRow(row.id, 'category', v)}
@@ -432,53 +423,51 @@ function AddMedicineModal({ onClose, onDone, categories = [], existingNames = []
                     />
                   </div>
 
-                  <div className="field-group">
-                    <label className="field-label">Unit / Form</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. Tablet"
-                      list="ml-unit-list"
-                      value={row.unit}
-                      onChange={e => updateRow(row.id, 'unit', e.target.value)}
-                    />
-                  </div>
+                  <input
+                    className="mlam-input mlam-c-unit"
+                    placeholder="Tablet"
+                    list="ml-unit-list"
+                    value={row.unit}
+                    onChange={e => updateRow(row.id, 'unit', e.target.value)}
+                  />
 
-                  <div className="field-group">
-                    <label className="field-label">Stock Qty</label>
-                    <input
-                      className="field"
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                      value={row.quantity}
-                      onChange={e => updateRow(row.id, 'quantity', e.target.value)}
-                    />
-                  </div>
+                  <input
+                    className="mlam-input mlam-c-qty"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    value={row.quantity}
+                    onChange={e => updateRow(row.id, 'quantity', e.target.value)}
+                  />
 
-                  <div className="field-group">
-                    <label className="field-label">Default Price (₹)</label>
-                    <input
-                      className="field"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={row.price}
-                      onChange={e => updateRow(row.id, 'price', e.target.value)}
-                    />
+                  <input
+                    className="mlam-input mlam-c-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={row.price}
+                    onChange={e => updateRow(row.id, 'price', e.target.value)}
+                  />
+
+                  <div className="mlam-c-del">
+                    {rows.length > 1 && (
+                      <button type="button" className="mlam-del-btn" onClick={() => removeRow(row.id)} title="Remove">
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
-            <div className="ml-add-more-wrap">
-              <button type="button" className="ml-add-more-btn" onClick={addRow}>
-                <IconPlus />
-                Add Another Medicine
-              </button>
-            </div>
           </div>
+
+            {/* Add row button — outside the bordered table */}
+            <button type="button" className="mlam-add-row-btn" onClick={addRow}>
+              <IconPlus /> Add Another Medicine
+            </button>
 
           <div className="ml-modal-foot">
             <span className="ml-foot-info">
@@ -850,107 +839,147 @@ export default function MedicinesPage() {
     return <div className="card state-panel">Could not load medicine library — check your connection.</div>
   }
 
+  const lowStockCount = medicines.filter(m => (m.quantity ?? 0) < 10).length
+
   return (
-    <div>
-      {/* Shared datalist for unit options */}
+    <div className="mlib-page">
       <datalist id="ml-unit-list">
         {UNIT_OPTIONS.map(u => <option key={u} value={u} />)}
       </datalist>
 
-      {/* Stock alerts */}
-      {!alertsDismissed && (
-        <StockAlertPanel alerts={alerts} onDismiss={() => setAlertsDismissed(true)} />
-      )}
-
-      {/* Toolbar */}
-      <div className="ml-toolbar">
-        <input
-          className="field ml-search"
-          type="search"
-          placeholder="Search by name, generic or category…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <span className="ml-count-tag">
-          {status === 'loading' ? '…' : `${filtered.length} / ${total}`}
-        </span>
-        <div className="ml-actions">
+      {/* ── Page header ── */}
+      <div className="mlib-hdr">
+        <div className="mlib-hdr-info">
+          <h1 className="mlib-title">Medicine Library</h1>
+          <p className="mlib-sub">Stock · pricing · dosage forms</p>
+        </div>
+        <div className="mlib-hdr-meta">
+          {status === 'done' && (
+            <span className="mlib-count-pill">{total} medicines</span>
+          )}
+          {lowStockCount > 0 && (
+            <span className="mlib-warn-pill">⚠ {lowStockCount} low stock</span>
+          )}
+        </div>
+        <div className="mlib-hdr-actions">
           <ExportMenu list={filtered} />
           <button
-            className="btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            className="btn-secondary mlib-act-btn"
             onClick={() => setModal('import')}
           >
             <IconUpload /> Import
           </button>
-          <button
-            className="btn-primary"
-            style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}
-            onClick={openAdd}
-          >
+          <button className="btn-primary mlib-act-btn" onClick={openAdd}>
             <IconPlus /> Add Medicine
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {status === 'loading' ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0', color: 'var(--clr-text-muted)' }}>
-            <Spinner size={26} />
-          </div>
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon="💊"
-            title={medicines.length === 0 ? 'No medicines yet' : 'No medicines match your search'}
-            description={medicines.length === 0 ? 'Add a medicine or import from a CSV file.' : 'Try a different name or category.'}
-          />
-        ) : (
-          <div className="ml-table-wrap">
-            <table className="ml-table">
-              <thead>
-                <tr>
-                  <th>Medicine Name</th>
-                  <th>Generic</th>
-                  <th>Category</th>
-                  <th>Unit</th>
-                  <th style={{ textAlign: 'right' }}>Qty</th>
-                  <th style={{ textAlign: 'right' }}>Price</th>
-                  <th style={{ width: '80px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(med => (
-                  <tr key={med.id} className={(med.quantity ?? 0) < 10 ? 'ml-row--low-stock' : ''}>
-                    <td className="ml-td-name">{med.name}</td>
-                    <td className="ml-td-muted">{med.generic_name || '—'}</td>
-                    <td className="ml-td-muted">{med.category || '—'}</td>
-                    <td className="ml-td-muted">{med.unit || '—'}</td>
-                    <td style={{ textAlign: 'right' }}>{med.quantity ?? 0}</td>
-                    <td style={{ textAlign: 'right' }}>{fmtPrice(med.price)}</td>
-                    <td>
-                      <div className="ml-row-actions">
-                        <button className="ml-row-btn" title="Edit" onClick={() => openEdit(med)}>
-                          <IconEdit />
-                        </button>
-                        <button
-                          className="ml-row-btn ml-row-btn--danger"
-                          title="Delete"
-                          onClick={() => handleDelete(med)}
-                        >
-                          <IconTrash />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* ── Stock alerts ── */}
+      {!alertsDismissed && (
+        <div className="mlib-alerts-wrap">
+          <StockAlertPanel alerts={alerts} onDismiss={() => setAlertsDismissed(true)} />
+        </div>
+      )}
 
-      {/* Multi-add modal */}
+      {/* ── Gray body ── */}
+      <div className="mlib-body">
+
+        {/* Search row */}
+        <div className="mlib-search-row">
+          <div className="mlib-search-wrap">
+            <svg className="mlib-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              className="mlib-search-input"
+              type="search"
+              placeholder="Search medicine, generic or category…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <span className="mlib-count-tag">
+            {status === 'loading' ? '…' : `${filtered.length} of ${total}`}
+          </span>
+        </div>
+
+        {/* Table card */}
+        <div className="mlib-table-card">
+          {status === 'loading' ? (
+            <div className="mlib-state-loading"><Spinner size={26} /></div>
+          ) : filtered.length === 0 ? (
+            <div className="mlib-state-empty">
+              <div className="mlib-empty-icon">💊</div>
+              <div className="mlib-empty-title">
+                {medicines.length === 0 ? 'No medicines yet' : 'No medicines match your search'}
+              </div>
+              <div className="mlib-empty-sub">
+                {medicines.length === 0 ? 'Add a medicine or import from a CSV file' : 'Try a different name or category'}
+              </div>
+              {medicines.length === 0 && (
+                <button className="btn-primary" style={{ marginTop: 14, fontSize: 13 }} onClick={openAdd}>
+                  <IconPlus /> Add First Medicine
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="ml-table-wrap">
+              <table className="ml-table mlib-tbl">
+                <thead>
+                  <tr>
+                    <th className="mlib-th-name">Medicine Name</th>
+                    <th>Generic</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th className="mlib-th-num">Qty</th>
+                    <th className="mlib-th-num">Price</th>
+                    <th className="mlib-th-act"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(med => {
+                    const isLow = (med.quantity ?? 0) < 10
+                    return (
+                      <tr key={med.id} className={isLow ? 'ml-row--low-stock' : ''}>
+                        <td className="mlib-td-name">
+                          <span className="mlib-med-name">{med.name}</span>
+                          {isLow && <span className="mlib-low-badge">Low stock</span>}
+                        </td>
+                        <td className="ml-td-muted">{med.generic_name || '—'}</td>
+                        <td>
+                          {med.category
+                            ? <span className="mlib-cat-pill">{med.category}</span>
+                            : <span className="ml-td-muted">—</span>
+                          }
+                        </td>
+                        <td className="ml-td-muted">{med.unit || '—'}</td>
+                        <td className="mlib-td-num">
+                          <span className={isLow ? 'mlib-qty--low' : ''}>{med.quantity ?? 0}</span>
+                        </td>
+                        <td className="mlib-td-num">{fmtPrice(med.price)}</td>
+                        <td className="mlib-td-act">
+                          <div className="ml-row-actions">
+                            <button className="mlib-row-btn mlib-row-btn--edit" title="Edit" onClick={() => openEdit(med)}>
+                              <IconEdit /> Edit
+                            </button>
+                            <button className="mlib-row-btn mlib-row-btn--del" title="Delete" onClick={() => handleDelete(med)}>
+                              <IconTrash />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      </div>{/* end mlib-body */}
+
+      {/* ── Modals ── */}
       {modal === 'add' && (
         <AddMedicineModal
           categories={categories}
@@ -964,7 +993,6 @@ export default function MedicinesPage() {
         />
       )}
 
-      {/* Edit modal */}
       {modal === 'edit' && (
         <MedicineModal
           title="Edit Medicine"
@@ -979,7 +1007,6 @@ export default function MedicinesPage() {
         />
       )}
 
-      {/* Import modal */}
       {modal === 'import' && (
         <MedicineImportModal
           onClose={closeModal}

@@ -90,7 +90,7 @@ export default function PatientNotesTab({ patientId, userRole }) {
       <div style={{ display: 'flex', height: 420, border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
 
         {/* Sidebar */}
-        <div style={{ width: 220, borderRight: '1px solid var(--clr-border)', display: 'flex', flexDirection: 'column', background: 'var(--clr-surface)', flexShrink: 0 }}>
+        <div style={{ width: 280, borderRight: '1px solid var(--clr-border)', display: 'flex', flexDirection: 'column', background: 'var(--clr-surface)', flexShrink: 0 }}>
           <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-muted)', textTransform: 'uppercase', letterSpacing: '.4px' }}>
               Notes {notes.length > 0 && `(${notes.length})`}
