@@ -132,7 +132,7 @@ export default function DashboardPage() {
       {/* ── Right Now — operational strip ──────────────────────────────── */}
       {statsStatus !== 'loading' && (
         <div className="dash-now-strip">
-          <button className={`dash-now-chip${statsStatus === 'done' && (stats?.today_visits ?? 0) > 0 ? ' dash-now-chip--green' : ''}`} onClick={() => navigate('/opd')}>
+          <button className={`dash-now-chip${statsStatus === 'done' && (stats?.today_visits ?? 0) > 0 ? ' dash-now-chip--green' : ''}`} onClick={() => navigate('/clinic')}>
             <span className="dash-now-val">{statsStatus === 'done' ? (stats?.today_visits ?? 0) : '—'}</span>
             <span className="dash-now-lbl">Seen Today</span>
           </button>
@@ -147,7 +147,7 @@ export default function DashboardPage() {
             <span className="dash-now-lbl">Drafts Unsent</span>
           </button>
           <div className="dash-now-sep" />
-          <button className={`dash-now-chip${followupStatus === 'done' && followupsToday > 0 ? ' dash-now-chip--purple' : ''}`} onClick={() => navigate('/opd')}>
+          <button className={`dash-now-chip${followupStatus === 'done' && followupsToday > 0 ? ' dash-now-chip--purple' : ''}`} onClick={() => navigate('/clinic')}>
             <span className="dash-now-val">{followupStatus === 'done' ? followupsToday : '—'}</span>
             <span className="dash-now-lbl">Follow-ups Today</span>
           </button>
@@ -179,7 +179,7 @@ export default function DashboardPage() {
           accent="success"
           status={statsStatus}
           delta={statsStatus === 'done' ? (stats?.today_visits ?? 0) - (stats?.yesterday_visits ?? 0) : null}
-          onClick={() => navigate('/opd')}
+          onClick={() => navigate('/clinic')}
         />
         <StatCard
           icon={<IconPeople />}
@@ -295,7 +295,7 @@ export default function DashboardPage() {
               <div className="card dash-card">
                 <div className="dash-card-header">
                   <span className="dash-card-title">Seen Today</span>
-                  <button className="btn-link" onClick={() => navigate('/opd')}>View OPD</button>
+                  <button className="btn-link" onClick={() => navigate('/clinic')}>View Clinic</button>
                 </div>
                 <SidePanel
                   status={todayStatus}
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                 <div className="card dash-card">
                   <div className="dash-card-header">
                     <span className="dash-card-title">Follow-ups</span>
-                    <button className="btn-link" onClick={() => navigate('/opd')}>View OPD</button>
+                    <button className="btn-link" onClick={() => navigate('/clinic')}>View Clinic</button>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {followups.slice(0, 8).map(f => {
@@ -362,32 +362,6 @@ export default function DashboardPage() {
 
           </div>
 
-          {/* ── Staff Overview ──────────────────────────────────────── */}
-          <div className="card dash-staff-card">
-            <div className="dash-staff-header">
-              <span className="dash-card-title">Staff Overview</span>
-              <span className="dash-staff-soon-badge">Coming Soon</span>
-            </div>
-            <div className="dash-staff-body">
-              <div className="dash-staff-clinic-info">
-                <div className="dash-staff-clinic-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V11h6v10"/>
-                  </svg>
-                </div>
-                <div>
-                  <div className="dash-staff-clinic-name">{clinicName ?? 'Your Clinic'}</div>
-                  <div className="dash-staff-clinic-sub">1 active doctor</div>
-                </div>
-              </div>
-              <p className="dash-staff-hint">
-                Employee tracking — region, headcount, and role stats — will appear here once staff members are added to the system.
-              </p>
-              <button className="dash-staff-cta" onClick={() => navigate('/settings')}>
-                Set up staff members →
-              </button>
-            </div>
-          </div>
         </>
       )}
     </div>

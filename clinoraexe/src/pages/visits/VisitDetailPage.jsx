@@ -392,7 +392,6 @@ export default function VisitDetailPage() {
   const consultFee    = parseFloat(feeInput || '0') || 0
   const medTotal      = visit.medicine_total ?? 0
   const chargesTotal  = charges.reduce((s, c) => s + parseFloat(c.amount || 0), 0)
-  const grandTotal    = consultFee + medTotal + chargesTotal
   const hasPharmacy   = medTotal > 0
 
   return (
@@ -815,23 +814,21 @@ export default function VisitDetailPage() {
             </div>
           )}
 
-          {/* Medicine total */}
-          <div className="vst-billing-row">
-            <span className="vst-billing-row-label">
-              Medicine Total
-              {hasPharmacy && <span className="vst-billing-source"> (from pharmacy)</span>}
-            </span>
-            <span className={`vst-billing-row-value${!hasPharmacy ? ' vst-billing-row-value--muted' : ''}`}>
-              {hasPharmacy ? `₹${fmtPrice(medTotal)}` : '—'}
+          <div className="vst-billing-total-row">
+            <span className="vst-billing-total-label">Total (Consultation)</span>
+            <span className="vst-billing-total-amount">
+              ₹{fmtPrice(isCompleted ? (parseFloat(visit.consultation_fee ?? 0) + chargesTotal) : (consultFee + chargesTotal))}
             </span>
           </div>
 
-          <div className="vst-billing-total-row">
-            <span className="vst-billing-total-label">Grand Total</span>
-            <span className="vst-billing-total-amount">
-              ₹{fmtPrice(isCompleted ? (parseFloat(visit.consultation_fee ?? 0) + medTotal + chargesTotal) : grandTotal)}
-            </span>
-          </div>
+          {hasPharmacy && (
+            <div className="vst-billing-pharmacy-note">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+              </svg>
+              Pharmacy billed separately — ₹{fmtPrice(medTotal)} via pharmacy invoice
+            </div>
+          )}
         </div>
 
         {/* ── Payment Status ──────────────────────────────────────── */}

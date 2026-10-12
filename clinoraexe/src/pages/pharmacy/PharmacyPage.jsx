@@ -82,33 +82,39 @@ function RxCard({ rx, selected, onClick }) {
       ].filter(Boolean).join(' ')}
       onClick={onClick}
     >
+      {/* Col 1: avatar */}
       <div className="pharma-qcard-avatar">{(rx.patient.name?.[0] ?? '?').toUpperCase()}</div>
 
-      <div className="pharma-qcard-body">
+      {/* Col 2: patient name */}
+      <div className="pharma-qcard-patient">
         <div className="pharma-qcard-name">{rx.patient.name}</div>
-        {rx.doctor && <div className="pharma-qcard-doctor">{doctorLabel(rx.doctor.name)}</div>}
+      </div>
+
+      {/* Col 3: doctor · medicines (fills center) */}
+      <div className="pharma-qcard-meta">
+        {rx.doctor && <span className="pharma-qcard-doc">{doctorLabel(rx.doctor.name)}</span>}
+        {rx.doctor && rx.items?.length > 0 && <span className="pharma-qcard-sep"> · </span>}
         {rx.items?.length > 0 && (
-          <div className="pharma-qcard-meds">
-            {rx.items.slice(0, 2).map(i => i.medicine_name).join(', ')}
-            {rx.items.length > 2 && <span className="pharma-qcard-meds-more"> +{rx.items.length - 2}</span>}
-          </div>
+          <span className="pharma-qcard-meds">
+            {rx.items.slice(0, 3).map(i => i.medicine_name).join(', ')}
+            {rx.items.length > 3 && <span className="pharma-qcard-meds-more"> +{rx.items.length - 3}</span>}
+          </span>
         )}
       </div>
 
+      {/* Col 4: time + badges */}
       <div className="pharma-qcard-right">
-        <div className="pharma-qcard-badges">
-          <span className={`pharma-status-pill${ongoing ? ' pharma-status-pill--ongoing' : ' pharma-status-pill--pending'}`}>
-            {ongoing && <span className="pharma-pulse" />}
-            {ongoing ? 'Dispensing' : 'Pending'}
-          </span>
-          {isOverdue(rx) && <span className="pharma-qcard-overdue">Overdue</span>}
-          {rx.items?.length > 0 && (
-            <span className="pharma-med-pill">{rx.items.length} med{rx.items.length !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-        <div className={`pharma-qcard-time${urgent ? ' pharma-qcard-time--urgent' : ''}`}>
+        <span className={`pharma-qcard-time${urgent ? ' pharma-qcard-time--urgent' : ''}`}>
           {timeAgo(timeRef)}
-        </div>
+        </span>
+        {isOverdue(rx) && <span className="pharma-qcard-overdue">Overdue</span>}
+        {rx.items?.length > 0 && (
+          <span className="pharma-med-pill">{rx.items.length} med{rx.items.length !== 1 ? 's' : ''}</span>
+        )}
+        <span className={`pharma-status-pill${ongoing ? ' pharma-status-pill--ongoing' : ' pharma-status-pill--pending'}`}>
+          {ongoing && <span className="pharma-pulse" />}
+          {ongoing ? 'Dispensing' : 'Pending'}
+        </span>
       </div>
     </button>
   )
@@ -481,191 +487,242 @@ export default function PharmacyPage() {
   }
 
   return (
-    <div className="pharma-page">
+    <div className="phq-page">
+      <div className="phq-body">
 
-      {/* Header */}
-      <div className="pharma-page-hdr">
-        <h2 className="pharma-page-hdr-title">Prescription Queue</h2>
-        <button className="pharma-sync-pill" onClick={handleRefresh} disabled={queueStatus === 'loading'}>
-          {queueStatus === 'loading' ? <Spinner size={12} /> : (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-            </svg>
-          )}
-          {lastSync
-            ? `Synced ${lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
-            : 'Sync'
-          }
-        </button>
-      </div>
-
-      {/* Stat cards */}
-      <div className="pharma-stat-cards">
-        <StatCard label="Total Active" value={stats.pending + stats.dispensing} accent="total" loading={statsLoading}
-          icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="1" width="12" height="16" rx="2" /><path d="M6 6h6M6 9h6M6 12h4" /></svg>}
-        />
-        <StatCard label="Pending" value={stats.pending} accent="pending" loading={statsLoading}
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>}
-        />
-        <StatCard label="Dispensing" value={stats.dispensing} accent="dispensing" loading={statsLoading}
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>}
-        />
-        <StatCard label="Done Today" value={stats.today_done} accent="done" loading={statsLoading}
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>}
-        />
-      </div>
-
-      {/* Stock alert strip — only shown if there are issues */}
-      {hasAlerts && (
-        <button className="pharma-alert-strip" onClick={() => navigate('/pharmacy/stock')}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          <span className="pharma-alert-strip-text">Stock attention needed: {alertParts.join(' · ')}</span>
-          <span className="pharma-alert-strip-cta">View Stock →</span>
-        </button>
-      )}
-
-      {/* Search */}
-      {queueStatus === 'done' && allRx.length > 0 && (
-        <div className="pharma-search">
-          <span className="pharma-search-icon">
+        {/* Alert banner */}
+        {hasAlerts && (
+          <button className="phq-alert-banner" onClick={() => navigate('/pharmacy/stock')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-          </span>
-          <input
-            className="pharma-search-input"
-            type="text"
-            placeholder="Search patient, doctor or medicine…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {q && <span className="pharma-search-count">{filtered.length} of {allRx.length} shown</span>}
-        </div>
-      )}
+            <span className="phq-alert-text">Stock attention needed: {alertParts.join(' · ')}</span>
+            <span className="phq-alert-cta">View Stock →</span>
+          </button>
+        )}
 
-      {/* Queue loading */}
-      {queueStatus === 'loading' && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-          <Spinner size={26} />
-        </div>
-      )}
-
-      {/* Queue error */}
-      {queueStatus === 'error' && (
-        <div className="card state-panel">
-          <p>Could not load prescriptions — check your connection.</p>
-          <button className="btn-link" style={{ marginTop: 'var(--space-sm)' }} onClick={handleRefresh}>Try again</button>
-        </div>
-      )}
-
-      {/* Queue empty */}
-      {queueStatus === 'done' && allRx.length === 0 && (
-        <div className="pharma-empty-state">
-          <div className="pharma-empty-card">
-            <div className="pharma-empty-illus">
-              <svg className="pharma-empty-orbit" width="116" height="116" viewBox="0 0 116 116" fill="none">
-                <circle cx="58" cy="58" r="54" stroke="currentColor" strokeWidth="1.5" strokeDasharray="7 5" strokeOpacity="0.35" />
-                <g transform="translate(58,4) rotate(-90)">
-                  <rect x="-11" y="-4.5" width="22" height="9" rx="4.5" fill="currentColor" fillOpacity="0.50" />
-                  <line x1="0" y1="-4" x2="0" y2="4" stroke="white" strokeWidth="1.2" strokeOpacity="0.55" />
-                </g>
-                <circle cx="104" cy="85" r="4.5" fill="currentColor" fillOpacity="0.40" />
-                <g transform="translate(12,85) rotate(30)">
-                  <rect x="-8" y="-3.5" width="16" height="7" rx="3.5" fill="currentColor" fillOpacity="0.45" />
-                </g>
+        {/* ── KPI stat cards ── */}
+        <div className="phq-kpi-row">
+          <div className="phq-kpi">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
-              <div className="pharma-empty-badge-wrap">
-                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                  <text x="50%" y="54%" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20" fontWeight="700" fontFamily="Georgia, serif">Rx</text>
-                </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.pending + stats.dispensing}</span>
+              <span className="phq-kpi-label">Active</span>
+              <span className="phq-kpi-sub">in queue now</span>
+            </div>
+          </div>
+
+          <div className="phq-kpi phq-kpi--amber">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.pending}</span>
+              <span className="phq-kpi-label">Pending</span>
+              <span className="phq-kpi-sub">awaiting dispense</span>
+            </div>
+          </div>
+
+          <div className="phq-kpi phq-kpi--green">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+              </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.dispensing}</span>
+              <span className="phq-kpi-label">Dispensing</span>
+              <span className="phq-kpi-sub">in progress</span>
+            </div>
+          </div>
+
+          <div className="phq-kpi phq-kpi--indigo">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.today_done}</span>
+              <span className="phq-kpi-label">Done Today</span>
+              <span className="phq-kpi-sub">dispensed</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Queue card ── */}
+        <div className="phq-queue-card">
+
+          {/* Toolbar: search + sync/refresh */}
+          <div className="phq-card-toolbar">
+            <span className="phq-queue-label">Queue</span>
+            <div className="phq-search-box">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                className="phq-search-input"
+                type="text"
+                placeholder="Search patient, doctor or medicine…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {q && <span className="phq-search-count">{filtered.length} of {allRx.length}</span>}
+            </div>
+            <div className="phq-toolbar-right">
+              {lastSync && (
+                <span className="phq-sync-ts">Synced {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              <button className="phq-refresh-btn" onClick={handleRefresh} disabled={queueStatus === 'loading'}>
+                {queueStatus === 'loading' ? <Spinner size={12} /> : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+                  </svg>
+                )}
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* Column headers — shown when there are items */}
+          {queueStatus === 'done' && filtered.length > 0 && (
+            <div className="phq-col-hdr">
+              <span />
+              <span>Patient</span>
+              <span>Prescribed by · Medicines</span>
+              <span>Status</span>
+            </div>
+          )}
+
+          {/* Loading */}
+          {queueStatus === 'loading' && (
+            <div className="phq-state-center">
+              <Spinner size={24} />
+            </div>
+          )}
+
+          {/* Error */}
+          {queueStatus === 'error' && (
+            <div className="phq-state-center">
+              <p>Could not load prescriptions — check your connection.</p>
+              <button className="btn-link" style={{ marginTop: 8 }} onClick={handleRefresh}>Try again</button>
+            </div>
+          )}
+
+          {/* Empty */}
+          {queueStatus === 'done' && allRx.length === 0 && (
+            <div className="pharma-empty-state">
+              <div className="pharma-empty-card">
+                <div className="pharma-empty-illus">
+                  <svg className="pharma-empty-orbit" width="116" height="116" viewBox="0 0 116 116" fill="none">
+                    <circle cx="58" cy="58" r="54" stroke="currentColor" strokeWidth="1.5" strokeDasharray="7 5" strokeOpacity="0.35" />
+                    <g transform="translate(58,4) rotate(-90)">
+                      <rect x="-11" y="-4.5" width="22" height="9" rx="4.5" fill="currentColor" fillOpacity="0.50" />
+                      <line x1="0" y1="-4" x2="0" y2="4" stroke="white" strokeWidth="1.2" strokeOpacity="0.55" />
+                    </g>
+                    <circle cx="104" cy="85" r="4.5" fill="currentColor" fillOpacity="0.40" />
+                    <g transform="translate(12,85) rotate(30)">
+                      <rect x="-8" y="-3.5" width="16" height="7" rx="3.5" fill="currentColor" fillOpacity="0.45" />
+                    </g>
+                  </svg>
+                  <div className="pharma-empty-badge-wrap">
+                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                      <text x="50%" y="54%" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20" fontWeight="700" fontFamily="Georgia, serif">Rx</text>
+                    </svg>
+                  </div>
+                </div>
+                <div className="pharma-empty-chip">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1.5,6 4.5,9 10.5,3" />
+                  </svg>
+                  All caught up
+                </div>
+                <div className="pharma-empty-title">Queue is clear</div>
+                <div className="pharma-empty-sub">New prescriptions from the doctor will appear here automatically.</div>
+                <button className="pharma-empty-refresh-btn" onClick={handleRefresh}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+                  </svg>
+                  Check for new prescriptions
+                </button>
               </div>
             </div>
-            <div className="pharma-empty-chip">
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="1.5,6 4.5,9 10.5,3" />
+          )}
+
+          {/* No search matches */}
+          {queueStatus === 'done' && allRx.length > 0 && filtered.length === 0 && (
+            <div className="pharma-no-match">
+              <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
               </svg>
-              All caught up
-            </div>
-            <div className="pharma-empty-title">Queue is clear</div>
-            <div className="pharma-empty-sub">New prescriptions from the doctor will appear here automatically.</div>
-            <button className="pharma-empty-refresh-btn" onClick={handleRefresh}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10" />
-                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-              </svg>
-              Check for new prescriptions
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* No search matches */}
-      {queueStatus === 'done' && allRx.length > 0 && filtered.length === 0 && (
-        <div className="pharma-no-match">
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-          </svg>
-          <div className="pharma-no-match-title">No matches</div>
-          <div className="pharma-no-match-sub">No prescriptions match &ldquo;{search}&rdquo;</div>
-        </div>
-      )}
-
-      {/* Active queue — split layout when panel is open */}
-      {queueStatus === 'done' && filtered.length > 0 && (
-        <div className={`pharma-queue-wrap${selectedRxId ? ' pharma-queue-wrap--split' : ''}`}>
-
-          {/* Queue list */}
-          <div className="pharma-queue-main">
-            {ongoing.length > 0 && (
-              <section className="pharma-section">
-                <div className="pharma-section-hdr">
-                  <span className="pharma-section-hdr-title">Dispensing</span>
-                  <span className="pharma-section-hdr-count">{ongoing.length}</span>
-                </div>
-                <ul className="pharma-qlist">
-                  {ongoing.map(rx => (
-                    <li key={rx.id}>
-                      <RxCard rx={rx} selected={selectedRxId === rx.id} onClick={() => openPanel(rx.id)} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {pending.length > 0 && (
-              <section className="pharma-section">
-                <div className="pharma-section-hdr">
-                  <span className="pharma-section-hdr-title">Pending</span>
-                  <span className="pharma-section-hdr-count">{pending.length}</span>
-                </div>
-                <ul className="pharma-qlist">
-                  {pending.map(rx => (
-                    <li key={rx.id}>
-                      <RxCard rx={rx} selected={selectedRxId === rx.id} onClick={() => openPanel(rx.id)} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-          </div>
-
-          {/* Inline dispense panel */}
-          {selectedRxId && (
-            <div className="pharma-dpanel-wrap">
-              <DispensePanel
-                rxId={selectedRxId}
-                onClose={() => setSelectedRxId(null)}
-                onCompleted={() => { loadQueue(true); loadStats(true) }}
-                navigate={navigate}
-              />
+              <div className="pharma-no-match-title">No matches</div>
+              <div className="pharma-no-match-sub">No prescriptions match &ldquo;{search}&rdquo;</div>
             </div>
           )}
+
+          {/* Active queue — split when panel open */}
+          {queueStatus === 'done' && filtered.length > 0 && (
+            <div className={`pharma-queue-wrap${selectedRxId ? ' pharma-queue-wrap--split' : ''}`}>
+
+              <div className="pharma-queue-main">
+                {ongoing.length > 0 && (
+                  <section>
+                    <div className="phq-section-hdr">
+                      <span className="phq-section-title">Dispensing</span>
+                      <span className="phq-section-count">{ongoing.length}</span>
+                    </div>
+                    <ul className="phq-qlist">
+                      {ongoing.map(rx => (
+                        <li key={rx.id}>
+                          <RxCard rx={rx} selected={selectedRxId === rx.id} onClick={() => openPanel(rx.id)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {pending.length > 0 && (
+                  <section>
+                    <div className="phq-section-hdr phq-section-hdr--pending">
+                      <span className="phq-section-title">Pending</span>
+                      <span className="phq-section-count phq-section-count--amber">{pending.length}</span>
+                    </div>
+                    <ul className="phq-qlist">
+                      {pending.map(rx => (
+                        <li key={rx.id}>
+                          <RxCard rx={rx} selected={selectedRxId === rx.id} onClick={() => openPanel(rx.id)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </div>
+
+              {selectedRxId && (
+                <div className="pharma-dpanel-wrap">
+                  <DispensePanel
+                    rxId={selectedRxId}
+                    onClose={() => setSelectedRxId(null)}
+                    onCompleted={() => { loadQueue(true); loadStats(true) }}
+                    navigate={navigate}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
-      )}
+      </div>
     </div>
   )
 }

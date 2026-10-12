@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { getSoapNotes, saveSoapNotes } from '../../services/soapNoteService'
 
@@ -13,43 +13,53 @@ export default function SoapNotesSection({ visitId }) {
   const [notes,   setNotes]   = useState({ soap_subjective: '', soap_objective: '', soap_assessment: '', soap_plan: '' })
   const [loading, setLoading] = useState(true)
   const [saving,  setSaving]  = useState(false)
-  const [dirty,   setDirty]   = useState(false)
+  const timerRef = useRef(null)
+  const savedRef = useRef(null) // tracks the last-saved snapshot
 
   useEffect(() => {
     setLoading(true)
     getSoapNotes(visitId)
       .then(data => {
-        setNotes({
+        const snap = {
           soap_subjective: data.soap_subjective || '',
           soap_objective:  data.soap_objective  || '',
           soap_assessment: data.soap_assessment || '',
           soap_plan:       data.soap_plan       || '',
-        })
-        setDirty(false)
+        }
+        setNotes(snap)
+        savedRef.current = snap
       })
       .catch(() => toast.error('Could not load SOAP notes'))
       .finally(() => setLoading(false))
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [visitId])
 
-  function handleChange(key, val) {
-    setNotes(n => ({ ...n, [key]: val }))
-    setDirty(true)
+  function scheduleAutoSave(nextNotes) {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => doSave(nextNotes), 900)
   }
 
-  async function handleSave() {
+  function handleChange(key, val) {
+    const next = { ...notes, [key]: val }
+    setNotes(next)
+    scheduleAutoSave(next)
+  }
+
+  async function doSave(current) {
+    const data = {}
+    for (const f of FIELDS) data[f.key] = current[f.key] || null
     setSaving(true)
     try {
-      const data = {}
-      for (const f of FIELDS) data[f.key] = notes[f.key] || null
       await saveSoapNotes(visitId, data)
-      setDirty(false)
-      toast.success('SOAP notes saved')
-    } catch (e) {
-      toast.error(typeof e === 'string' ? e : 'Failed to save')
+      savedRef.current = current
+    } catch {
+      toast.error('Auto-save failed — check connection')
     } finally {
       setSaving(false)
     }
   }
+
+  const isDirty = savedRef.current && FIELDS.some(f => notes[f.key] !== savedRef.current[f.key])
 
   if (loading) return <div style={{ padding: '16px 0', color: 'var(--clr-text-muted)', fontSize: 13 }}>Loading SOAP notes…</div>
 
@@ -68,10 +78,9 @@ export default function SoapNotesSection({ visitId }) {
         ))}
       </div>
       <div className="soap-save-row">
-        {dirty && <span style={{ fontSize: 12, color: 'var(--clr-text-muted)', alignSelf: 'center' }}>Unsaved changes</span>}
-        <button className="btn-primary" onClick={handleSave} disabled={saving || !dirty}>
-          {saving ? 'Saving…' : 'Save SOAP Notes'}
-        </button>
+        <span style={{ fontSize: 11.5, color: 'var(--clr-text-muted)', alignSelf: 'center' }}>
+          {saving ? 'Saving…' : isDirty ? 'Unsaved changes' : 'Auto-saved'}
+        </span>
       </div>
     </div>
   )

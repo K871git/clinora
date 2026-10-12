@@ -1,90 +1,5 @@
 /* ── OPD Register ─────────────────────────────────────────────────────── */
-.opd-page { padding: var(--space-lg); max-width: 1200px; }
-
-.opd-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  margin-bottom: var(--space-lg);
-}
-.opd-title { font-size: 22px; font-weight: 700; color: var(--clr-text); margin: 0 0 2px; }
-.opd-date-label { font-size: 13px; color: var(--clr-text-muted); }
-.opd-new-btn { font-size: 13px; }
-
-/* Date nav */
-.opd-date-nav {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: var(--space-md);
-}
-.opd-nav-btn {
-  padding: 6px 14px; border-radius: var(--radius-md);
-  border: 1px solid var(--clr-border); background: var(--clr-surface);
-  color: var(--clr-text); font-size: 13px; cursor: pointer; transition: border-color .15s;
-}
-.opd-nav-btn:hover:not(:disabled) { border-color: var(--clr-primary); color: var(--clr-primary); }
-.opd-nav-btn:disabled { opacity: .45; cursor: not-allowed; }
-.opd-nav-btn--today { color: var(--clr-primary); border-color: var(--clr-primary); }
-.opd-date-input {
-  padding: 6px 10px; border-radius: var(--radius-md); border: 1px solid var(--clr-border);
-  background: var(--clr-surface); color: var(--clr-text); font-size: 13px; cursor: pointer;
-}
-
-/* Stats bar */
-.opd-stats {
-  display: flex; gap: 10px; flex-wrap: wrap;
-  margin-bottom: var(--space-lg);
-}
-.opd-stat {
-  background: var(--clr-surface);
-  border: 1px solid var(--clr-border);
-  border-top: 3px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 12px 20px;
-  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 88px;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.15s cubic-bezier(0.16,1,0.3,1), box-shadow 0.15s;
-}
-.opd-stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.opd-stat-val { font-size: 22px; font-weight: 700; color: var(--clr-text); letter-spacing: -0.5px; line-height: 1.1; }
-.opd-stat-lbl { font-size: 10.5px; font-weight: 600; color: var(--clr-text-muted); text-transform: uppercase; letter-spacing: .5px; }
-
-.opd-stat--open {
-  border-top-color: var(--clr-warning);
-  background: linear-gradient(170deg, color-mix(in srgb, var(--clr-warning) 6%, var(--clr-surface)) 0%, var(--clr-surface) 60%);
-}
-.opd-stat--done {
-  border-top-color: var(--clr-success);
-  background: linear-gradient(170deg, color-mix(in srgb, var(--clr-success) 6%, var(--clr-surface)) 0%, var(--clr-surface) 60%);
-}
-.opd-stat--fee {
-  border-top-color: var(--clr-primary);
-  background: linear-gradient(170deg, color-mix(in srgb, var(--clr-primary) 6%, var(--clr-surface)) 0%, var(--clr-surface) 60%);
-}
-.opd-stat--paid {
-  border-top-color: var(--clr-success);
-  background: linear-gradient(170deg, color-mix(in srgb, var(--clr-success) 5%, var(--clr-surface)) 0%, var(--clr-surface) 60%);
-}
-.opd-stat--open .opd-stat-val  { color: var(--clr-warning); }
-.opd-stat--done .opd-stat-val  { color: var(--clr-success); }
-.opd-stat--fee  .opd-stat-val  { color: var(--clr-primary); }
-.opd-stat--paid .opd-stat-val  { color: var(--clr-success); }
-
-/* Empty */
-.opd-empty {
-  text-align: center; padding: 56px 24px;
-  color: var(--clr-text-muted); font-size: 14px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-}
-.opd-empty::before {
-  content: '📅';
-  display: block;
-  font-size: 32px;
-  width: 56px; height: 56px;
-  line-height: 56px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--clr-primary) 8%, var(--clr-surface));
-  border: 1px solid color-mix(in srgb, var(--clr-primary) 16%, transparent);
-  margin-bottom: 10px;
-  opacity: 0.85;
-}
+/* Layout/header/stats handled by clinic.css (cpd-* classes) */
 
 /* Table */
 .opd-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--clr-border); }
@@ -142,6 +57,18 @@
 /* Payment dot */
 .opd-pay-dot { font-size: 12px; white-space: nowrap; }
 
+/* Inline mark-paid button */
+.opd-mark-paid-btn {
+  padding: 2px 8px; border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--clr-success) 40%, transparent);
+  background: color-mix(in srgb, var(--clr-success) 8%, transparent);
+  color: var(--clr-success); font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: background .12s, opacity .12s;
+}
+.opd-mark-paid-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--clr-success) 16%, transparent); }
+.opd-mark-paid-btn:disabled { opacity: .5; cursor: not-allowed; }
+.opd-th-pay, .opd-td-pay { width: 140px; }
+
 /* Follow-up badge */
 .opd-fu-badge {
   display: inline-block; padding: 2px 8px; border-radius: 99px;
@@ -162,55 +89,16 @@
 }
 .opd-sort--active { opacity: 1; color: var(--clr-primary); }
 
-/* ── Clinic page (merged OPD + Appointments) ─────────────────────────── */
-.clinic-page {
-  padding: var(--space-lg);
-  max-width: 1200px;
-}
-
-.clinic-tab-bar {
-  display: flex;
-  gap: 4px;
-  margin-bottom: var(--space-lg);
-  border-bottom: 1.5px solid var(--clr-border);
-  padding-bottom: 0;
-}
-
-.clinic-tab-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 18px 10px;
-  border: none; border-bottom: 2.5px solid transparent;
-  background: none; cursor: pointer;
-  font-size: 13px; font-weight: 600; color: var(--clr-text-muted);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  margin-bottom: -1.5px;
-  transition: color .15s, border-color .15s, background .15s;
-}
-.clinic-tab-btn:hover { color: var(--clr-text); background: color-mix(in srgb, var(--clr-primary) 5%, transparent); }
-.clinic-tab-btn--active { color: var(--clr-primary); border-bottom-color: var(--clr-primary); }
-
-.clinic-tab-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 99px; background: var(--clr-primary); color: #fff;
-  font-size: 10px; font-weight: 700;
-}
+/* Clinic tab bar replaced by cpd-tabs in clinic.css */
 
 /* ── Print: OPD Summary ───────────────────────────────────────────────── */
 @media print {
-  /* Hide everything except the OPD page */
   body > * { display: none !important; }
   #root > * { display: none !important; }
-  .opd-page { display: block !important; padding: 16px !important; max-width: 100% !important; }
-
-  /* Hide non-essential UI */
-  .opd-header { margin-bottom: 8px !important; }
-  .opd-new-btn, .opd-print-btn, .opd-date-nav, .btn-primary, .btn-secondary { display: none !important; }
-  .opd-title { font-size: 18px !important; }
-
-  .opd-stats { margin-bottom: 12px !important; }
-  .opd-stat { border: 1px solid #ccc !important; background: #fff !important; padding: 6px 12px !important; }
-
+  .cpd-page { display: block !important; }
+  .cpd-tabs, .cpd-hdr-right, .cpd-date-nav, .btn-primary, .btn-secondary { display: none !important; }
+  .cpd-hdr { border: none !important; padding: 0 0 8px !important; }
+  .cpd-strip { border: 1px solid #ccc !important; margin-bottom: 10px !important; }
   .opd-table-wrap { border: 1px solid #ccc !important; border-radius: 0 !important; }
   .opd-table { font-size: 11px !important; }
   .opd-table thead th { background: #f5f5f5 !important; }
@@ -220,14 +108,9 @@
   .opd-td-name { gap: 0 !important; }
   .opd-status-pill--open      { background: #fff3cd !important; color: #856404 !important; }
   .opd-status-pill--completed { background: #d1e7dd !important; color: #0a3622 !important; }
-
-  /* Print footer */
-  .opd-page::after {
+  .cpd-page::after {
     content: 'Printed from Clinora · Confidential';
-    display: block;
-    text-align: center;
-    font-size: 9px;
-    color: #999;
-    margin-top: 16px;
+    display: block; text-align: center;
+    font-size: 9px; color: #999; margin-top: 16px;
   }
 }
