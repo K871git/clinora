@@ -255,15 +255,15 @@ html[data-theme="dark"] .shell-header {
   padding-top: 0;
 }
 
-/* Pharmacy queue — flush, header owns padding */
+/* Pharmacy queue — fills viewport exactly, inner list scrolls */
 .shell-content:has(.phq-page) {
-  max-width: 1440px;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
+  max-width: none;
+  padding: 0;
   background: var(--clr-bg, #f1f5f9);
   display: flex;
   flex-direction: column;
+  height: calc(100dvh - 57px);
+  overflow: hidden;
 }
 
 /* Medicine library and patients pages also need bg coverage */

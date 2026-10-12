@@ -82,33 +82,39 @@ function RxCard({ rx, selected, onClick }) {
       ].filter(Boolean).join(' ')}
       onClick={onClick}
     >
+      {/* Col 1: avatar */}
       <div className="pharma-qcard-avatar">{(rx.patient.name?.[0] ?? '?').toUpperCase()}</div>
 
-      <div className="pharma-qcard-body">
+      {/* Col 2: patient name */}
+      <div className="pharma-qcard-patient">
         <div className="pharma-qcard-name">{rx.patient.name}</div>
-        {rx.doctor && <div className="pharma-qcard-doctor">{doctorLabel(rx.doctor.name)}</div>}
+      </div>
+
+      {/* Col 3: doctor · medicines (fills center) */}
+      <div className="pharma-qcard-meta">
+        {rx.doctor && <span className="pharma-qcard-doc">{doctorLabel(rx.doctor.name)}</span>}
+        {rx.doctor && rx.items?.length > 0 && <span className="pharma-qcard-sep"> · </span>}
         {rx.items?.length > 0 && (
-          <div className="pharma-qcard-meds">
-            {rx.items.slice(0, 2).map(i => i.medicine_name).join(', ')}
-            {rx.items.length > 2 && <span className="pharma-qcard-meds-more"> +{rx.items.length - 2}</span>}
-          </div>
+          <span className="pharma-qcard-meds">
+            {rx.items.slice(0, 3).map(i => i.medicine_name).join(', ')}
+            {rx.items.length > 3 && <span className="pharma-qcard-meds-more"> +{rx.items.length - 3}</span>}
+          </span>
         )}
       </div>
 
+      {/* Col 4: time + badges */}
       <div className="pharma-qcard-right">
-        <div className="pharma-qcard-badges">
-          <span className={`pharma-status-pill${ongoing ? ' pharma-status-pill--ongoing' : ' pharma-status-pill--pending'}`}>
-            {ongoing && <span className="pharma-pulse" />}
-            {ongoing ? 'Dispensing' : 'Pending'}
-          </span>
-          {isOverdue(rx) && <span className="pharma-qcard-overdue">Overdue</span>}
-          {rx.items?.length > 0 && (
-            <span className="pharma-med-pill">{rx.items.length} med{rx.items.length !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-        <div className={`pharma-qcard-time${urgent ? ' pharma-qcard-time--urgent' : ''}`}>
+        <span className={`pharma-qcard-time${urgent ? ' pharma-qcard-time--urgent' : ''}`}>
           {timeAgo(timeRef)}
-        </div>
+        </span>
+        {isOverdue(rx) && <span className="pharma-qcard-overdue">Overdue</span>}
+        {rx.items?.length > 0 && (
+          <span className="pharma-med-pill">{rx.items.length} med{rx.items.length !== 1 ? 's' : ''}</span>
+        )}
+        <span className={`pharma-status-pill${ongoing ? ' pharma-status-pill--ongoing' : ' pharma-status-pill--pending'}`}>
+          {ongoing && <span className="pharma-pulse" />}
+          {ongoing ? 'Dispensing' : 'Pending'}
+        </span>
       </div>
     </button>
   )
@@ -482,59 +488,6 @@ export default function PharmacyPage() {
 
   return (
     <div className="phq-page">
-
-      {/* ── Header strip ──────────────────────────────────────────── */}
-      <div className="phq-hdr">
-        <div className="phq-hdr-main">
-          <div className="phq-title-block">
-            <h2 className="phq-title">Prescription Queue</h2>
-            {lastSync && (
-              <span className="phq-sync-ts">
-                Synced {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
-          </div>
-          <button className="phq-refresh-btn" onClick={handleRefresh} disabled={queueStatus === 'loading'}>
-            {queueStatus === 'loading' ? <Spinner size={12} /> : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10" />
-                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-              </svg>
-            )}
-            Refresh
-          </button>
-        </div>
-
-        {/* Stat strip */}
-        <div className="phq-stat-strip">
-          <div className="phq-stat">
-            <span className="phq-stat-val">
-              {statsLoading ? <span className="phq-stat-skel" /> : stats.pending + stats.dispensing}
-            </span>
-            <span className="phq-stat-lbl">Active</span>
-          </div>
-          <div className="phq-stat">
-            <span className={`phq-stat-val${!statsLoading && stats.pending > 0 ? ' phq-stat-val--amber' : ''}`}>
-              {statsLoading ? <span className="phq-stat-skel" /> : stats.pending}
-            </span>
-            <span className="phq-stat-lbl">Pending</span>
-          </div>
-          <div className="phq-stat">
-            <span className={`phq-stat-val${!statsLoading && stats.dispensing > 0 ? ' phq-stat-val--green' : ''}`}>
-              {statsLoading ? <span className="phq-stat-skel" /> : stats.dispensing}
-            </span>
-            <span className="phq-stat-lbl">Dispensing</span>
-          </div>
-          <div className="phq-stat">
-            <span className={`phq-stat-val${!statsLoading && stats.today_done > 0 ? ' phq-stat-val--indigo' : ''}`}>
-              {statsLoading ? <span className="phq-stat-skel" /> : stats.today_done}
-            </span>
-            <span className="phq-stat-lbl">Done Today</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Gray body ─────────────────────────────────────────────── */}
       <div className="phq-body">
 
         {/* Alert banner */}
@@ -549,17 +502,72 @@ export default function PharmacyPage() {
           </button>
         )}
 
-        {/* Queue card */}
+        {/* ── KPI stat cards ── */}
+        <div className="phq-kpi-row">
+          <div className="phq-kpi">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.pending + stats.dispensing}</span>
+              <span className="phq-kpi-label">Active</span>
+              <span className="phq-kpi-sub">in queue now</span>
+            </div>
+          </div>
+
+          <div className="phq-kpi phq-kpi--amber">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.pending}</span>
+              <span className="phq-kpi-label">Pending</span>
+              <span className="phq-kpi-sub">awaiting dispense</span>
+            </div>
+          </div>
+
+          <div className="phq-kpi phq-kpi--green">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+              </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.dispensing}</span>
+              <span className="phq-kpi-label">Dispensing</span>
+              <span className="phq-kpi-sub">in progress</span>
+            </div>
+          </div>
+
+          <div className="phq-kpi phq-kpi--indigo">
+            <div className="phq-kpi-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div className="phq-kpi-content">
+              <span className="phq-kpi-num">{statsLoading ? '—' : stats.today_done}</span>
+              <span className="phq-kpi-label">Done Today</span>
+              <span className="phq-kpi-sub">dispensed</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Queue card ── */}
         <div className="phq-queue-card">
 
-          {/* Search inside card */}
-          {queueStatus === 'done' && allRx.length > 0 && (
-            <div className="phq-search-row">
-              <span className="phq-search-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-                </svg>
-              </span>
+          {/* Toolbar: search + sync/refresh */}
+          <div className="phq-card-toolbar">
+            <span className="phq-queue-label">Queue</span>
+            <div className="phq-search-box">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
               <input
                 className="phq-search-input"
                 type="text"
@@ -568,6 +576,30 @@ export default function PharmacyPage() {
                 onChange={e => setSearch(e.target.value)}
               />
               {q && <span className="phq-search-count">{filtered.length} of {allRx.length}</span>}
+            </div>
+            <div className="phq-toolbar-right">
+              {lastSync && (
+                <span className="phq-sync-ts">Synced {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              <button className="phq-refresh-btn" onClick={handleRefresh} disabled={queueStatus === 'loading'}>
+                {queueStatus === 'loading' ? <Spinner size={12} /> : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+                  </svg>
+                )}
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* Column headers — shown when there are items */}
+          {queueStatus === 'done' && filtered.length > 0 && (
+            <div className="phq-col-hdr">
+              <span />
+              <span>Patient</span>
+              <span>Prescribed by · Medicines</span>
+              <span>Status</span>
             </div>
           )}
 
