@@ -1938,3 +1938,300 @@ html[data-theme="dark"] .pharma-qcard-overdue {
   color: #f87171;
   border-color: rgba(248, 113, 113, 0.25);
 }
+
+/* ─── Pharmacy Queue page redesign (phq-*) ──────────────────────────────── */
+
+/* Page shell — flex: 1 fills the shell-content flex column */
+.phq-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ── Header ── */
+.phq-hdr {
+  background: var(--clr-surface);
+  border-bottom: 1px solid var(--clr-border);
+  padding: 20px 28px 0;
+  flex-shrink: 0;
+}
+
+.phq-hdr-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.phq-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.phq-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.phq-sync-ts {
+  font-size: 11.5px;
+  color: var(--clr-text-muted);
+}
+
+.phq-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--clr-text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+.phq-refresh-btn:hover:not(:disabled) { border-color: var(--clr-primary); color: var(--clr-primary); }
+.phq-refresh-btn:disabled { opacity: 0.55; cursor: default; }
+
+/* Stat strip — runs edge to edge below the title row */
+.phq-stat-strip {
+  display: flex;
+  border-top: 1px solid var(--clr-border);
+  margin: 0 -28px;
+}
+
+.phq-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px;
+  border-right: 1px solid var(--clr-border);
+  gap: 3px;
+}
+.phq-stat:last-child { border-right: none; }
+
+.phq-stat-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.phq-stat-val--amber  { color: #d97706; }
+.phq-stat-val--green  { color: #16a34a; }
+.phq-stat-val--indigo { color: #4f46e5; }
+
+html[data-theme="dark"] .phq-stat-val--amber  { color: #fbbf24; }
+html[data-theme="dark"] .phq-stat-val--green  { color: #4ade80; }
+html[data-theme="dark"] .phq-stat-val--indigo { color: #818cf8; }
+
+.phq-stat-skel {
+  display: inline-block;
+  width: 36px;
+  height: 22px;
+  background: var(--clr-border);
+  border-radius: 4px;
+  animation: pharma-skeleton 1.4s ease-in-out infinite;
+}
+
+.phq-stat-lbl {
+  font-size: 10.5px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+}
+
+/* ── Gray body ── */
+.phq-body {
+  flex: 1;
+  background: var(--clr-bg, #f1f5f9);
+  padding: 20px 24px 40px;
+}
+
+/* Alert banner */
+.phq-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  background: #fefce8;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  color: #92400e;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: background 0.13s;
+  box-sizing: border-box;
+}
+.phq-alert-banner:hover { background: #fef9c3; }
+.phq-alert-text { flex: 1; min-width: 0; }
+.phq-alert-cta  { font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+[data-theme="dark"] .phq-alert-banner {
+  background: rgba(245,158,11,.12);
+  border-color: rgba(245,158,11,.3);
+  color: #fbbf24;
+}
+[data-theme="dark"] .phq-alert-banner:hover { background: rgba(245,158,11,.18); }
+
+/* White queue card */
+.phq-queue-card {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.04);
+  overflow: hidden;
+}
+
+/* Search row at top of card */
+.phq-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.phq-search-icon {
+  flex-shrink: 0;
+  color: var(--clr-text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.phq-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: var(--clr-text);
+  font-family: inherit;
+}
+.phq-search-input::placeholder { color: var(--clr-text-muted); opacity: .8; }
+
+.phq-search-count {
+  font-size: 11.5px;
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 10px;
+  padding: 2px 9px;
+}
+
+/* Loading / error states */
+.phq-state-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  color: var(--clr-text-muted);
+  font-size: 13px;
+  gap: 4px;
+}
+
+/* Section headers inside card */
+.phq-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--clr-bg, #f8fafc);
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.phq-section-hdr--pending { border-top: 1px solid var(--clr-border); }
+
+.phq-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--clr-text-muted);
+}
+
+.phq-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--clr-primary);
+  color: #fff;
+  border-radius: 9px;
+}
+
+.phq-section-count--amber {
+  background: #d97706;
+}
+
+/* Queue list — items separated by line, no gap */
+.phq-qlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.phq-qlist li + li {
+  border-top: 1px solid var(--clr-border);
+}
+
+/* RxCards inside the white card — flat, no individual borders */
+.phq-queue-card .pharma-qcard {
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px 16px;
+  width: 100%;
+}
+
+.phq-queue-card .pharma-qcard:hover {
+  background: var(--clr-bg-subtle, #f8fafc);
+  border-color: transparent;
+  border-left-color: var(--clr-primary);
+}
+
+.phq-queue-card .pharma-qcard--ongoing  { border-left-color: rgba(34,197,94,.7); }
+.phq-queue-card .pharma-qcard--urgent   { border-left-color: #f59e0b !important; }
+.phq-queue-card .pharma-qcard--selected {
+  background: rgba(13,148,136,.04);
+  border-left-color: var(--clr-primary) !important;
+  border-color: transparent;
+}
+
+/* Split layout inside card — panel shares card without extra border */
+.phq-queue-card .pharma-queue-wrap--split {
+  gap: 0;
+}
+
+.phq-queue-card .pharma-dpanel-wrap {
+  border-left: 1px solid var(--clr-border);
+  top: 0;
+}
+
+.phq-queue-card .pharma-dpanel {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
