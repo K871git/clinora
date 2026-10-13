@@ -47,7 +47,8 @@ function buildDosage(row) {
   return [timing, meal, qty].filter(Boolean).join(' ') || null
 }
 
-const EMPTY_PT = { name: '', age: '', mobile: '', dob: '', gender: '', address: '' }
+const EMPTY_PT     = { name: '', age: '', mobile: '', dob: '', gender: '', address: '' }
+const EMPTY_VITALS = { weight: '', height: '', bp: '' }
 
 /* ── Rx overlay coordinate helpers (shared with RxLivePanel) ─── */
 const PANEL_W = 480          // live-preview column width in px
@@ -98,6 +99,9 @@ export default function QuickRxPage() {
   /* Medicines */
   const [medicines, setMedicines]   = useState([newMedRow()])
   const [lastAddedId, setLastAddedId] = useState(null)
+
+  /* Vitals */
+  const [vitals, setVitals] = useState(EMPTY_VITALS)
 
   /* Notes + fee */
   const [doctorNotes, setDoctorNotes] = useState('')
@@ -171,6 +175,7 @@ export default function QuickRxPage() {
     if (draft.medicines?.length) setMedicines(draft.medicines)
     if (draft.doctorNotes)     setDoctorNotes(draft.doctorNotes)
     if (draft.fee)             setFee(draft.fee)
+    if (draft.vitals)          setVitals(draft.vitals)
     if (draft.selectedPatient?.id) {
       getPatientAllergies(draft.selectedPatient.id).then(a => setAllergies(a ?? [])).catch(() => {})
     }
@@ -181,7 +186,7 @@ export default function QuickRxPage() {
     if (visitMode) return
     clearTimeout(draftTimer.current)
     draftTimer.current = setTimeout(() => {
-      saveDraft({ pt, selectedPatient, medicines, doctorNotes, fee })
+      saveDraft({ pt, selectedPatient, medicines, doctorNotes, fee, vitals })
     }, 500)
     return () => clearTimeout(draftTimer.current)
   }, [pt, selectedPatient, medicines, doctorNotes, fee, visitMode])
@@ -427,6 +432,17 @@ export default function QuickRxPage() {
     mobile: pt.mobile, address: pt.address,
   }
 
+  /* Build visit object from vitals (null if nothing entered) */
+  const bmiVal = vitals.weight && vitals.height
+    ? parseFloat((Number(vitals.weight) / Math.pow(Number(vitals.height) / 100, 2)).toFixed(2))
+    : null
+  const visitObj = (vitals.weight || vitals.height || vitals.bp) ? {
+    weight: vitals.weight ? Number(vitals.weight) : null,
+    height: vitals.height ? Number(vitals.height) : null,
+    bmi:    bmiVal,
+    bp:     vitals.bp || null,
+  } : null
+
   return (
     <div className="qrx-page">
 
@@ -560,6 +576,44 @@ export default function QuickRxPage() {
         </div>
       )}
 
+      {/* ── Vitals (optional) ── */}
+      <div className="card qrx-section">
+        <div className="qrx-section-label">
+          <span className="qrx-sec-icon qrx-sec-icon--vitals">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </span>
+          <span>Vitals</span>
+          <span className="qrx-opt">optional</span>
+        </div>
+        <div className="qrx-vitals-row">
+          <div className="qrx-vital-field">
+            <label className="qrx-vital-label">Weight (Kg)</label>
+            <input type="number" className="field qrx-vital-input" placeholder="70" min="0"
+              value={vitals.weight}
+              onChange={e => setVitals(v => ({ ...v, weight: e.target.value }))} />
+          </div>
+          <div className="qrx-vital-field">
+            <label className="qrx-vital-label">Height (Cm)</label>
+            <input type="number" className="field qrx-vital-input" placeholder="170" min="0"
+              value={vitals.height}
+              onChange={e => setVitals(v => ({ ...v, height: e.target.value }))} />
+          </div>
+          <div className="qrx-vital-field">
+            <label className="qrx-vital-label">BP (mmHg)</label>
+            <input type="text" className="field qrx-vital-input" placeholder="120/80"
+              value={vitals.bp}
+              onChange={e => setVitals(v => ({ ...v, bp: e.target.value }))} />
+          </div>
+          {bmiVal && (
+            <div className="qrx-vital-bmi">
+              BMI <strong>{bmiVal}</strong>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* ── Medicines ── */}
       <div className="card qrx-section">
         <div className="qrx-section-label">
@@ -663,6 +717,7 @@ export default function QuickRxPage() {
           patient={previewPatient}
           medicines={medicines}
           doctorNotes={doctorNotes}
+          vitals={visitObj}
           langLabels={LANG[lang] || LANG.en}
           templateUrl={tplUrl}
           templatePath={tplPath}
@@ -720,6 +775,7 @@ export default function QuickRxPage() {
           langLabels={LANG[lang] || LANG.en}
           doctorName={user?.name || 'Doctor'}
           clinicName={user?.clinic?.name || 'Clinic'}
+          vitals={visitObj}
           templateUrl={tplUrl}
           templatePath={tplPath}
           clinicSettings={clinicSettings}
@@ -767,7 +823,7 @@ function RxMedList({ filled, medLine }) {
 }
 
 /* ── Live prescription preview panel ────────────────────────── */
-function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateUrl, templatePath, layout, clinicSettings, lang, onClick }) {
+function RxLivePanel({ patient, medicines, doctorNotes, vitals, langLabels: L, templateUrl, templatePath, layout, clinicSettings, lang, onClick }) {
   const filled = medicines.filter(m => m.name.trim())
   const now = new Date()
   const dd   = String(now.getDate()).padStart(2,'0')
@@ -794,7 +850,7 @@ function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateU
       address:patient?.address|| null,
     },
     prescribed_at: now.toISOString(),
-    visit: null,
+    visit: vitals || null,
     items: filled.map((m, i) => ({
       id:           i,
       medicine_name: m.name,

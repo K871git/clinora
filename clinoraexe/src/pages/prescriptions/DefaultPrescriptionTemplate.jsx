@@ -10,6 +10,8 @@ const LANG = {
         beforeMeal: 'जेवणापूर्वी', afterMeal: 'जेवणानंतर', days: 'दिवस', daily: 'दररोज' },
 }
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
 /* ── Helpers ──────────────────────────────────────────────────── */
 function parseMed(item) {
   const d   = item.dosage   ?? ''
@@ -36,7 +38,7 @@ function parseMed(item) {
 function fmtDate(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
-  return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`
+  return `${String(d.getDate()).padStart(2,'0')}-${MONTHS[d.getMonth()]}-${d.getFullYear()}`
 }
 
 function genderLabel(g) {
@@ -61,12 +63,12 @@ const DUMMY = {
     weight: 70, height: 170, bmi: 24.2, bp: '120/80',
   },
   items: [
-    { id: 1, medicine_name: 'TAB. PARACETAMOL 500MG',  dosage: '1-1-1 After meal',  duration: '3 days', instructions: '' },
-    { id: 2, medicine_name: 'TAB. CETIRIZINE 10MG',    dosage: '1-0-1 After meal',  duration: '3 days', instructions: '' },
-    { id: 3, medicine_name: 'CAP. AMOXICILLIN 500MG',  dosage: '1-1-1 Before meal', duration: '5 days', instructions: '' },
+    { id: 1, medicine_name: 'TAB. PARACETAMOL 500MG',  dosage: '1-0-1 After meal',  duration: '5 days', instructions: 'ACETAMINOPHEN 500MG' },
+    { id: 2, medicine_name: 'TAB. CETIRIZINE 10MG',    dosage: '0-0-1 After meal',  duration: '3 days', instructions: '' },
+    { id: 3, medicine_name: 'CAP. AMOXICILLIN 500MG',  dosage: '1-1-1 Before meal', duration: '7 days', instructions: 'AMOXICILLIN TRIHYDRATE 500MG' },
   ],
-  doctor_notes: 'Take bed rest.\nDrink plenty of fluids.',
-  follow_up: '2024-09-04',
+  doctor_notes: 'Take complete bed rest.\nDrink plenty of warm fluids.\nAvoid cold food and drinks.\nDo blood test after 3 days.',
+  follow_up: '2024-09-06',
 }
 
 /* ── Clinora watermark — brand PNG ───────────────────────────── */
@@ -78,7 +80,7 @@ function WatermarkMark() {
   )
 }
 
-/* ── Medicine list — ONE LINE per medicine, timing in words ──── */
+/* ── Medicine List ────────────────────────────────────────────── */
 function MedList({ items, L }) {
   if (!items?.length) return <p className="dpt-no-meds">No medicines prescribed.</p>
   const meds = items.map(parseMed)
@@ -92,25 +94,31 @@ function MedList({ items, L }) {
           m.doseE > 0 && `${m.doseE} ${L.evening}`,
         ].filter(Boolean)
 
-        const timingStr  = timingParts.join(' + ')
-        const mealStr    = m.afterMeal  ? ` (${L.afterMeal})`  : m.beforeMeal ? ` (${L.beforeMeal})` : ''
-        const durationStr = m.days ? `${L.daily} - ${m.days} ${L.days}` : ''
+        const timingStr = timingParts.join(', ')
+        const mealStr   = m.afterMeal ? ` (${L.afterMeal})` : m.beforeMeal ? ` (${L.beforeMeal})` : ''
+        const daysStr   = m.days ? `${m.days} ${L.days}` : ''
+        const totStr    = m.qty  ? `(Tot:${m.qty} Tab)` : ''
 
         return (
-          <div key={m.id} className="dpt-med-row">
-            {/* Col 1 — number + medicine name */}
-            <div className="dpt-med-name-col">
-              <span className="dpt-med-num">{i + 1})</span>
-              <span className="dpt-med-brand">{m.name}</span>
+          <div key={m.id} className="dpt-med-entry">
+            {/* Main row: number + name | timing | days */}
+            <div className="dpt-med-row">
+              <div className="dpt-med-name-col">
+                <span className="dpt-med-num">{i + 1})</span>
+                <span className="dpt-med-brand">{m.name}</span>
+              </div>
+              <div className="dpt-med-timing-col">
+                {timingStr || '—'}{mealStr}
+              </div>
+              <div className="dpt-med-dur-col">
+                {daysStr && <div className="dpt-med-days">{daysStr}</div>}
+                {totStr  && <div className="dpt-med-tot">{totStr}</div>}
+              </div>
             </div>
-            {/* Col 2 — timing in words */}
-            <div className="dpt-med-timing-col">
-              {timingStr}{mealStr}
-            </div>
-            {/* Col 3 — duration */}
-            <div className="dpt-med-dur-col">
-              {durationStr}
-            </div>
+            {/* Generic / composition sub-line */}
+            {m.notes?.trim() && (
+              <div className="dpt-med-generic">{m.notes}</div>
+            )}
           </div>
         )
       })}
@@ -140,20 +148,24 @@ export default function DefaultPrescriptionTemplate({
   const clinicName = cl.name       || ''
   const regNo      = cl.regNo || cl.registration_number || ''
 
-  /* Patient line */
-  const nameAgeGender = [
+  /* Patient summary line */
+  const patientMeta = [
     patient.name,
-    (patient.age || patient.gender)
+    (patient.gender || patient.age)
       ? `(${[patient.age ? `${patient.age}y` : '', genderLabel(patient.gender)].filter(Boolean).join(', ')})`
       : null,
-  ].filter(Boolean).join(' ')
+    patient.mobile ? `Mob. No.: ${patient.mobile}` : null,
+  ].filter(Boolean).join('  ·  ')
 
   /* Vitals */
   const vitalItems = [
-    visit.bp     && { label: 'BP',     val: `${visit.bp} mmHg` },
-    visit.weight && { label: 'Weight', val: `${visit.weight} Kg` },
-    visit.height && { label: 'Height', val: `${visit.height} Cm` },
-    visit.bmi    && { label: 'BMI',    val: Number(visit.bmi).toFixed(1) },
+    visit.bp     && `BP: ${visit.bp} mmHg`,
+    visit.weight && `Weight (Kg): ${visit.weight}`,
+    visit.height
+      ? visit.bmi
+        ? `Height (Cm): ${visit.height} (B.M.I. = ${Number(visit.bmi).toFixed(2)})`
+        : `Height (Cm): ${visit.height}`
+      : null,
   ].filter(Boolean)
 
   /* CC / CF */
@@ -164,7 +176,7 @@ export default function DefaultPrescriptionTemplate({
   const adviceLines = toLines(rx.doctor_notes)
   const followUp    = rx.follow_up || visit?.follow_up
 
-  /* Logo for center: custom clinic logo first, else Clinora default */
+  /* Logo: custom clinic logo OR Clinora default */
   const centerLogoSrc = cl.logoUrl || '/logos/clinoraLogo.png'
 
   return (
@@ -176,7 +188,7 @@ export default function DefaultPrescriptionTemplate({
       {/* ══ HEADER: Clinic LEFT | Logo CENTER | Doctor RIGHT ══ */}
       <div className="dpt-header">
 
-        {/* LEFT — Clinic info */}
+        {/* LEFT — clinic */}
         <div className="dpt-hdr-clinic">
           {clinicName && <div className="dpt-clinic-name">{clinicName}</div>}
           {cl.tagline  && <div className="dpt-clinic-tagline">{cl.tagline}</div>}
@@ -191,12 +203,12 @@ export default function DefaultPrescriptionTemplate({
           )}
         </div>
 
-        {/* CENTER — Medical logo */}
+        {/* CENTER — logo */}
         <div className="dpt-hdr-logo">
           <img src={centerLogoSrc} alt="Logo" className="dpt-logo-img" />
         </div>
 
-        {/* RIGHT — Doctor credentials */}
+        {/* RIGHT — doctor */}
         <div className="dpt-hdr-doctor">
           {doctorName       && <div className="dpt-dr-name">Dr. {doctorName}</div>}
           {cl.qualification && <div className="dpt-dr-qual">{cl.qualification}</div>}
@@ -209,61 +221,41 @@ export default function DefaultPrescriptionTemplate({
       {/* ── Teal divider ── */}
       <div className="dpt-divider" />
 
-      {/* ══ PATIENT BLOCK ══ */}
+      {/* ══ PATIENT BAND ══ */}
       <div className="dpt-patient-block">
-        <div className="dpt-pt-info-col">
-          {nameAgeGender && (
-            <div className="dpt-pt-row">
-              <span className="dpt-pt-label">Name</span>
-              <span className="dpt-pt-colon">:</span>
-              <span className="dpt-pt-val dpt-pt-val--name">{nameAgeGender}</span>
-            </div>
-          )}
-          {patient.mobile && (
-            <div className="dpt-pt-row">
-              <span className="dpt-pt-label">Phone</span>
-              <span className="dpt-pt-colon">:</span>
-              <span className="dpt-pt-val">{patient.mobile}</span>
-            </div>
-          )}
-          {patient.address && (
-            <div className="dpt-pt-row">
-              <span className="dpt-pt-label">Address</span>
-              <span className="dpt-pt-colon">:</span>
-              <span className="dpt-pt-val">{patient.address}</span>
-            </div>
-          )}
+        <div className="dpt-pt-main-line">
+          {patientMeta && <span className="dpt-pt-meta">{patientMeta}</span>}
         </div>
-        <div className="dpt-pt-date-col">
-          <div className="dpt-pt-row dpt-pt-row--right">
-            <span className="dpt-pt-label">Date</span>
-            <span className="dpt-pt-colon">:</span>
-            <span className="dpt-pt-val">{fmtDate(rx.prescribed_at)}</span>
+        {patient.address && (
+          <div className="dpt-pt-addr-line">
+            <span className="dpt-pt-label">Address :</span>
+            <span className="dpt-pt-addr-val">{patient.address}</span>
           </div>
+        )}
+        <div className="dpt-pt-date-badge">
+          Date : {fmtDate(rx.prescribed_at)}
         </div>
       </div>
 
-      {/* ── Vitals bar ── */}
+      {/* ── Vitals band ── */}
       {vitalItems.length > 0 && (
         <div className="dpt-vitals-bar">
           {vitalItems.map((v, i) => (
-            <span key={i} className="dpt-vital-item">
-              <strong>{v.label}</strong> {v.val}
-            </span>
+            <span key={i} className="dpt-vital-item">{v}</span>
           ))}
         </div>
       )}
 
-      {/* ── CC / CF ── */}
+      {/* ── Chief Complaints / Clinical Findings ── */}
       {hasCCCF && (
         <div className="dpt-cc-cf-grid">
           <div className="dpt-cc-col">
             <div className="dpt-cc-title">Chief Complaints</div>
-            {complaints.map((c, i) => <div key={i} className="dpt-cc-item">• {c}</div>)}
+            {complaints.map((c, i) => <div key={i} className="dpt-cc-item">* {c}</div>)}
           </div>
           <div className="dpt-cf-col">
             <div className="dpt-cf-title">Clinical Findings</div>
-            {findings.map((f, i) => <div key={i} className="dpt-cf-item">• {f}</div>)}
+            {findings.map((f, i) => <div key={i} className="dpt-cf-item">* {f}</div>)}
           </div>
         </div>
       )}
@@ -271,8 +263,8 @@ export default function DefaultPrescriptionTemplate({
       {/* ── Diagnosis ── */}
       {visit.diagnosis && (
         <div className="dpt-diagnosis-block">
-          <span className="dpt-diag-label">Diagnosis : </span>
-          <span className="dpt-diag-val">{visit.diagnosis}</span>
+          <div className="dpt-diag-label">Diagnosis:</div>
+          <div className="dpt-diag-val">* {visit.diagnosis}</div>
         </div>
       )}
 
@@ -281,22 +273,22 @@ export default function DefaultPrescriptionTemplate({
         <span className="dpt-rx-symbol">&#8478;</span>
       </div>
 
-      {/* ── Medicine column headers ── */}
+      {/* ── Medicine table header ── */}
       <div className="dpt-med-header">
-        <div className="dpt-med-hdr-name">Medicine</div>
-        <div className="dpt-med-hdr-timing">Timing</div>
+        <div className="dpt-med-hdr-name">Medicine Name</div>
+        <div className="dpt-med-hdr-timing">Dosage</div>
         <div className="dpt-med-hdr-dur">Duration</div>
       </div>
 
-      {/* ── Medicine rows — one line each ── */}
+      {/* ── Medicine rows ── */}
       <MedList items={rx.items} L={L} />
 
       {/* ── Advice ── */}
       {adviceLines.length > 0 && (
         <div className="dpt-advice-block">
-          <span className="dpt-advice-label">Advice: </span>
+          <div className="dpt-advice-label">Advice:</div>
           {adviceLines.map((line, i) => (
-            <span key={i} className="dpt-advice-line">{line}{i < adviceLines.length - 1 ? ',  ' : ''}</span>
+            <div key={i} className="dpt-advice-line">* {line}</div>
           ))}
         </div>
       )}

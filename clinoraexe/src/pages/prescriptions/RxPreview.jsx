@@ -14,6 +14,7 @@ const pw = mm => `${(mm / 210) * 100}%`
 export default function RxPreview({
   onClose, patient, medicines, doctorNotes, fee,
   lang, langLabels: L, doctorName, clinicName,
+  vitals,
   templateUrl,    // asset:// URL for display
   templatePath,   // absolute file path for scan_template_layout
   clinicSettings, // { clinic, watermark }
@@ -56,7 +57,7 @@ export default function RxPreview({
       address: patient?.address || null,
     },
     prescribed_at: new Date().toISOString(),
-    visit: null,
+    visit: vitals || null,
     items: filled.map((m, i) => ({
       id:            i,
       medicine_name: m.name,
