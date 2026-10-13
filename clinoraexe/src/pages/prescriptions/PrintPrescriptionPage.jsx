@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { getPrescription } from '../../services/prescriptionService'
 import { getSettings } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
+import DefaultPrescriptionTemplate from './DefaultPrescriptionTemplate'
 import '../../styles/print-prescription.css'
 import '../../styles/rx-preview.css'
 import { fmtDateTime, fmtDateParts } from '../../lib/dateUtils'
@@ -262,93 +263,32 @@ export default function PrintPrescriptionPage() {
   )
 
   /* ══════════════════════════════════════════════════════════════════
-     MODE A — No template: full standalone prescription layout
+     MODE A — No custom template: use default HTML/CSS template
      ══════════════════════════════════════════════════════════════════ */
   if (!hasTemplate) {
     return (
       <div className="print-page">
         {toolbar}
-        {noTemplateWarn}
-
-        <div className="print-paper print-paper--standalone">
-
-          {/* Custom header banner */}
-          {ps.prescription_header && (
-            <div className="print-banner" style={{ borderBottom: '1px solid #e2e8f0', marginBottom: 8 }}>
-              {ps.prescription_header}
-            </div>
-          )}
-
-          {/* Clinic + Patient row */}
-          <div className="print-standalone-header">
-            <div className="print-clinic-col">
-              <div className="print-clinic-name">{clinic.name}</div>
-              {clinic.doctor_name && (
-                <div className="print-doctor-name">Dr. {clinic.doctor_name}</div>
-              )}
-              {ps.show_doctor_contact && clinic.qualification && (
-                <div className="print-qualification">{clinic.qualification}</div>
-              )}
-              {ps.show_doctor_contact && clinic.registration_number && (
-                <div className="print-reg-number">Reg. No: {clinic.registration_number}</div>
-              )}
-              {ps.show_clinic_contact && clinic.address && (
-                <div className="print-address">{clinic.address}</div>
-              )}
-              {ps.show_clinic_contact && clinic.contact && (
-                <div className="print-clinic-contact">{clinic.contact}</div>
-              )}
-            </div>
-
-            <div className="print-patient-col">
-              <div className="print-patient-row">
-                <span className="print-patient-label">Date</span>
-                <span className="print-patient-value">{fmtDateTime(prescription.prescribed_at)}</span>
-              </div>
-              <div className="print-patient-row">
-                <span className="print-patient-label">Patient</span>
-                <span className="print-patient-value">{prescription.patient.name}</span>
-              </div>
-              {prescription.patient.mobile && (
-                <div className="print-patient-row">
-                  <span className="print-patient-label">Contact</span>
-                  <span className="print-patient-value">{prescription.patient.mobile}</span>
-                </div>
-              )}
-              {prescription.visit?.diagnosis && (
-                <div className="print-patient-row">
-                  <span className="print-patient-label">Diagnosis</span>
-                  <span className="print-patient-value">{prescription.visit.diagnosis}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Rx + Medicines */}
-          <div className="print-rx-symbol">&#8478;</div>
-          <MedicineList items={prescription.items} L={L} />
-
-          {/* Notes */}
-          {prescription.doctor_notes && (
-            <div className="print-notes-section" style={{ marginTop: 14 }}>
-              <hr className="print-rule" />
-              <div className="print-notes-label">Notes</div>
-              <div className="print-notes-text">{prescription.doctor_notes}</div>
-            </div>
-          )}
-
-          {/* Signature */}
-          <Signature name={sigName} qualification={clinic.qualification} registrationNumber={clinic.registration_number} />
-
-          {/* Custom footer banner */}
-          {ps.prescription_footer && (
-            <>
-              <hr className="print-rule" />
-              <div className="print-banner">{ps.prescription_footer}</div>
-            </>
-          )}
-
-        </div>
+        <DefaultPrescriptionTemplate
+          clinic={{
+            name:          clinic.name,
+            doctorName:    clinic.doctor_name,
+            qualification: clinic.qualification,
+            regNo:         clinic.registration_number,
+            address:       clinic.address,
+            contact:       clinic.contact,
+            timing:        clinic.clinic_timing,
+            days:          clinic.clinic_days,
+            logoUrl:       clinic.logo_url,
+          }}
+          watermark={{
+            text:    ps.watermark_text    ?? 'Clinora',
+            color:   ps.watermark_color   ?? '#0d9488',
+            enabled: ps.watermark_enabled !== false,
+          }}
+          prescription={prescription}
+          lang={lang}
+        />
       </div>
     )
   }

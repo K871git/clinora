@@ -25,6 +25,11 @@
   animation: rxp-slide-up 0.18s cubic-bezier(0.16,1,0.3,1);
 }
 
+/* Wider sheet for default A4 HTML prescription (210mm ≈ 793px) */
+.rxp-sheet--a4 {
+  max-width: 860px;
+}
+
 @keyframes rxp-slide-up {
   from { transform: translateY(16px); opacity:0 }
   to   { transform: translateY(0);    opacity:1 }

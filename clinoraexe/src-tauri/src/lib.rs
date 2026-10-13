@@ -224,6 +224,8 @@ pub fn run() {
             commands::settings::set_active_template,
             commands::settings::read_template_file,
             commands::settings::scan_template_layout,
+            commands::settings::upload_clinic_logo,
+            commands::settings::delete_clinic_logo,
             // Network health
             commands::utils::ping_db,
             // Downloads

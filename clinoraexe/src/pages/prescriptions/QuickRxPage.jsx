@@ -13,6 +13,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { AuthContext } from '../../contexts/AuthContext'
 import PageLoader from '../../components/ui/PageLoader'
 import RxPreview from './RxPreview'
+import DefaultPrescriptionTemplate from './DefaultPrescriptionTemplate'
 import { toast } from 'sonner'
 
 /* ── Draft persistence ───────────────────────────────────────── */
@@ -46,7 +47,8 @@ function buildDosage(row) {
   return [timing, meal, qty].filter(Boolean).join(' ') || null
 }
 
-const EMPTY_PT = { name: '', age: '', mobile: '', dob: '', gender: '', address: '' }
+const EMPTY_PT     = { name: '', age: '', mobile: '', dob: '', gender: '', address: '' }
+const EMPTY_VITALS = { weight: '', height: '', bp: '' }
 
 /* ── Rx overlay coordinate helpers (shared with RxLivePanel) ─── */
 const PANEL_W = 480          // live-preview column width in px
@@ -98,6 +100,9 @@ export default function QuickRxPage() {
   const [medicines, setMedicines]   = useState([newMedRow()])
   const [lastAddedId, setLastAddedId] = useState(null)
 
+  /* Vitals */
+  const [vitals, setVitals] = useState(EMPTY_VITALS)
+
   /* Notes + fee */
   const [doctorNotes, setDoctorNotes] = useState('')
   const [fee, setFee]                 = useState('100')
@@ -111,9 +116,10 @@ export default function QuickRxPage() {
   /* Post-save pharmacy prompt */
   const [savedRxId,      setSavedRxId]      = useState(null)
   const [pharmacySending, setPharmacySending] = useState(false)
-  const [tplUrl, setTplUrl]     = useState(null)
-  const [tplPath, setTplPath]   = useState(null)
-  const [tplLayout, setTplLayout] = useState(null)
+  const [tplUrl, setTplUrl]         = useState(null)
+  const [tplPath, setTplPath]       = useState(null)
+  const [tplLayout, setTplLayout]   = useState(null)
+  const [clinicSettings, setClinicSettings] = useState(null)
 
   /* UI */
   const [errors, setErrors]       = useState({})
@@ -123,11 +129,19 @@ export default function QuickRxPage() {
   const searchTimer = useRef(null)
   const draftTimer  = useRef(null)
 
-  /* ── Load prescription template URL + path ── */
+  /* ── Load prescription template URL + path + clinic/watermark settings ── */
   useEffect(() => {
     getSettings().then(({ data }) => {
       setTplUrl(data.prescription_template_url ?? null)
       setTplPath(data.prescription_template_path ?? null)
+      setClinicSettings({
+        clinic: data.clinic ?? {},
+        watermark: {
+          text:    data.watermark_text    ?? 'Clinora',
+          color:   data.watermark_color   ?? '#0d9488',
+          enabled: data.watermark_enabled !== false,
+        },
+      })
     }).catch(() => {})
   }, [])
 
@@ -161,6 +175,7 @@ export default function QuickRxPage() {
     if (draft.medicines?.length) setMedicines(draft.medicines)
     if (draft.doctorNotes)     setDoctorNotes(draft.doctorNotes)
     if (draft.fee)             setFee(draft.fee)
+    if (draft.vitals)          setVitals(draft.vitals)
     if (draft.selectedPatient?.id) {
       getPatientAllergies(draft.selectedPatient.id).then(a => setAllergies(a ?? [])).catch(() => {})
     }
@@ -171,7 +186,7 @@ export default function QuickRxPage() {
     if (visitMode) return
     clearTimeout(draftTimer.current)
     draftTimer.current = setTimeout(() => {
-      saveDraft({ pt, selectedPatient, medicines, doctorNotes, fee })
+      saveDraft({ pt, selectedPatient, medicines, doctorNotes, fee, vitals })
     }, 500)
     return () => clearTimeout(draftTimer.current)
   }, [pt, selectedPatient, medicines, doctorNotes, fee, visitMode])
@@ -417,6 +432,17 @@ export default function QuickRxPage() {
     mobile: pt.mobile, address: pt.address,
   }
 
+  /* Build visit object from vitals (null if nothing entered) */
+  const bmiVal = vitals.weight && vitals.height
+    ? parseFloat((Number(vitals.weight) / Math.pow(Number(vitals.height) / 100, 2)).toFixed(2))
+    : null
+  const visitObj = (vitals.weight || vitals.height || vitals.bp) ? {
+    weight: vitals.weight ? Number(vitals.weight) : null,
+    height: vitals.height ? Number(vitals.height) : null,
+    bmi:    bmiVal,
+    bp:     vitals.bp || null,
+  } : null
+
   return (
     <div className="qrx-page">
 
@@ -550,6 +576,44 @@ export default function QuickRxPage() {
         </div>
       )}
 
+      {/* ── Vitals (optional) ── */}
+      <div className="card qrx-section">
+        <div className="qrx-section-label">
+          <span className="qrx-sec-icon qrx-sec-icon--vitals">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </span>
+          <span>Vitals</span>
+          <span className="qrx-opt">optional</span>
+        </div>
+        <div className="qrx-vitals-row">
+          <div className="qrx-vital-field">
+            <label className="qrx-vital-label">Weight (Kg)</label>
+            <input type="number" className="field qrx-vital-input" placeholder="70" min="0"
+              value={vitals.weight}
+              onChange={e => setVitals(v => ({ ...v, weight: e.target.value }))} />
+          </div>
+          <div className="qrx-vital-field">
+            <label className="qrx-vital-label">Height (Cm)</label>
+            <input type="number" className="field qrx-vital-input" placeholder="170" min="0"
+              value={vitals.height}
+              onChange={e => setVitals(v => ({ ...v, height: e.target.value }))} />
+          </div>
+          <div className="qrx-vital-field">
+            <label className="qrx-vital-label">BP (mmHg)</label>
+            <input type="text" className="field qrx-vital-input" placeholder="120/80"
+              value={vitals.bp}
+              onChange={e => setVitals(v => ({ ...v, bp: e.target.value }))} />
+          </div>
+          {bmiVal && (
+            <div className="qrx-vital-bmi">
+              BMI <strong>{bmiVal}</strong>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* ── Medicines ── */}
       <div className="card qrx-section">
         <div className="qrx-section-label">
@@ -653,10 +717,13 @@ export default function QuickRxPage() {
           patient={previewPatient}
           medicines={medicines}
           doctorNotes={doctorNotes}
+          vitals={visitObj}
           langLabels={LANG[lang] || LANG.en}
           templateUrl={tplUrl}
           templatePath={tplPath}
           layout={tplLayout}
+          clinicSettings={clinicSettings}
+          lang={lang}
           onClick={() => setShowPreview(true)}
         />
       </div>
@@ -708,8 +775,10 @@ export default function QuickRxPage() {
           langLabels={LANG[lang] || LANG.en}
           doctorName={user?.name || 'Doctor'}
           clinicName={user?.clinic?.name || 'Clinic'}
+          vitals={visitObj}
           templateUrl={tplUrl}
           templatePath={tplPath}
+          clinicSettings={clinicSettings}
         />
       )}
     </div>
@@ -754,7 +823,7 @@ function RxMedList({ filled, medLine }) {
 }
 
 /* ── Live prescription preview panel ────────────────────────── */
-function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateUrl, templatePath, layout, onClick }) {
+function RxLivePanel({ patient, medicines, doctorNotes, vitals, langLabels: L, templateUrl, templatePath, layout, clinicSettings, lang, onClick }) {
   const filled = medicines.filter(m => m.name.trim())
   const now = new Date()
   const dd   = String(now.getDate()).padStart(2,'0')
@@ -771,6 +840,42 @@ function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateU
 
   const isPdf = (templatePath ?? '').toLowerCase().endsWith('.pdf')
 
+  /* Build a prescription-shaped object for DefaultPrescriptionTemplate from live form state */
+  const livePrescription = {
+    patient: {
+      name:   patient?.name   || '',
+      age:    patient?.age    || null,
+      gender: patient?.gender || null,
+      mobile: patient?.mobile || null,
+      address:patient?.address|| null,
+    },
+    prescribed_at: now.toISOString(),
+    visit: vitals || null,
+    items: filled.map((m, i) => ({
+      id:           i,
+      medicine_name: m.name,
+      dosage: [
+        m.morning ? '1' : '0', m.afternoon ? '1' : '0', m.evening ? '1' : '0',
+      ].join('-') + (m.afterMeal ? ' After meal' : m.beforeMeal ? ' Before meal' : ''),
+      duration: m.days ? `${m.days} days` : '',
+      instructions: m.notes || '',
+    })),
+    doctor_notes: doctorNotes || '',
+  }
+
+  const cl = clinicSettings?.clinic ?? {}
+  const previewClinic = {
+    name:          cl.name,
+    doctorName:    cl.doctor_name,
+    qualification: cl.qualification,
+    regNo:         cl.registration_number,
+    address:       cl.address,
+    contact:       cl.contact,
+    timing:        cl.clinic_timing,
+    days:          cl.clinic_days,
+    logoUrl:       cl.logo_url,
+  }
+
   return (
     <div className="qrx-live-panel">
       <div className="qrx-live-label">
@@ -779,13 +884,18 @@ function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateU
       </div>
 
       {!templateUrl ? (
-        <div className="qrx-live-empty" onClick={onClick}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-          <span>No template</span>
-          <small>Upload in Prescription Settings</small>
+        /* ── Default template live preview ── */
+        <div className="qrx-live-default-wrap" onClick={onClick} title="Click to open full preview">
+          <div className="qrx-live-default-scale">
+            <DefaultPrescriptionTemplate
+              clinic={previewClinic}
+              watermark={clinicSettings?.watermark}
+              prescription={livePrescription}
+              lang={lang || 'en'}
+              isPreview={true}
+            />
+          </div>
+          <div className="qrx-live-default-hint">Click to expand</div>
         </div>
       ) : (
         <div className="qrx-live-outer" onClick={onClick} title="Click to open full preview">

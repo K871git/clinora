@@ -159,13 +159,42 @@ function RxSort({ col, sortCol, sortDir }) {
    TEMPLATES PANEL
    ══════════════════════════════════════════════════════════════════════ */
 
+function DefaultTplThumb() {
+  return (
+    <div className="dpt-mini-thumb">
+      {/* Simulated prescription document illustration */}
+      <div className="dpt-mini-hdr">
+        <div className="dpt-mini-line dpt-mini-line--title" />
+        <div className="dpt-mini-cross">
+          <span>✚</span>
+        </div>
+        <div className="dpt-mini-line dpt-mini-line--title dpt-mini-line--r" />
+      </div>
+      <div className="dpt-mini-sep" />
+      <div className="dpt-mini-lines">
+        <div className="dpt-mini-line" style={{ width: '80%' }} />
+        <div className="dpt-mini-line" style={{ width: '60%' }} />
+        <div className="dpt-mini-line" style={{ width: '70%' }} />
+        <div className="dpt-mini-rx">Rx</div>
+        <div className="dpt-mini-line" style={{ width: '90%' }} />
+        <div className="dpt-mini-line" style={{ width: '75%' }} />
+        <div className="dpt-mini-line" style={{ width: '55%' }} />
+      </div>
+    </div>
+  )
+}
+
 function TemplatesPanel() {
-  const [templates,  setTemplates]  = useState([])
-  const [tplStatus,  setTplStatus]  = useState('loading')
-  const [uploading,  setUploading]  = useState(false)
-  const [settingId,  setSettingId]  = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
+  const [templates,        setTemplates]        = useState([])
+  const [tplStatus,        setTplStatus]        = useState('loading')
+  const [uploading,        setUploading]        = useState(false)
+  const [settingId,        setSettingId]        = useState(null)
+  const [deletingId,       setDeletingId]       = useState(null)
+  const [activatingDefault,setActivatingDefault] = useState(false)
   const fileRef = useRef(null)
+
+  // Default template is active when no custom template is active
+  const defaultIsActive = tplStatus === 'done' && templates.every(t => !t.is_active)
 
   useEffect(() => {
     listTemplates()
@@ -223,6 +252,20 @@ function TemplatesPanel() {
     }
   }
 
+  async function handleActivateDefault() {
+    if (defaultIsActive) return
+    setActivatingDefault(true)
+    setTplError(null)
+    try {
+      await setActiveTemplate('')
+      setTemplates(prev => prev.map(t => ({ ...t, is_active: false })))
+    } catch {
+      setTplError('Could not activate the default template.')
+    } finally {
+      setActivatingDefault(false)
+    }
+  }
+
   return (
     <div className="card p-4">
       <div className="tpl-panel-header">
@@ -277,21 +320,42 @@ function TemplatesPanel() {
         </div>
       )}
 
+      {/* ── Default template card (always present when loaded) ── */}
+      {tplStatus === 'done' && (
+        <div className="tpl-grid" style={{ marginBottom: templates.length > 0 ? 0 : undefined }}>
+          <div className={`tpl-card tpl-card--default${defaultIsActive ? ' is-active' : ''}`}>
+            <div className="tpl-thumb tpl-thumb--default">
+              <DefaultTplThumb />
+              {defaultIsActive && <span className="tpl-active-badge">Active</span>}
+            </div>
+            <div className="tpl-info">
+              <div className="tpl-name">Default Template</div>
+              <div className="tpl-source">Built-in · HTML layout</div>
+            </div>
+            <div className="tpl-actions">
+              <button
+                className={`tpl-btn tpl-btn-set${defaultIsActive ? ' is-active' : ''}`}
+                onClick={handleActivateDefault}
+                disabled={defaultIsActive || activatingDefault}
+              >
+                {activatingDefault ? <Spinner size={11} /> : defaultIsActive ? '✓ Active' : 'Set Active'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {tplStatus === 'done' && templates.length === 0 && (
-        <div className="tpl-empty">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-          <p className="tpl-empty-title">No templates yet</p>
+        <div className="tpl-empty" style={{ borderTop: '1px dashed var(--clr-border)', marginTop: 4, paddingTop: 20 }}>
+          <p className="tpl-empty-title" style={{ marginBottom: 4 }}>No custom templates uploaded</p>
           <p className="tpl-empty-desc">
-            Upload a scan or PDF of your clinic's prescription pad.
+            Upload a scan or PDF of your clinic's prescription pad to override the default template.
           </p>
         </div>
       )}
 
       {tplStatus === 'done' && templates.length > 0 && (
-        <div className="tpl-grid">
+        <div className="tpl-grid" style={{ marginTop: 0 }}>
           {templates.map(tpl => (
             <div key={tpl.name} className={`tpl-card${tpl.is_active ? ' is-active' : ''}`}>
               <div className="tpl-thumb">

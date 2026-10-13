@@ -13,6 +13,22 @@ pub struct ClinicPayload {
     pub registration_number: Option<String>,
     pub address: Option<String>,
     pub contact: Option<String>,
+    pub clinic_timing: Option<String>,
+    pub clinic_days: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct LogoUpload {
+    pub data: String,
+    pub filename: String,
+}
+
+fn logo_dir(clinic_id: u64) -> AppResult<std::path::PathBuf> {
+    let exe_dir = std::env::current_exe()
+        .map_err(|e| e.to_string())?
+        .parent().ok_or("Cannot determine exe directory")?
+        .to_path_buf();
+    Ok(exe_dir.join("data").join("logos").join(clinic_id.to_string()))
 }
 
 #[derive(Deserialize)]
@@ -23,6 +39,9 @@ pub struct PrescriptionSettingsPayload {
     pub show_clinic_contact: Option<bool>,
     pub prescription_template: Option<String>,
     pub gst_percent: Option<f64>,
+    pub watermark_text: Option<String>,
+    pub watermark_color: Option<String>,
+    pub watermark_enabled: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -58,9 +77,15 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
     let settings = sqlx::query(
         "SELECT clinic_id, prescription_header, prescription_footer, \
          show_doctor_contact, show_clinic_contact, prescription_template, \
-         CAST(gst_percent AS CHAR) AS gst_percent_str, created_at, updated_at \
+         CAST(gst_percent AS CHAR) AS gst_percent_str, \
+         watermark_text, watermark_color, watermark_enabled, \
+         created_at, updated_at \
          FROM clinic_settings WHERE clinic_id=?"
     ).bind(session.clinic_id).fetch_optional(&state.db).await?;
+
+    let logo_path = clinic.get::<Option<String>, _>("logo_path");
+    let clinic_timing = clinic.get::<Option<String>, _>("clinic_timing");
+    let clinic_days = clinic.get::<Option<String>, _>("clinic_days");
 
     let mut result = json!({
         "clinic": {
@@ -70,7 +95,10 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
             "qualification": clinic.get::<Option<String>, _>("qualification"),
             "registration_number": clinic.get::<Option<String>, _>("registration_number"),
             "address": clinic.get::<Option<String>, _>("address"),
-            "contact": clinic.get::<Option<String>, _>("contact")
+            "contact": clinic.get::<Option<String>, _>("contact"),
+            "logo_path": &logo_path,
+            "clinic_timing": &clinic_timing,
+            "clinic_days": &clinic_days,
         },
         "prescription_header": Value::Null,
         "prescription_footer": Value::Null,
@@ -78,7 +106,10 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
         "show_clinic_contact": true,
         "prescription_template": Value::Null,
         "prescription_template_path": Value::Null,
-        "gst_percent": 0.0
+        "gst_percent": 0.0,
+        "watermark_text": "Clinora",
+        "watermark_color": "#0d9488",
+        "watermark_enabled": true,
     });
 
     if let Some(s) = settings {
@@ -89,6 +120,11 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
         result["gst_percent"] = json!(s.get::<Option<String>, _>("gst_percent_str")
             .and_then(|v| v.parse::<f64>().ok())
             .unwrap_or(0.0));
+        result["watermark_text"] = json!(s.get::<Option<String>, _>("watermark_text")
+            .unwrap_or_else(|| "Clinora".to_string()));
+        result["watermark_color"] = json!(s.get::<Option<String>, _>("watermark_color")
+            .unwrap_or_else(|| "#0d9488".to_string()));
+        result["watermark_enabled"] = json!(s.get::<i8, _>("watermark_enabled") == 1);
         let template_name = s.get::<Option<String>, _>("prescription_template");
         result["prescription_template"] = json!(&template_name);
         if let Some(ref name) = template_name {
@@ -108,10 +144,12 @@ pub async fn update_clinic(data: ClinicPayload, state: State<'_, AppState>) -> A
     let session = get_session(&state)?;
     sqlx::query(
         "UPDATE clinics SET name=COALESCE(?,name), doctor_name=COALESCE(?,doctor_name),
-         qualification=?, registration_number=?, address=?, contact=?, updated_at=NOW() WHERE id=?"
+         qualification=?, registration_number=?, address=?, contact=?,
+         clinic_timing=?, clinic_days=?, updated_at=NOW() WHERE id=?"
     )
     .bind(&data.name).bind(&data.doctor_name).bind(&data.qualification)
     .bind(&data.registration_number).bind(&data.address).bind(&data.contact)
+    .bind(&data.clinic_timing).bind(&data.clinic_days)
     .bind(session.clinic_id)
     .execute(&state.db).await?;
     get_settings(state).await
@@ -127,25 +165,32 @@ pub async fn update_prescription_settings(data: PrescriptionSettingsPayload, sta
 
     if count == 0 {
         sqlx::query(
-            "INSERT INTO clinic_settings (clinic_id, prescription_header, prescription_footer, show_doctor_contact, show_clinic_contact, prescription_template, gst_percent, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
+            "INSERT INTO clinic_settings (clinic_id, prescription_header, prescription_footer, show_doctor_contact, show_clinic_contact, prescription_template, gst_percent, watermark_text, watermark_color, watermark_enabled, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
         )
         .bind(session.clinic_id).bind(&data.prescription_header).bind(&data.prescription_footer)
         .bind(data.show_doctor_contact.unwrap_or(true) as i8)
         .bind(data.show_clinic_contact.unwrap_or(true) as i8)
         .bind(&data.prescription_template).bind(gst)
+        .bind(data.watermark_text.as_deref().unwrap_or("Clinora"))
+        .bind(data.watermark_color.as_deref().unwrap_or("#0d9488"))
+        .bind(data.watermark_enabled.unwrap_or(true) as i8)
         .execute(&state.db).await?;
     } else {
         sqlx::query(
             "UPDATE clinic_settings SET prescription_header=?, prescription_footer=?,
              show_doctor_contact=?, show_clinic_contact=?, prescription_template=?,
-             gst_percent=?, updated_at=NOW()
+             gst_percent=?, watermark_text=COALESCE(?,watermark_text),
+             watermark_color=COALESCE(?,watermark_color), watermark_enabled=?,
+             updated_at=NOW()
              WHERE clinic_id=?"
         )
         .bind(&data.prescription_header).bind(&data.prescription_footer)
         .bind(data.show_doctor_contact.unwrap_or(true) as i8)
         .bind(data.show_clinic_contact.unwrap_or(true) as i8)
         .bind(&data.prescription_template).bind(gst)
+        .bind(&data.watermark_text).bind(&data.watermark_color)
+        .bind(data.watermark_enabled.unwrap_or(true) as i8)
         .bind(session.clinic_id)
         .execute(&state.db).await?;
     }
@@ -454,6 +499,49 @@ pub async fn set_active_template(name: String, state: State<'_, AppState>) -> Ap
     }
 
     Ok(json!({ "prescription_template": name }))
+}
+
+#[tauri::command]
+pub async fn upload_clinic_logo(data: LogoUpload, state: State<'_, AppState>) -> AppResult<Value> {
+    let session = get_session(&state)?;
+
+    let ext = data.filename.rsplit('.').next().unwrap_or("").to_lowercase();
+    if !["png", "jpg", "jpeg", "webp"].contains(&ext.as_str()) {
+        return Err("Invalid file type. Allowed: PNG, JPG, JPEG, WEBP.".into());
+    }
+
+    let dir = logo_dir(session.clinic_id)?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    // Always store as logo.<ext> — replaces any previous logo
+    let filename = format!("logo.{}", ext);
+    let abs_path = dir.join(&filename);
+    let bytes = super::utils::base64_decode(&data.data)?;
+    std::fs::write(&abs_path, &bytes).map_err(|e| e.to_string())?;
+
+    let abs_str = abs_path.to_string_lossy().replace('\\', "/");
+    sqlx::query("UPDATE clinics SET logo_path=?, updated_at=NOW() WHERE id=?")
+        .bind(&abs_str).bind(session.clinic_id).execute(&state.db).await?;
+
+    Ok(json!({ "path": abs_str }))
+}
+
+#[tauri::command]
+pub async fn delete_clinic_logo(state: State<'_, AppState>) -> AppResult<()> {
+    let session = get_session(&state)?;
+
+    let row = sqlx::query("SELECT logo_path FROM clinics WHERE id=?")
+        .bind(session.clinic_id).fetch_optional(&state.db).await?;
+    if let Some(r) = row {
+        if let Some(path) = r.get::<Option<String>, _>("logo_path") {
+            let p = std::path::Path::new(&path);
+            if p.exists() { std::fs::remove_file(p).ok(); }
+        }
+    }
+
+    sqlx::query("UPDATE clinics SET logo_path=NULL, updated_at=NOW() WHERE id=?")
+        .bind(session.clinic_id).execute(&state.db).await?;
+    Ok(())
 }
 
 #[tauri::command]

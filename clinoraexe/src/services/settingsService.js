@@ -8,6 +8,10 @@ export async function getSettings() {
   if (tplName && tplName.trim() && result.prescription_template_path) {
     result.prescription_template_url = convertFileSrc(result.prescription_template_path)
   }
+  // Convert logo path to asset:// URL
+  if (result.clinic?.logo_path) {
+    result.clinic.logo_url = convertFileSrc(result.clinic.logo_path)
+  }
   return { data: result }
 }
 
@@ -58,4 +62,22 @@ export async function deleteTemplate(name) {
 export async function setActiveTemplate(name) {
   const result = await invoke('set_active_template', { name })
   return { data: result }
+}
+
+export async function uploadClinicLogo(file) {
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+  const result = await invoke('upload_clinic_logo', {
+    data: { data: base64, filename: file.name },
+  })
+  return { data: { ...result, url: result.path ? convertFileSrc(result.path) : null } }
+}
+
+export async function deleteClinicLogo() {
+  await invoke('delete_clinic_logo')
+  return { data: {} }
 }

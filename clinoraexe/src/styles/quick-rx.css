@@ -109,6 +109,47 @@
 .qrx-live-empty span { font-size: 13px; font-weight: 600; }
 .qrx-live-empty small { font-size: 11px; opacity: 0.6; }
 
+/* Default template live preview */
+.qrx-live-default-wrap {
+  width: 480px;
+  height: 660px;
+  overflow: hidden;
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  background: #f4f4f4;
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 0.15s;
+}
+.qrx-live-default-wrap:hover {
+  box-shadow: 0 2px 14px rgba(0,0,0,.12);
+}
+.qrx-live-default-scale {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) scale(0.59);
+  transform-origin: top center;
+  pointer-events: none;
+}
+.qrx-live-default-hint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.45) 0%, transparent 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  padding: 18px 0 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.qrx-live-default-wrap:hover .qrx-live-default-hint {
+  opacity: 1;
+}
+
 .qrx-section {
   padding: 24px 28px;
   margin-bottom: 14px;
@@ -142,6 +183,50 @@
 .qrx-sec-icon--med      { background: color-mix(in srgb, #2563eb 12%, var(--clr-surface)); color: #2563eb; }
 .qrx-sec-icon--notes    { background: color-mix(in srgb, #8b5cf6 12%, var(--clr-surface)); color: #8b5cf6; }
 .qrx-sec-icon--fee      { background: color-mix(in srgb, #059669 12%, var(--clr-surface)); color: #059669; }
+.qrx-sec-icon--vitals   { background: color-mix(in srgb, #0d9488 12%, var(--clr-surface)); color: #0d9488; }
+
+/* ── Vitals row ───────────────────────────────────────────────── */
+.qrx-vitals-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qrx-vital-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 90px;
+  min-width: 80px;
+  max-width: 140px;
+}
+.qrx-vital-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--clr-text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.qrx-vital-input {
+  height: 34px !important;
+  font-size: 13px !important;
+}
+.qrx-vital-bmi {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  padding: 6px 14px;
+  background: color-mix(in srgb, #0d9488 10%, transparent);
+  border: 1px solid color-mix(in srgb, #0d9488 30%, transparent);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #0d4a47;
+  white-space: nowrap;
+}
+.qrx-vital-bmi strong {
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 4px;
+}
 
 .qrx-opt {
   font-weight: 400;
