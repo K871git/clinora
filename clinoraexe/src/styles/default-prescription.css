@@ -1,0 +1,352 @@
+/* ── Default Prescription Template ─────────────────────────────────── */
+
+.dpt-paper {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  padding: 12mm 14mm 14mm;
+  box-sizing: border-box;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11pt;
+  color: #111;
+  overflow: hidden;
+}
+
+.dpt-paper--preview {
+  box-shadow: 0 2px 12px rgba(0,0,0,.12);
+}
+
+/* ── Watermark ── */
+.dpt-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 88px;
+  font-weight: 900;
+  opacity: 0.055;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  letter-spacing: 10px;
+  font-family: Arial, sans-serif;
+  z-index: 0;
+}
+
+/* ── Header ── */
+.dpt-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: start;
+  position: relative;
+  z-index: 1;
+}
+
+.dpt-hdr-left {
+  text-align: left;
+}
+.dpt-hdr-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 8px;
+}
+.dpt-hdr-right {
+  text-align: right;
+}
+
+.dpt-dr-name {
+  font-size: 14pt;
+  font-weight: 700;
+  color: #0d4a47;
+  letter-spacing: 0.01em;
+}
+.dpt-dr-qual {
+  font-size: 9.5pt;
+  color: #333;
+  margin-top: 1px;
+}
+.dpt-dr-reg {
+  font-size: 9pt;
+  color: #555;
+  margin-top: 2px;
+}
+
+.dpt-logo {
+  max-width: 64px;
+  max-height: 64px;
+  object-fit: contain;
+}
+
+.dpt-clinic-name {
+  font-size: 13.5pt;
+  font-weight: 700;
+  color: #0d4a47;
+}
+.dpt-clinic-addr {
+  font-size: 9pt;
+  color: #444;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.dpt-clinic-contact {
+  font-size: 8.5pt;
+  color: #444;
+  margin-top: 2px;
+}
+
+/* ── Divider ── */
+.dpt-divider {
+  border: none;
+  border-top: 2px solid #0d9488;
+  margin: 8px 0 6px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Date row ── */
+.dpt-date-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+.dpt-date-val {
+  font-size: 10pt;
+  font-weight: 600;
+  color: #222;
+}
+
+/* ── Patient block ── */
+.dpt-patient-block {
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 5px 8px;
+  margin-bottom: 8px;
+  background: #fafafa;
+  position: relative;
+  z-index: 1;
+}
+.dpt-patient-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 2px;
+  font-size: 10pt;
+}
+.dpt-pt-label {
+  font-weight: 600;
+  min-width: 52px;
+  color: #333;
+  flex-shrink: 0;
+}
+.dpt-pt-colon {
+  flex-shrink: 0;
+  color: #555;
+}
+.dpt-pt-val {
+  flex: 1;
+  color: #111;
+}
+.dpt-pt-name {
+  font-weight: 600;
+}
+.dpt-pt-mob {
+  font-size: 9.5pt;
+  color: #555;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* ── Diagnosis ── */
+.dpt-diagnosis-block {
+  margin-bottom: 8px;
+  font-size: 10.5pt;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  position: relative;
+  z-index: 1;
+}
+.dpt-diag-label {
+  font-weight: 700;
+  color: #333;
+  flex-shrink: 0;
+}
+.dpt-diag-val {
+  font-weight: 600;
+  color: #0d4a47;
+}
+
+/* ── Rx symbol ── */
+.dpt-rx-row {
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+.dpt-rx-symbol {
+  font-size: 22pt;
+  color: #0d9488;
+  font-style: italic;
+  line-height: 1;
+}
+
+/* ── Medicine table ── */
+.dpt-med-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+.dpt-med-thead {
+  background: #f0faf9;
+}
+.dpt-th {
+  border: 1px solid #bbb;
+  padding: 4px 6px;
+  font-size: 9.5pt;
+  font-weight: 700;
+  text-align: left;
+  color: #0d4a47;
+}
+.dpt-th--no    { width: 28px; text-align: center; }
+.dpt-th--dosage { width: 34%; }
+.dpt-th--dur    { width: 22%; }
+
+.dpt-med-row {
+  vertical-align: top;
+}
+.dpt-med-row:nth-child(even) {
+  background: #f9fefe;
+}
+.dpt-td {
+  border: 1px solid #ccc;
+  padding: 5px 6px;
+  font-size: 10pt;
+  vertical-align: top;
+}
+.dpt-td--no {
+  text-align: center;
+  color: #555;
+  font-size: 9.5pt;
+  font-weight: 600;
+}
+.dpt-med-name {
+  font-weight: 700;
+  color: #111;
+  display: block;
+}
+.dpt-med-generic {
+  font-size: 8.5pt;
+  color: #666;
+  margin-top: 1px;
+  font-style: italic;
+}
+.dpt-dosage-line {
+  font-weight: 500;
+}
+.dpt-meal-line {
+  font-size: 9pt;
+  color: #555;
+  margin-top: 1px;
+}
+.dpt-days-line {
+  font-weight: 600;
+}
+.dpt-tot-line {
+  font-size: 9pt;
+  color: #555;
+  margin-top: 1px;
+}
+.dpt-no-meds {
+  font-size: 10pt;
+  color: #888;
+  padding: 6px 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Advice ── */
+.dpt-advice-block {
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+.dpt-advice-label {
+  font-weight: 700;
+  font-size: 10.5pt;
+  color: #222;
+  margin-bottom: 3px;
+}
+.dpt-advice-line {
+  font-size: 10pt;
+  color: #333;
+  line-height: 1.6;
+  padding-left: 4px;
+}
+
+/* ── Signature ── */
+.dpt-sig-block {
+  margin-top: 18mm;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  position: relative;
+  z-index: 1;
+}
+.dpt-sig-line {
+  width: 120px;
+  border-top: 1px solid #333;
+  margin-bottom: 3px;
+}
+.dpt-sig-name {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #0d4a47;
+}
+.dpt-sig-qual {
+  font-size: 9pt;
+  color: #555;
+  margin-top: 1px;
+}
+
+/* ── Footer ── */
+.dpt-footer {
+  margin-top: 14px;
+  border-top: 1px solid #ccc;
+  padding-top: 5px;
+  font-size: 8.5pt;
+  color: #777;
+  text-align: center;
+  font-style: italic;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Print media ────────────────────────────────────────────────────── */
+@media print {
+  .dpt-paper {
+    width: 210mm;
+    min-height: 297mm;
+    box-shadow: none;
+    margin: 0;
+    padding: 10mm 14mm 12mm;
+  }
+  .dpt-watermark {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .dpt-divider {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .dpt-rx-symbol {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
