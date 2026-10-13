@@ -1,7 +1,7 @@
 import '../../styles/rx-preview.css'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
+import DefaultPrescriptionTemplate from './DefaultPrescriptionTemplate'
 
 const isPdf = name => (name ?? '').toLowerCase().endsWith('.pdf')
 
@@ -13,11 +13,11 @@ const pw = mm => `${(mm / 210) * 100}%`
 
 export default function RxPreview({
   onClose, patient, medicines, doctorNotes, fee,
-  lang, langLabels: L, doctorName,
-  templateUrl,   // asset:// URL for display
-  templatePath,  // absolute file path for scan_template_layout
+  lang, langLabels: L, doctorName, clinicName,
+  templateUrl,    // asset:// URL for display
+  templatePath,   // absolute file path for scan_template_layout
+  clinicSettings, // { clinic, watermark }
 }) {
-  const navigate = useNavigate()
   const [layout, setLayout] = useState(null)
 
   const d = new Date()
@@ -46,9 +46,49 @@ export default function RxPreview({
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  /* Build prescription object in DB format for DefaultPrescriptionTemplate */
+  const livePrescription = {
+    patient: {
+      name:    patient?.name    || '',
+      age:     patient?.age     || null,
+      gender:  patient?.gender  || null,
+      mobile:  patient?.mobile  || null,
+      address: patient?.address || null,
+    },
+    prescribed_at: new Date().toISOString(),
+    visit: null,
+    items: filled.map((m, i) => ({
+      id:            i,
+      medicine_name: m.name,
+      dosage: [
+        m.morning   ? String(Number(m.dosePerIntake) || 1) : '0',
+        m.afternoon ? String(Number(m.dosePerIntake) || 1) : '0',
+        m.evening   ? String(Number(m.dosePerIntake) || 1) : '0',
+      ].join('-') + (m.afterMeal ? ' After meal' : m.beforeMeal ? ' Before meal' : ''),
+      duration:     m.days  ? `${m.days} days` : '',
+      instructions: m.notes || '',
+    })),
+    doctor_notes: doctorNotes || '',
+  }
+
+  const cl = clinicSettings?.clinic ?? {}
+  const previewClinic = {
+    name:          cl.name               || clinicName  || '',
+    doctorName:    cl.doctor_name        || doctorName  || '',
+    qualification: cl.qualification      || '',
+    regNo:         cl.registration_number || '',
+    speciality:    cl.speciality         || '',
+    institution:   cl.institution        || '',
+    address:       cl.address            || '',
+    contact:       cl.contact            || '',
+    timing:        cl.clinic_timing      || '',
+    days:          cl.clinic_days        || '',
+    logoUrl:       cl.logo_url           || null,
+  }
+
   return (
     <div className="rxp-overlay" onClick={onClose}>
-      <div className="rxp-sheet" onClick={e => e.stopPropagation()}>
+      <div className={`rxp-sheet${!templateUrl ? ' rxp-sheet--a4' : ''}`} onClick={e => e.stopPropagation()}>
 
         {/* Controls */}
         <div className="rxp-controls no-print">
@@ -58,32 +98,25 @@ export default function RxPreview({
             </svg>
             Close
           </button>
-          {templateUrl && (
-            <button className="rxp-print-btn" onClick={() => window.print()}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 6 2 18 2 18 9"/>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                <rect x="6" y="14" width="12" height="8"/>
-              </svg>
-              Print
-            </button>
-          )}
+          <button className="rxp-print-btn" onClick={() => window.print()}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"/>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Print
+          </button>
         </div>
 
-        {/* No template */}
+        {/* No custom template — render default HTML prescription */}
         {!templateUrl ? (
-          <div className="rxp-no-tpl">
-            <div className="rxp-no-tpl-icon">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-            </div>
-            <h3 className="rxp-no-tpl-title">No Template Uploaded</h3>
-            <p className="rxp-no-tpl-desc">Upload your clinic letterhead in Prescription Settings.</p>
-            <button className="rxp-go-settings-btn" onClick={() => { onClose(); navigate('/prescription-settings') }}>
-              Go to Prescription Settings →
-            </button>
+          <div className="rxp-paper">
+            <DefaultPrescriptionTemplate
+              clinic={previewClinic}
+              watermark={clinicSettings?.watermark}
+              prescription={livePrescription}
+              lang={lang || 'en'}
+            />
           </div>
 
         ) : (

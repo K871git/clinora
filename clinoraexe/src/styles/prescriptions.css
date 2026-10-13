@@ -254,6 +254,82 @@
 .tpl-empty-title { font-size: 0.9375rem; font-weight: 600; color: var(--clr-text); margin-bottom: 6px; }
 .tpl-empty-desc  { font-size: 0.8125rem; line-height: 1.6; }
 
+/* ── Default template card ─────────────────────────────────── */
+.tpl-card--default {
+  border-style: dashed;
+}
+.tpl-card--default.is-active {
+  border-style: solid;
+}
+
+/* Thumbnail: mini prescription illustration */
+.tpl-thumb--default {
+  background: linear-gradient(135deg, #f0faf9 0%, #e6f7f5 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dpt-mini-thumb {
+  width: 80%;
+  height: 85%;
+  background: #fff;
+  border: 1px solid #d1e8e6;
+  border-radius: 3px;
+  padding: 6px 7px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+.dpt-mini-hdr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.dpt-mini-line {
+  height: 3px;
+  background: #c8e6e4;
+  border-radius: 2px;
+  flex: 1;
+}
+.dpt-mini-line--title {
+  height: 5px;
+  background: #0d9488;
+  opacity: 0.5;
+}
+.dpt-mini-line--r { }
+.dpt-mini-cross {
+  font-size: 9px;
+  color: #0d9488;
+  flex-shrink: 0;
+  font-weight: 700;
+  opacity: 0.7;
+}
+.dpt-mini-sep {
+  height: 1.5px;
+  background: #0d9488;
+  opacity: 0.35;
+  margin: 2px 0;
+}
+.dpt-mini-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+.dpt-mini-rx {
+  font-size: 8px;
+  font-style: italic;
+  font-weight: 700;
+  color: #0d9488;
+  margin: 1px 0;
+  opacity: 0.8;
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    HEADER
    ══════════════════════════════════════════════════════════════════════ */

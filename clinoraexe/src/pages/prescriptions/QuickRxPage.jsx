@@ -13,6 +13,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { AuthContext } from '../../contexts/AuthContext'
 import PageLoader from '../../components/ui/PageLoader'
 import RxPreview from './RxPreview'
+import DefaultPrescriptionTemplate from './DefaultPrescriptionTemplate'
 import { toast } from 'sonner'
 
 /* ── Draft persistence ───────────────────────────────────────── */
@@ -111,9 +112,10 @@ export default function QuickRxPage() {
   /* Post-save pharmacy prompt */
   const [savedRxId,      setSavedRxId]      = useState(null)
   const [pharmacySending, setPharmacySending] = useState(false)
-  const [tplUrl, setTplUrl]     = useState(null)
-  const [tplPath, setTplPath]   = useState(null)
-  const [tplLayout, setTplLayout] = useState(null)
+  const [tplUrl, setTplUrl]         = useState(null)
+  const [tplPath, setTplPath]       = useState(null)
+  const [tplLayout, setTplLayout]   = useState(null)
+  const [clinicSettings, setClinicSettings] = useState(null)
 
   /* UI */
   const [errors, setErrors]       = useState({})
@@ -123,11 +125,19 @@ export default function QuickRxPage() {
   const searchTimer = useRef(null)
   const draftTimer  = useRef(null)
 
-  /* ── Load prescription template URL + path ── */
+  /* ── Load prescription template URL + path + clinic/watermark settings ── */
   useEffect(() => {
     getSettings().then(({ data }) => {
       setTplUrl(data.prescription_template_url ?? null)
       setTplPath(data.prescription_template_path ?? null)
+      setClinicSettings({
+        clinic: data.clinic ?? {},
+        watermark: {
+          text:    data.watermark_text    ?? 'Clinora',
+          color:   data.watermark_color   ?? '#0d9488',
+          enabled: data.watermark_enabled !== false,
+        },
+      })
     }).catch(() => {})
   }, [])
 
@@ -657,6 +667,8 @@ export default function QuickRxPage() {
           templateUrl={tplUrl}
           templatePath={tplPath}
           layout={tplLayout}
+          clinicSettings={clinicSettings}
+          lang={lang}
           onClick={() => setShowPreview(true)}
         />
       </div>
@@ -710,6 +722,7 @@ export default function QuickRxPage() {
           clinicName={user?.clinic?.name || 'Clinic'}
           templateUrl={tplUrl}
           templatePath={tplPath}
+          clinicSettings={clinicSettings}
         />
       )}
     </div>
@@ -754,7 +767,7 @@ function RxMedList({ filled, medLine }) {
 }
 
 /* ── Live prescription preview panel ────────────────────────── */
-function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateUrl, templatePath, layout, onClick }) {
+function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateUrl, templatePath, layout, clinicSettings, lang, onClick }) {
   const filled = medicines.filter(m => m.name.trim())
   const now = new Date()
   const dd   = String(now.getDate()).padStart(2,'0')
@@ -771,6 +784,42 @@ function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateU
 
   const isPdf = (templatePath ?? '').toLowerCase().endsWith('.pdf')
 
+  /* Build a prescription-shaped object for DefaultPrescriptionTemplate from live form state */
+  const livePrescription = {
+    patient: {
+      name:   patient?.name   || '',
+      age:    patient?.age    || null,
+      gender: patient?.gender || null,
+      mobile: patient?.mobile || null,
+      address:patient?.address|| null,
+    },
+    prescribed_at: now.toISOString(),
+    visit: null,
+    items: filled.map((m, i) => ({
+      id:           i,
+      medicine_name: m.name,
+      dosage: [
+        m.morning ? '1' : '0', m.afternoon ? '1' : '0', m.evening ? '1' : '0',
+      ].join('-') + (m.afterMeal ? ' After meal' : m.beforeMeal ? ' Before meal' : ''),
+      duration: m.days ? `${m.days} days` : '',
+      instructions: m.notes || '',
+    })),
+    doctor_notes: doctorNotes || '',
+  }
+
+  const cl = clinicSettings?.clinic ?? {}
+  const previewClinic = {
+    name:          cl.name,
+    doctorName:    cl.doctor_name,
+    qualification: cl.qualification,
+    regNo:         cl.registration_number,
+    address:       cl.address,
+    contact:       cl.contact,
+    timing:        cl.clinic_timing,
+    days:          cl.clinic_days,
+    logoUrl:       cl.logo_url,
+  }
+
   return (
     <div className="qrx-live-panel">
       <div className="qrx-live-label">
@@ -779,13 +828,18 @@ function RxLivePanel({ patient, medicines, doctorNotes, langLabels: L, templateU
       </div>
 
       {!templateUrl ? (
-        <div className="qrx-live-empty" onClick={onClick}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-          <span>No template</span>
-          <small>Upload in Prescription Settings</small>
+        /* ── Default template live preview ── */
+        <div className="qrx-live-default-wrap" onClick={onClick} title="Click to open full preview">
+          <div className="qrx-live-default-scale">
+            <DefaultPrescriptionTemplate
+              clinic={previewClinic}
+              watermark={clinicSettings?.watermark}
+              prescription={livePrescription}
+              lang={lang || 'en'}
+              isPreview={true}
+            />
+          </div>
+          <div className="qrx-live-default-hint">Click to expand</div>
         </div>
       ) : (
         <div className="qrx-live-outer" onClick={onClick} title="Click to open full preview">

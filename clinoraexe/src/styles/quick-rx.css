@@ -109,6 +109,47 @@
 .qrx-live-empty span { font-size: 13px; font-weight: 600; }
 .qrx-live-empty small { font-size: 11px; opacity: 0.6; }
 
+/* Default template live preview */
+.qrx-live-default-wrap {
+  width: 480px;
+  height: 660px;
+  overflow: hidden;
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  background: #f4f4f4;
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 0.15s;
+}
+.qrx-live-default-wrap:hover {
+  box-shadow: 0 2px 14px rgba(0,0,0,.12);
+}
+.qrx-live-default-scale {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) scale(0.59);
+  transform-origin: top center;
+  pointer-events: none;
+}
+.qrx-live-default-hint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.45) 0%, transparent 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  padding: 18px 0 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.qrx-live-default-wrap:hover .qrx-live-default-hint {
+  opacity: 1;
+}
+
 .qrx-section {
   padding: 24px 28px;
   margin-bottom: 14px;

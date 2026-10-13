@@ -1,287 +1,392 @@
-/* ── Default Prescription Template ─────────────────────────────────── */
+/* ── Default Prescription Template ─────────────────────────────── */
 
 .dpt-paper {
   position: relative;
   width: 210mm;
   min-height: 297mm;
   background: #fff;
-  padding: 12mm 14mm 14mm;
+  padding: 8mm 12mm 10mm;
   box-sizing: border-box;
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 11pt;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10.5pt;
   color: #111;
   overflow: hidden;
 }
-
 .dpt-paper--preview {
-  box-shadow: 0 2px 12px rgba(0,0,0,.12);
+  box-shadow: 0 4px 28px rgba(0,0,0,.18);
 }
 
-/* ── Watermark ── */
-.dpt-watermark {
+/* ── Clinora watermark — PNG logo centered, multiply blend ── */
+.dpt-wm-wrap {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-45deg);
-  font-size: 88px;
-  font-weight: 900;
-  opacity: 0.055;
   pointer-events: none;
   user-select: none;
-  white-space: nowrap;
-  letter-spacing: 10px;
-  font-family: Arial, sans-serif;
   z-index: 0;
+  opacity: 0.13;
+  mix-blend-mode: multiply;
+}
+.dpt-wm-img {
+  width: 300px;
+  height: auto;
+  display: block;
 }
 
-/* ── Header ── */
+/* ══════════════════════════════════════════
+   HEADER — Logo | Clinic center | Doctor right
+   ══════════════════════════════════════════ */
 .dpt-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
-  align-items: start;
   position: relative;
   z-index: 1;
+  min-height: 68px;
 }
 
-.dpt-hdr-left {
-  text-align: left;
-}
-.dpt-hdr-center {
+.dpt-hdr-logo {
+  flex: 0 0 auto;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0 8px;
+  align-items: flex-start;
+  padding-top: 2px;
 }
-.dpt-hdr-right {
-  text-align: right;
-}
-
-.dpt-dr-name {
-  font-size: 14pt;
-  font-weight: 700;
-  color: #0d4a47;
-  letter-spacing: 0.01em;
-}
-.dpt-dr-qual {
-  font-size: 9.5pt;
-  color: #333;
-  margin-top: 1px;
-}
-.dpt-dr-reg {
-  font-size: 9pt;
-  color: #555;
-  margin-top: 2px;
-}
-
-.dpt-logo {
+.dpt-logo-img {
   max-width: 64px;
   max-height: 64px;
   object-fit: contain;
 }
 
-.dpt-clinic-name {
-  font-size: 13.5pt;
-  font-weight: 700;
-  color: #0d4a47;
+/* Clinic name — center, grows */
+.dpt-hdr-center {
+  flex: 1;
+  text-align: center;
+  padding: 0 10px;
+  padding-top: 2px;
 }
-.dpt-clinic-addr {
+.dpt-clinic-name {
+  font-size: 14pt;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+.dpt-clinic-tagline {
   font-size: 9pt;
-  color: #444;
+  color: #555;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Doctor info — right aligned */
+.dpt-hdr-doctor {
+  flex: 0 0 auto;
+  text-align: right;
+  min-width: 165px;
+  max-width: 210px;
+}
+.dpt-dr-name {
+  font-size: 13pt;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+.dpt-dr-qual {
+  font-size: 9pt;
+  color: #333;
   margin-top: 2px;
   line-height: 1.4;
 }
-.dpt-clinic-contact {
+.dpt-dr-inst {
   font-size: 8.5pt;
+  color: #555;
+  margin-top: 1px;
+  line-height: 1.35;
+}
+.dpt-dr-reg {
+  font-size: 9pt;
   color: #444;
-  margin-top: 2px;
+  margin-top: 1px;
+}
+.dpt-dr-spec {
+  font-size: 9pt;
+  color: #0d7a72;
+  margin-top: 1px;
+  font-style: italic;
 }
 
-/* ── Divider ── */
+/* ── Teal divider ── */
 .dpt-divider {
   border: none;
   border-top: 2px solid #0d9488;
-  margin: 8px 0 6px;
+  margin: 5px 0 4px;
   position: relative;
   z-index: 1;
 }
 
-/* ── Date row ── */
-.dpt-date-row {
+/* ══════════════════════════════════════════
+   PATIENT BLOCK — label : value style
+   ══════════════════════════════════════════ */
+.dpt-patient-block {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-  position: relative;
-  z-index: 1;
-}
-.dpt-date-val {
-  font-size: 10pt;
-  font-weight: 600;
-  color: #222;
-}
-
-/* ── Patient block ── */
-.dpt-patient-block {
+  align-items: flex-start;
   border: 1px solid #ccc;
-  border-radius: 3px;
-  padding: 5px 8px;
-  margin-bottom: 8px;
-  background: #fafafa;
+  padding: 5px 10px;
+  margin-bottom: 4px;
   position: relative;
   z-index: 1;
+  background: #fff;
 }
-.dpt-patient-row {
+.dpt-pt-info-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dpt-pt-date-col {
+  flex: 0 0 auto;
+  text-align: right;
+  min-width: 110px;
+}
+.dpt-pt-row {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  margin-bottom: 2px;
-  font-size: 10pt;
+  gap: 0;
+  line-height: 1.55;
+}
+.dpt-pt-row--right {
+  justify-content: flex-end;
 }
 .dpt-pt-label {
+  font-size: 9.5pt;
   font-weight: 600;
-  min-width: 52px;
   color: #333;
+  min-width: 52px;
   flex-shrink: 0;
 }
 .dpt-pt-colon {
-  flex-shrink: 0;
-  color: #555;
-}
-.dpt-pt-val {
-  flex: 1;
-  color: #111;
-}
-.dpt-pt-name {
-  font-weight: 600;
-}
-.dpt-pt-mob {
   font-size: 9.5pt;
   color: #555;
-  white-space: nowrap;
-  margin-left: auto;
+  padding: 0 5px 0 2px;
+  flex-shrink: 0;
+}
+.dpt-pt-val {
+  font-size: 9.5pt;
+  color: #111;
+}
+.dpt-pt-val--name {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #111;
+}
+
+/* ── Vitals bar ── */
+.dpt-vitals-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 4px 0 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #ddd;
+  position: relative;
+  z-index: 1;
+}
+.dpt-vital-item {
+  font-size: 10pt;
+  color: #0d4a47;
+}
+.dpt-vital-item strong {
+  font-weight: 700;
+  margin-right: 3px;
+}
+
+/* ── Chief Complaints / Clinical Findings ── */
+.dpt-cc-cf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #ccc;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+.dpt-cc-col { padding: 4px 8px; border-right: 1px solid #ccc; }
+.dpt-cf-col { padding: 4px 8px; }
+.dpt-cc-title, .dpt-cf-title {
+  font-size: 8.5pt;
+  font-weight: 700;
+  color: #0d4a47;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+.dpt-cc-item, .dpt-cf-item {
+  font-size: 9.5pt;
+  color: #333;
+  line-height: 1.55;
 }
 
 /* ── Diagnosis ── */
 .dpt-diagnosis-block {
-  margin-bottom: 8px;
-  font-size: 10.5pt;
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
+  margin-bottom: 3px;
   position: relative;
   z-index: 1;
 }
-.dpt-diag-label {
-  font-weight: 700;
-  color: #333;
-  flex-shrink: 0;
-}
-.dpt-diag-val {
-  font-weight: 600;
-  color: #0d4a47;
-}
+.dpt-diag-label { font-size: 10pt; font-weight: 700; color: #222; }
+.dpt-diag-val   { font-size: 10pt; color: #0d4a47; }
 
 /* ── Rx symbol ── */
 .dpt-rx-row {
-  margin-bottom: 4px;
+  margin: 3px 0 1px;
   position: relative;
   z-index: 1;
 }
 .dpt-rx-symbol {
   font-size: 22pt;
-  color: #0d9488;
+  color: #111;
   font-style: italic;
+  font-family: 'Times New Roman', Times, serif;
   line-height: 1;
 }
 
-/* ── Medicine table ── */
-.dpt-med-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 10px;
+/* ══════════════════════════════════════════
+   MEDICINE SECTION — matches sample
+   No table borders, just row separators
+   ══════════════════════════════════════════ */
+
+/* Header row: Medicine | Dosage */
+.dpt-med-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1.5px solid #555;
+  padding: 3px 4px;
+  margin-bottom: 0;
   position: relative;
   z-index: 1;
 }
-.dpt-med-thead {
-  background: #f0faf9;
-}
-.dpt-th {
-  border: 1px solid #bbb;
-  padding: 4px 6px;
-  font-size: 9.5pt;
-  font-weight: 700;
-  text-align: left;
-  color: #0d4a47;
-}
-.dpt-th--no    { width: 28px; text-align: center; }
-.dpt-th--dosage { width: 34%; }
-.dpt-th--dur    { width: 22%; }
-
-.dpt-med-row {
-  vertical-align: top;
-}
-.dpt-med-row:nth-child(even) {
-  background: #f9fefe;
-}
-.dpt-td {
-  border: 1px solid #ccc;
-  padding: 5px 6px;
+.dpt-med-hdr-name {
   font-size: 10pt;
-  vertical-align: top;
-}
-.dpt-td--no {
-  text-align: center;
-  color: #555;
-  font-size: 9.5pt;
-  font-weight: 600;
-}
-.dpt-med-name {
   font-weight: 700;
   color: #111;
-  display: block;
 }
-.dpt-med-generic {
-  font-size: 8.5pt;
+.dpt-med-hdr-dose {
+  font-size: 10pt;
+  font-weight: 700;
+  color: #111;
+  padding-right: 4px;
+}
+
+/* Medicine list container */
+.dpt-med-list {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 8px;
+}
+
+/* Each medicine entry */
+.dpt-med-entry {
+  border-bottom: 1px solid #ccc;
+  padding: 5px 4px 6px;
+}
+.dpt-med-entry:last-child {
+  border-bottom: 1px solid #999;
+}
+
+/* Main row: name-col | dose+duration */
+.dpt-med-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dpt-med-name-col {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: 1;
+}
+.dpt-med-num {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #333;
+  flex-shrink: 0;
+  min-width: 24px;
+}
+.dpt-med-brand {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.25;
+}
+.dpt-med-dose-col {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.dpt-med-code {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0.04em;
+  min-width: 42px;
+  text-align: center;
+}
+.dpt-med-dur {
+  font-size: 10pt;
+  color: #222;
+  white-space: nowrap;
+}
+
+/* Sub-rows: Composition / Timing */
+.dpt-med-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  padding-left: 28px;
+  margin-top: 2px;
+  line-height: 1.5;
+}
+.dpt-med-sub-label {
+  font-size: 9pt;
+  font-style: italic;
+  color: #444;
+  flex-shrink: 0;
+}
+.dpt-med-sub-colon {
+  font-size: 9pt;
   color: #666;
-  margin-top: 1px;
+  flex-shrink: 0;
+}
+.dpt-med-sub-val {
+  font-size: 9pt;
+  color: #333;
   font-style: italic;
 }
-.dpt-dosage-line {
-  font-weight: 500;
-}
-.dpt-meal-line {
-  font-size: 9pt;
-  color: #555;
-  margin-top: 1px;
-}
-.dpt-days-line {
-  font-weight: 600;
-}
-.dpt-tot-line {
-  font-size: 9pt;
-  color: #555;
-  margin-top: 1px;
-}
+
 .dpt-no-meds {
   font-size: 10pt;
-  color: #888;
-  padding: 6px 0;
+  color: #aaa;
+  padding: 8px 4px;
+  font-style: italic;
   position: relative;
   z-index: 1;
 }
 
 /* ── Advice ── */
 .dpt-advice-block {
-  margin-bottom: 10px;
+  margin: 6px 0;
   position: relative;
   z-index: 1;
 }
 .dpt-advice-label {
-  font-weight: 700;
   font-size: 10.5pt;
-  color: #222;
-  margin-bottom: 3px;
+  font-weight: 700;
+  color: #0d4a47;
+  margin-bottom: 2px;
 }
 .dpt-advice-line {
   font-size: 10pt;
@@ -290,9 +395,20 @@
   padding-left: 4px;
 }
 
+/* ── Follow Up ── */
+.dpt-followup-row {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #0d4a47;
+  margin: 5px 0 10px;
+  position: relative;
+  z-index: 1;
+}
+.dpt-followup-val { font-weight: 600; color: #333; }
+
 /* ── Signature ── */
 .dpt-sig-block {
-  margin-top: 18mm;
+  margin-top: 14mm;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -301,13 +417,13 @@
 }
 .dpt-sig-line {
   width: 120px;
-  border-top: 1px solid #333;
-  margin-bottom: 3px;
+  border-top: 1.5px solid #555;
+  margin-bottom: 4px;
 }
 .dpt-sig-name {
   font-size: 10.5pt;
   font-weight: 700;
-  color: #0d4a47;
+  color: #111;
 }
 .dpt-sig-qual {
   font-size: 9pt;
@@ -317,35 +433,33 @@
 
 /* ── Footer ── */
 .dpt-footer {
-  margin-top: 14px;
-  border-top: 1px solid #ccc;
+  margin-top: 8px;
+  border-top: 1.5px solid #0d9488;
   padding-top: 5px;
-  font-size: 8.5pt;
-  color: #777;
-  text-align: center;
-  font-style: italic;
   position: relative;
   z-index: 1;
 }
+.dpt-footer-line {
+  font-size: 8.5pt;
+  color: #444;
+  text-align: center;
+  line-height: 1.55;
+}
+.dpt-footer-line strong {
+  color: #222;
+  font-weight: 700;
+}
 
-/* ── Print media ────────────────────────────────────────────────────── */
+/* ── Print ── */
 @media print {
   .dpt-paper {
     width: 210mm;
     min-height: 297mm;
     box-shadow: none;
     margin: 0;
-    padding: 10mm 14mm 12mm;
+    padding: 8mm 12mm 10mm;
   }
-  .dpt-watermark {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .dpt-divider {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .dpt-rx-symbol {
+  .dpt-wm-wrap, .dpt-divider, .dpt-rx-symbol {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
