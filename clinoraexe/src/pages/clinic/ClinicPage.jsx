@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { listOpdRegister, recordVisitPayment } from '../../services/visitService'
+import { listOpdRegister, recordVisitPayment, completeVisit, updateVisit } from '../../services/visitService'
 import { listAppointments, createAppointment, updateAppointment, deleteAppointment } from '../../services/appointmentService'
 import { searchPatients, createPatient } from '../../services/patientService'
 import { sanitizeMobile, validateMobile, sanitizeAge, validateAge } from '../../lib/inputValidators'
@@ -162,6 +162,7 @@ export default function ClinicPage() {
   const [apptView,     setApptView]     = useState('list')
   const [weekAppts,    setWeekAppts]    = useState([])
   const [weekLoading,  setWeekLoading]  = useState(false)
+  const [dupPatient,   setDupPatient]   = useState(null)
 
   /* ── OPD load ── */
   const loadOpd = useCallback(() => {
@@ -237,6 +238,25 @@ export default function ClinicPage() {
     })
   }, [visits, sortCol, sortDir])
 
+  /* ── OPD quick status toggle ── */
+  const [togglingStatusId, setTogglingStatusId] = useState(null)
+  async function handleToggleStatus(v, e) {
+    e.stopPropagation()
+    setTogglingStatusId(v.id)
+    try {
+      if (v.status === 'open') {
+        await completeVisit(v.id)
+        setVisits(prev => prev.map(x => x.id === v.id ? { ...x, status: 'completed' } : x))
+        toast.success(`Done — ${v.patient?.name ?? 'Visit'}`)
+      } else {
+        await updateVisit(v.id, { status: 'open' })
+        setVisits(prev => prev.map(x => x.id === v.id ? { ...x, status: 'open' } : x))
+        toast.success(`Reopened — ${v.patient?.name ?? 'Visit'}`)
+      }
+    } catch { toast.error('Could not update visit status') }
+    finally { setTogglingStatusId(null) }
+  }
+
   /* ── OPD quick pay ── */
   const [markingPaidId, setMarkingPaidId] = useState(null)
   async function handleMarkPaid(v, e) {
@@ -299,6 +319,10 @@ export default function ClinicPage() {
     if (mobileErr) { toast.error(mobileErr); return }
     const ageErr = validateAge(newPat.age)
     if (ageErr) { toast.error(ageErr); return }
+    if (dupPatient) {
+      toast.error(`Patient already exists: ${dupPatient.name}. Select them from the list instead.`)
+      return
+    }
     setCreatingPat(true)
     try {
       const payload = { name: newPat.name.trim() }
@@ -307,8 +331,11 @@ export default function ClinicPage() {
       if (newPat.gender) payload.gender = newPat.gender
       const { data: patient } = await createPatient(payload)
       setForm(f => ({ ...f, patient_id: patient.id, patient_name: patient.name }))
-      setPatSearch(patient.name); setPatResults([]); setShowNewPat(false)
-      toast.success(`${patient.name} created and selected`)
+      setPatSearch(patient.name); setPatResults([]); setShowNewPat(false); setDupPatient(null)
+      toast.success(`${patient.name} added`, {
+        description: 'Basic profile saved. Add history, address & more.',
+        action: { label: 'Complete Profile', onClick: () => navigate(`/patients/${patient.id}`) },
+      })
     } catch (e) {
       toast.error(typeof e === 'string' ? e : 'Could not create patient')
     } finally { setCreatingPat(false) }
@@ -499,6 +526,7 @@ export default function ClinicPage() {
                       </th>
                       <th className="opd-th-pay">Payment</th>
                       <th className="opd-th-fu">Follow-up</th>
+                      <th className="opd-th-actions" />
                     </tr>
                   </thead>
                   <tbody>
@@ -527,8 +555,15 @@ export default function ClinicPage() {
                                 </span>
                               : <span className="opd-muted">—</span>}
                           </td>
-                          <td className="opd-td-status">
-                            <span className={`opd-status-pill opd-status-pill--${v.status}`}>{isOpen ? 'Open' : 'Done'}</span>
+                          <td className="opd-td-status" onClick={e => e.stopPropagation()}>
+                            <button
+                              className={`opd-status-btn opd-status-btn--${v.status}`}
+                              onClick={e => handleToggleStatus(v, e)}
+                              disabled={togglingStatusId === v.id}
+                              title={isOpen ? 'Click to mark done' : 'Click to reopen'}
+                            >
+                              {togglingStatusId === v.id ? '…' : isOpen ? 'Open' : 'Done'}
+                            </button>
                           </td>
                           <td className="opd-td-fee">
                             {v.consultation_fee > 0 ? `₹${v.consultation_fee.toLocaleString('en-IN')}` : <span className="opd-muted">—</span>}
@@ -556,6 +591,15 @@ export default function ClinicPage() {
                             {v.followup_date
                               ? <span className="opd-fu-badge">{fmtDateShort(v.followup_date)}</span>
                               : <span className="opd-muted">—</span>}
+                          </td>
+                          <td className="opd-td-actions" onClick={e => e.stopPropagation()}>
+                            <button
+                              className="opd-rx-btn"
+                              onClick={e => { e.stopPropagation(); navigate(`/prescriptions/new?patient=${v.patient_id}`) }}
+                              title="Write new prescription"
+                            >
+                              + Rx
+                            </button>
                           </td>
                         </tr>
                       )
@@ -769,7 +813,20 @@ export default function ClinicPage() {
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-text)', marginBottom: 10 }}>New Patient Details</div>
                     <div className="emr-form-2col">
                       <div className="emr-form-row"><label>Name *</label><input value={newPat.name} onChange={e => setNewPat(n => ({ ...n, name: e.target.value }))} placeholder="Full name" autoFocus /></div>
-                      <div className="emr-form-row"><label>Mobile</label><input value={newPat.mobile} inputMode="numeric" maxLength={10} placeholder="10-digit" onChange={e => setNewPat(n => ({ ...n, mobile: sanitizeMobile(e.target.value) }))} /></div>
+                      <div className="emr-form-row"><label>Mobile</label><input value={newPat.mobile} inputMode="numeric" maxLength={10} placeholder="10-digit"
+                            onChange={e => {
+                              const val = sanitizeMobile(e.target.value)
+                              setNewPat(n => ({ ...n, mobile: val }))
+                              setDupPatient(null)
+                              if (val.length === 10) {
+                                searchPatients(val).then(res => {
+                                  const list = res.data?.data ?? res.data ?? []
+                                  const match = list.find(p => p.mobile === val)
+                                  if (match) setDupPatient(match)
+                                }).catch(() => {})
+                              }
+                            }}
+                          /></div>
                       <div className="emr-form-row"><label>Age</label><input value={newPat.age} inputMode="numeric" maxLength={3} placeholder="Years" onChange={e => setNewPat(n => ({ ...n, age: sanitizeAge(e.target.value) }))} /></div>
                       <div className="emr-form-row">
                         <label>Gender</label>
@@ -778,9 +835,19 @@ export default function ClinicPage() {
                         </select>
                       </div>
                     </div>
+                    {dupPatient && (
+                      <div className="cpd-dup-banner">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <span>Already registered: <strong>{dupPatient.name}</strong></span>
+                        <button className="cpd-dup-select" onClick={() => {
+                          setForm(f => ({ ...f, patient_id: dupPatient.id, patient_name: dupPatient.name }))
+                          setPatSearch(dupPatient.name); setPatResults([]); setShowNewPat(false); setDupPatient(null)
+                        }}>Select this patient</button>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                      <button className="btn-primary" onClick={handleCreatePatient} disabled={creatingPat} style={{ fontSize: 13 }}>{creatingPat ? 'Creating…' : 'Create & Select'}</button>
-                      <button className="btn-secondary" onClick={() => setShowNewPat(false)} style={{ fontSize: 13 }}>Cancel</button>
+                      <button className="btn-primary" onClick={handleCreatePatient} disabled={creatingPat || !!dupPatient} style={{ fontSize: 13 }}>{creatingPat ? 'Creating…' : 'Create & Select'}</button>
+                      <button className="btn-secondary" onClick={() => { setShowNewPat(false); setDupPatient(null) }} style={{ fontSize: 13 }}>Cancel</button>
                     </div>
                   </div>
                 )}

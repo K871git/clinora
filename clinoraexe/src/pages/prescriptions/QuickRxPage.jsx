@@ -1,6 +1,6 @@
 import '../../styles/quick-rx.css'
 import { useState, useEffect, useRef, useCallback, useContext } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { searchPatients, createPatient, getPatient } from '../../services/patientService'
 import { createVisit, saveFee } from '../../services/visitService'
 import { createPrescription, sendPrescription } from '../../services/prescriptionService'
@@ -81,7 +81,9 @@ const LANG = {
 /* ── Main Page ───────────────────────────────────────────────── */
 export default function QuickRxPage() {
   const { visitId: routeVisitId } = useParams()
-  const navigate   = useNavigate()
+  const navigate      = useNavigate()
+  const [searchParams] = useSearchParams()
+  const patientIdParam = searchParams.get('patient')
   const visitMode  = !!routeVisitId
   const { user }   = useContext(AuthContext)
 
@@ -165,9 +167,24 @@ export default function QuickRxPage() {
       .catch(() => setVisitLoading(false))
   }, [routeVisitId, visitMode])
 
+  /* ── Pre-select patient from URL ?patient=<id> (e.g. from OPD Write Rx) ── */
+  useEffect(() => {
+    if (visitMode || !patientIdParam) return
+    getPatient(patientIdParam)
+      .then(({ data: p }) => {
+        setSelectedPatient(p)
+        setPt({ name: p.name || '', age: p.age != null ? String(p.age) : '',
+                mobile: p.mobile || '', dob: p.date_of_birth || '',
+                gender: p.gender || '', address: p.address || '' })
+        getPatientAllergies(p.id).then(a => setAllergies(a ?? [])).catch(() => {})
+      })
+      .catch(() => {})
+  }, [patientIdParam]) // eslint-disable-line
+
   /* ── Draft restore ── */
   useEffect(() => {
     if (visitMode) return
+    if (patientIdParam) return  // skip draft when patient pre-selected from URL
     const draft = loadDraft()
     if (!draft) return
     if (draft.pt)              setPt(draft.pt)
