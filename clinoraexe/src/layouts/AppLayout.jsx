@@ -332,7 +332,18 @@ export default function AppLayout() {
         {/* Quick actions — doctor only, hidden when collapsed */}
         {!collapsed && user?.role !== 'pharmacy' && (
           <div className="sidebar-quick">
-            <div className="sidebar-quick-grid">
+            {/* Primary CTA — New Prescription */}
+            <button className="sidebar-q-btn sidebar-q-btn--rx sidebar-q-btn--rx-primary"
+              onClick={() => { navigate('/prescriptions/new'); setMobileOpen(false) }}>
+              <span className="sidebar-q-icon">
+                <svg width="15" height="15" viewBox="0 0 52 52" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 8 v36" /><path d="M10 8 h16 a13 13 0 0 1 0 22 H10" /><path d="M26 30 L44 46" />
+                </svg>
+              </span>
+              + New Prescription
+            </button>
+            {/* Secondary actions — 3-col */}
+            <div className="sidebar-quick-grid sidebar-quick-grid--3">
               <button className="sidebar-q-btn sidebar-q-btn--patient"
                 onClick={() => { navigate('/patients?new=1'); setMobileOpen(false) }}>
                 <span className="sidebar-q-icon">
@@ -342,16 +353,6 @@ export default function AppLayout() {
                   </svg>
                 </span>
                 + Patient
-              </button>
-              <button className="sidebar-q-btn sidebar-q-btn--rx"
-                onClick={() => { navigate('/prescriptions/new'); setMobileOpen(false) }}>
-                <span className="sidebar-q-icon">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                    <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
-                  </svg>
-                </span>
-                + Rx
               </button>
               <button className="sidebar-q-btn sidebar-q-btn--clinic"
                 onClick={() => { navigate('/clinic'); setMobileOpen(false) }}>

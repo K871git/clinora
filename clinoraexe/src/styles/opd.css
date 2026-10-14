@@ -76,6 +76,32 @@
   font-size: 11px; font-weight: 600; white-space: nowrap;
 }
 
+/* Clickable status toggle button */
+.opd-status-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  letter-spacing: .3px; border: none; cursor: pointer; transition: opacity .15s, transform .1s;
+  font-family: inherit;
+}
+.opd-status-btn--open      { background: rgba(245,158,11,.12); color: #b45309; }
+.opd-status-btn--completed { background: rgba(16,185,129,.12); color: #065f46; }
+.opd-status-btn:hover:not(:disabled) { opacity: .75; transform: scale(1.04); }
+.opd-status-btn:disabled { opacity: .5; cursor: not-allowed; }
+[data-theme="dark"] .opd-status-btn--open      { color: #fcd34d; }
+[data-theme="dark"] .opd-status-btn--completed { color: #6ee7b7; }
+
+/* Write Rx action button */
+.opd-th-actions, .opd-td-actions { width: 60px; text-align: center; }
+.opd-rx-btn {
+  padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700;
+  border: 1px solid color-mix(in srgb, #0d9488 35%, transparent);
+  background: color-mix(in srgb, #0d9488 8%, transparent);
+  color: #0d9488; cursor: pointer; font-family: inherit;
+  transition: background .12s, border-color .12s, transform .1s;
+  white-space: nowrap;
+}
+.opd-rx-btn:hover { background: color-mix(in srgb, #0d9488 16%, transparent); transform: translateY(-1px); }
+
 /* Sortable column headers */
 .opd-th--sortable { cursor: pointer; user-select: none; }
 .opd-th--sortable:hover { color: var(--clr-text); }
