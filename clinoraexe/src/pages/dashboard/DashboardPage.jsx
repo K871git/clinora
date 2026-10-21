@@ -168,6 +168,15 @@ export default function DashboardPage() {
         </button>
       )}
 
+      {/* ── Clinic Pulse — contextual status banner ── */}
+      {statsStatus === 'done' && !isNewClinic && (stats?.draft_rx ?? 0) === 0 && (
+        <ClinicPulse
+          followupsToday={followupStatus === 'done' ? followupsToday : 0}
+          pendingPharm={pendingPharm}
+          navigate={navigate}
+        />
+      )}
+
       {/* ── Onboarding or main content ── */}
       {isNewClinic ? (
         <div className="dash-onboard">
@@ -358,6 +367,34 @@ function QuickTile({ icon, label, sub, color, onClick }) {
         {sub && <span className="dash-action-sub">{sub}</span>}
       </div>
     </button>
+  )
+}
+
+/* ── Clinic Pulse banner ────────────────────────────────────────────────── */
+function ClinicPulse({ followupsToday, pendingPharm, navigate }) {
+  let type, text, action = null
+
+  if (followupsToday > 0) {
+    type = 'info'
+    text = `${followupsToday} follow-up${followupsToday > 1 ? 's' : ''} due today`
+    action = { label: 'Open OPD →', fn: () => navigate('/clinic') }
+  } else if (pendingPharm > 0) {
+    type = 'pharm'
+    text = `${pendingPharm} prescription${pendingPharm > 1 ? 's' : ''} awaiting pharmacy`
+    action = { label: 'View Rx →', fn: () => navigate('/prescriptions') }
+  } else {
+    type = 'clear'
+    text = 'All caught up — no pending actions right now'
+  }
+
+  return (
+    <div className={`dash-clinic-pulse dash-clinic-pulse--${type}`}>
+      <span className="dash-cp-dot" />
+      <span className="dash-cp-text">{text}</span>
+      {action && (
+        <button className="dash-cp-action" onClick={action.fn}>{action.label}</button>
+      )}
+    </div>
   )
 }
 
