@@ -599,13 +599,23 @@ export default function ClinicPage() {
                               : <span className="opd-muted">—</span>}
                           </td>
                           <td className="opd-td-actions" onClick={e => e.stopPropagation()}>
-                            <button
-                              className="opd-rx-btn"
-                              onClick={e => { e.stopPropagation(); navigate(`/prescriptions/new?patient=${v.patient_id}`) }}
-                              title="Write new prescription"
-                            >
-                              + Rx
-                            </button>
+                            {v.prescription_id ? (
+                              <button
+                                className="opd-rx-btn opd-rx-btn--view"
+                                onClick={e => { e.stopPropagation(); navigate(`/prescriptions/${v.prescription_id}/print`) }}
+                                title="View prescription PDF"
+                              >
+                                View Rx
+                              </button>
+                            ) : (
+                              <button
+                                className="opd-rx-btn"
+                                onClick={e => { e.stopPropagation(); navigate(`/visits/${v.id}/prescriptions/new`) }}
+                                title="Write new prescription"
+                              >
+                                + Rx
+                              </button>
+                            )}
                           </td>
                         </tr>
                       )

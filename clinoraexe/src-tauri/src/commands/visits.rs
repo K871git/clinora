@@ -376,9 +376,16 @@ pub async fn list_opd_register(
                 DATE_FORMAT(v.followup_date, '%Y-%m-%d') as followup_date,
                 p.id as patient_id, p.name as patient_name,
                 p.mobile as patient_mobile, p.age as patient_age,
-                p.gender as patient_gender
+                p.gender as patient_gender,
+                rx.id as prescription_id,
+                rx.status as prescription_status
          FROM visits v
          JOIN patients p ON p.id = v.patient_id
+         LEFT JOIN prescriptions rx
+               ON rx.id = (
+                   SELECT MAX(id) FROM prescriptions
+                   WHERE visit_id = v.id AND deleted_at IS NULL
+               )
          WHERE v.clinic_id = ? AND DATE(v.visited_at) = ?
            AND v.deleted_at IS NULL AND p.deleted_at IS NULL
          ORDER BY v.visited_at ASC"
@@ -387,13 +394,15 @@ pub async fn list_opd_register(
     .fetch_all(&state.db).await?;
 
     let result: Vec<Value> = rows.iter().map(|r| json!({
-        "id":                 r.get::<u64, _>("id"),
-        "visited_at":         r.get::<Option<String>, _>("visited_at"),
-        "consultation_notes": r.get::<Option<String>, _>("consultation_notes"),
-        "status":             r.get::<String, _>("status"),
-        "consultation_fee":   r.get::<f64, _>("consultation_fee"),
-        "payment_status":     r.get::<String, _>("payment_status"),
-        "followup_date":      r.get::<Option<String>, _>("followup_date"),
+        "id":                   r.get::<u64, _>("id"),
+        "visited_at":           r.get::<Option<String>, _>("visited_at"),
+        "consultation_notes":   r.get::<Option<String>, _>("consultation_notes"),
+        "status":               r.get::<String, _>("status"),
+        "consultation_fee":     r.get::<f64, _>("consultation_fee"),
+        "payment_status":       r.get::<String, _>("payment_status"),
+        "followup_date":        r.get::<Option<String>, _>("followup_date"),
+        "prescription_id":      r.get::<Option<u64>, _>("prescription_id"),
+        "prescription_status":  r.get::<Option<String>, _>("prescription_status"),
         "patient": {
             "id":     r.get::<u64, _>("patient_id"),
             "name":   r.get::<String, _>("patient_name"),
