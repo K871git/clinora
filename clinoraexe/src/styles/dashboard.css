@@ -1187,6 +1187,7 @@ html[data-theme="dark"] .stat-card--purple {
 
 .dash-card {
   padding: var(--space-lg);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
 }
 
 .dash-card-header {
@@ -1341,11 +1342,37 @@ html[data-theme="dark"] .stat-card--purple {
   margin-left: auto;
   flex-shrink: 0;
   font-size: 11px;
-  font-weight: 500;
-  padding: 2px 8px;
+  font-weight: 700;
+  padding: 3px 9px;
   border-radius: 999px;
-  background-color: var(--clr-warning-bg);
+  background: color-mix(in srgb, var(--clr-warning) 14%, transparent);
   color: var(--clr-warning);
+  border: 1.5px solid rgba(217, 119, 6, 0.22);
+  letter-spacing: 0.1px;
+}
+
+/* ─── Pending prescription rows — amber left accent ─────────────────────── */
+.dash-card--rx .dash-list-item {
+  position: relative;
+  padding-left: 12px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 2px;
+    background: rgba(217, 119, 6, 0.28);
+    transition: background 0.15s;
+  }
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--clr-warning) 6%, var(--clr-surface));
+
+    &::before { background: var(--clr-warning); }
+  }
 }
 
 /* "View all" — sandy tint scoped to dash card headers only */
@@ -1732,7 +1759,7 @@ html[data-theme="dark"] .dash-draft-alert:hover {
 
 .dash-week-bar-track {
   width: 100%;
-  height: 40px;
+  height: 80px;
   background: var(--clr-surface-hover);
   border-radius: 4px;
   display: flex;
@@ -2044,4 +2071,82 @@ html[data-theme="dark"] .dash-draft-alert:hover {
   transition: background-color 0.12s;
 
   &:hover { background: rgba(220, 38, 38, 0.08); }
+}
+
+/* ─── Clinic Pulse banner ────────────────────────────────────────────────── */
+.dash-clinic-pulse {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.dash-clinic-pulse--warn {
+  background: color-mix(in srgb, var(--clr-warning) 9%, transparent);
+  border: 1px solid rgba(217, 119, 6, 0.26);
+  color: #92400e;
+}
+
+.dash-clinic-pulse--info {
+  background: rgba(13, 148, 136, 0.07);
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  color: #0f766e;
+}
+
+.dash-clinic-pulse--pharm {
+  background: rgba(37, 99, 235, 0.07);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  color: #1d4ed8;
+}
+
+.dash-clinic-pulse--clear {
+  background: rgba(22, 163, 74, 0.07);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  color: #166534;
+}
+
+html[data-theme="dark"] .dash-clinic-pulse--warn  { color: #fcd34d; background: rgba(245,158,11,0.12); border-color: rgba(252,211,77,0.2); }
+html[data-theme="dark"] .dash-clinic-pulse--info  { color: #5eead4; background: rgba(13,148,136,0.12); border-color: rgba(94,234,212,0.2); }
+html[data-theme="dark"] .dash-clinic-pulse--pharm { color: #93c5fd; background: rgba(37,99,235,0.12);  border-color: rgba(147,197,253,0.2); }
+html[data-theme="dark"] .dash-clinic-pulse--clear { color: #86efac; background: rgba(22,163,74,0.12);  border-color: rgba(134,239,172,0.2); }
+
+.dash-cp-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: dash-cp-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes dash-cp-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(0.85); }
+}
+
+.dash-clinic-pulse--warn  .dash-cp-dot { background: var(--clr-warning); }
+.dash-clinic-pulse--info  .dash-cp-dot { background: #0d9488; }
+.dash-clinic-pulse--pharm .dash-cp-dot { background: var(--clr-primary); }
+.dash-clinic-pulse--clear .dash-cp-dot { background: var(--clr-success); animation: none; }
+
+.dash-cp-text { flex: 1; }
+
+.dash-cp-action {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  opacity: 0.8;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  transition: opacity 0.12s, background 0.12s;
+
+  &:hover { opacity: 1; background: rgba(0,0,0,0.07); }
 }

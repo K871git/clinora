@@ -11,6 +11,7 @@ import VisitDetailPage from '../pages/visits/VisitDetailPage'
 import QuickRxPage from '../pages/prescriptions/QuickRxPage'
 import PrintPrescriptionPage from '../pages/prescriptions/PrintPrescriptionPage'
 import PrescriptionsPage from '../pages/prescriptions/PrescriptionsPage'
+import PrescriptionDetailPage from '../pages/prescriptions/PrescriptionDetailPage'
 import VisitInvoicePage from '../pages/visits/VisitInvoicePage'
 import PharmacyPage from '../pages/pharmacy/PharmacyPage'
 import PharmacyPrescriptionPage from '../pages/pharmacy/PharmacyPrescriptionPage'
@@ -91,6 +92,7 @@ export default function AppRoutes() {
             <Route path="/visits/:visitId" element={<VisitDetailPage />} />
             <Route path="/visits/:visitId/prescriptions/new" element={<QuickRxPage />} />
             <Route path="/prescriptions/new" element={<QuickRxPage />} />
+            <Route path="/prescriptions/:prescriptionId" element={<PrescriptionDetailPage />} />
             <Route path="/prescriptions" element={<PrescriptionsPage />} />
             <Route path="/visits" element={<VisitsPage />} />
             <Route path="/medicines" element={<MedicinesPage />} />
