@@ -440,21 +440,27 @@ export default function ClinicPage() {
               <button className="cpd-nav-btn" onClick={() => pickOpdDate(-1)}>‹ Prev</button>
               <input type="date" className="cpd-date-input" value={opdDate} onChange={e => setOpdDate(e.target.value)} />
               <button className="cpd-nav-btn" onClick={() => pickOpdDate(1)} disabled={isOpdToday}>Next ›</button>
-              {!isOpdToday && (
-                <button className="cpd-nav-btn cpd-nav-btn--today" onClick={() => setOpdDate(todayStr())}>Today</button>
-              )}
+              <button
+                className="cpd-nav-btn cpd-nav-btn--today"
+                onClick={() => setOpdDate(todayStr())}
+                aria-hidden={isOpdToday ? 'true' : undefined}
+                tabIndex={isOpdToday ? -1 : undefined}
+              >Today</button>
             </div>
             <div className="cpd-hdr-right">
-              {visits.length > 0 && (
-                <button className="btn-secondary opd-print-btn" onClick={() => window.print()}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                    <rect x="6" y="14" width="12" height="8"/>
-                  </svg>
-                  Print
-                </button>
-              )}
+              <button
+                className="btn-secondary opd-print-btn"
+                onClick={() => window.print()}
+                aria-hidden={visits.length === 0 ? 'true' : undefined}
+                tabIndex={visits.length === 0 ? -1 : undefined}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, visibility: visits.length === 0 ? 'hidden' : 'visible' }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                  <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                Print
+              </button>
               <button className="btn-primary" style={{ fontSize: 13 }} onClick={() => navigate('/prescriptions/new')}>
                 + Prescription
               </button>

@@ -52,16 +52,15 @@
   font-weight: 700;
 }
 
-/* ── Section header ── */
+/* ── Section header — stable 3-col grid, no layout shift on date change ── */
 .cpd-hdr {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 28px;
+  gap: 12px;
+  padding: 13px 28px;
   border-bottom: 1px solid var(--clr-border);
   background: var(--clr-surface);
-  flex-wrap: wrap;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
@@ -70,7 +69,7 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .cpd-title {
@@ -79,19 +78,24 @@
   color: var(--clr-text);
   margin: 0;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cpd-date-full {
   font-size: 0.78rem;
   color: var(--clr-text-muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Date navigation */
+/* Date navigation — always centered, stable width */
 .cpd-date-nav {
   display: flex;
   align-items: center;
   gap: 4px;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .cpd-nav-btn {
@@ -103,7 +107,7 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.12s;
+  transition: all 0.14s;
   font-family: inherit;
   white-space: nowrap;
 }
@@ -119,6 +123,13 @@
 .cpd-nav-btn--today {
   color: var(--clr-primary);
   border-color: color-mix(in srgb, var(--clr-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface));
+}
+
+/* invisible sentinel — keeps Today button space reserved */
+.cpd-nav-btn--today[aria-hidden="true"] {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .cpd-date-input {
@@ -130,13 +141,14 @@
   font-size: 12px;
   cursor: pointer;
   font-family: inherit;
+  width: 120px;
 }
 
 .cpd-hdr-right {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  justify-content: flex-end;
 }
 
 /* ── Content body (gray zone below chrome) ── */
@@ -165,14 +177,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 12px 14px;
-  gap: 4px;
+  padding: 18px 12px 15px;
+  gap: 5px;
   position: relative;
   cursor: default;
-  transition: background 0.12s;
+  transition: background 0.14s;
 }
 
-.cpd-stat:hover { background: color-mix(in srgb, var(--clr-primary) 3%, var(--clr-surface)); }
+.cpd-stat:hover { background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface)); }
 
 .cpd-stat + .cpd-stat::before {
   content: '';
@@ -185,19 +197,20 @@
 }
 
 .cpd-stat-val {
-  font-size: 1.7rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.8px;
   line-height: 1;
   color: var(--clr-text);
   font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
 }
 
 .cpd-stat-lbl {
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.62rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: var(--clr-text-muted);
 }
 
@@ -205,6 +218,16 @@
 .cpd-stat--ok    .cpd-stat-val { color: #16a34a; }
 .cpd-stat--blue  .cpd-stat-val { color: var(--clr-primary); }
 .cpd-stat--green .cpd-stat-val { color: #16a34a; }
+
+/* Pulse on "Open" when count > 0 */
+.cpd-stat--warn {
+  background: color-mix(in srgb, #d97706 4%, var(--clr-surface));
+}
+.cpd-stat--warn:hover { background: color-mix(in srgb, #d97706 8%, var(--clr-surface)); }
+.cpd-stat--ok {
+  background: color-mix(in srgb, #16a34a 4%, var(--clr-surface));
+}
+.cpd-stat--ok:hover { background: color-mix(in srgb, #16a34a 8%, var(--clr-surface)); }
 
 /* ── OPD Table card ── */
 .cpd-table-card {
