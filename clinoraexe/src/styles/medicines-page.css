@@ -683,17 +683,52 @@ html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
   flex-direction: column;
   min-height: calc(100vh - 110px);
   background: var(--clr-bg);
+  padding-top: 20px;
 }
 
-/* ── Header bar ── */
+/* ── Gradient header ── */
 .mlib-hdr {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px 28px 18px;
-  background: var(--clr-surface);
-  border-bottom: 1px solid var(--clr-border);
+  padding: 22px 32px 20px;
+  background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-primary-hover) 100%);
   flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.mlib-hdr::before {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+
+[data-theme="dark"] .mlib-hdr {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--clr-primary) 40%, var(--clr-surface)) 0%,
+    color-mix(in srgb, var(--clr-primary-hover) 30%, var(--clr-surface)) 100%
+  );
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.mlib-hdr-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
 }
 
 .mlib-hdr-info {
@@ -702,91 +737,220 @@ html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
 }
 
 .mlib-title {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 700;
-  color: var(--clr-text);
-  margin: 0 0 2px;
+  color: #fff;
+  margin: 0 0 3px;
   line-height: 1.2;
+  letter-spacing: -0.3px;
 }
 
 .mlib-sub {
-  font-size: 12.5px;
-  color: var(--clr-text-muted);
+  font-size: 13px;
+  color: rgba(255,255,255,0.72);
   margin: 0;
 }
-
-.mlib-hdr-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.mlib-count-pill {
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
-  color: var(--clr-primary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.mlib-warn-pill {
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-[data-theme="dark"] .mlib-warn-pill { color: #fcd34d; }
 
 .mlib-hdr-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .mlib-act-btn {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  width: auto !important;
-  font-size: 13px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: inherit;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+  white-space: nowrap;
 }
 
-/* ── Stock alerts wrapper ── */
-.mlib-alerts-wrap {
-  padding: 12px 28px 0;
+.mlib-act-btn--ghost {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.28);
+  color: #fff;
 }
 
-/* ── Gray body ── */
-.mlib-body {
+.mlib-act-btn--ghost:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.4);
+}
+
+.mlib-act-btn--add {
+  background: #fff;
+  color: var(--clr-primary);
+  border-color: rgba(255,255,255,0.5);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.mlib-act-btn--add:hover {
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.mlib-hdr .ml-export-btn {
+  background: rgba(255,255,255,0.12) !important;
+  border-color: rgba(255,255,255,0.28) !important;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.mlib-hdr .ml-export-btn:hover {
+  background: rgba(255,255,255,0.22) !important;
+  border-color: rgba(255,255,255,0.4) !important;
+}
+
+/* ── Content wrapper (replaces mlib-body) ── */
+.mlib-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 28px 28px;
+  gap: 16px;
+  padding: 22px 28px 32px;
 }
 
-/* ── Search row ── */
-.mlib-search-row {
+/* ── Stat cards row ── */
+.mlib-sc-row {
+  display: flex;
+  gap: 14px;
+}
+
+.mlib-sc {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  min-width: 170px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.03);
+  transition: box-shadow .18s, transform .18s;
+  cursor: default;
+}
+
+.mlib-sc:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .mlib-sc {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.14);
+}
+
+/* Icon bubble */
+.mlib-sc-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mlib-sc-icon--primary {
+  background: color-mix(in srgb, var(--clr-primary) 14%, transparent);
+  color: var(--clr-primary);
+}
+
+.mlib-sc-icon--warn {
+  background: rgba(245,158,11,0.12);
+  color: #b45309;
+}
+[data-theme="dark"] .mlib-sc-icon--warn { color: #fbbf24; }
+
+.mlib-sc-icon--danger {
+  background: rgba(239,68,68,0.1);
+  color: #dc2626;
+}
+[data-theme="dark"] .mlib-sc-icon--danger { color: #f87171; }
+
+/* Text block */
+.mlib-sc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mlib-sc-num {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.mlib-sc-num--ok     { color: #059669; }
+.mlib-sc-num--warn   { color: #d97706; }
+.mlib-sc-num--danger { color: #dc2626; }
+
+[data-theme="dark"] .mlib-sc-num--ok     { color: #34d399; }
+[data-theme="dark"] .mlib-sc-num--warn   { color: #fbbf24; }
+[data-theme="dark"] .mlib-sc-num--danger { color: #f87171; }
+
+.mlib-sc-lbl {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Unified data card ── */
+.mlib-data-card {
+  flex: 1;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme="dark"] .mlib-data-card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.18);
+}
+
+/* Card integrated toolbar (search + count live here) */
+.mlib-data-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--clr-border);
+  background: color-mix(in srgb, var(--clr-bg) 60%, var(--clr-surface));
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .mlib-data-toolbar {
+  background: rgba(255,255,255,0.02);
 }
 
 .mlib-search-wrap {
   position: relative;
   flex: 1;
-  max-width: 380px;
+  max-width: 420px;
 }
 
 .mlib-search-icon {
   position: absolute;
-  left: 11px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--clr-text-muted);
@@ -795,8 +959,8 @@ html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
 
 .mlib-search-input {
   width: 100%;
-  height: 36px;
-  padding: 0 12px 0 34px;
+  height: 38px;
+  padding: 0 12px 0 36px;
   border-radius: 8px;
   border: 1px solid var(--clr-border);
   background: var(--clr-surface);
@@ -814,75 +978,119 @@ html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
 }
 
 [data-theme="dark"] .mlib-search-input {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.05);
 }
 
 .mlib-count-tag {
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--clr-text-muted);
   white-space: nowrap;
-  padding: 3px 10px;
+  padding: 5px 12px;
   border-radius: 20px;
-  background: var(--clr-surface);
+  background: var(--clr-bg-subtle, #f1f5f9);
   border: 1px solid var(--clr-border);
+  margin-left: auto;
 }
 
-/* ── Table card ── */
-.mlib-table-card {
-  background: var(--clr-surface);
-  border: 1px solid var(--clr-border);
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  overflow: hidden;
-  flex: 1;
+[data-theme="dark"] .mlib-count-tag {
+  background: rgba(255,255,255,0.05);
 }
 
-/* Override table header inside mlib */
+/* ── Table header ── */
 .mlib-tbl th {
   background: color-mix(in srgb, var(--clr-primary) 5%, #f8fafc) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 [data-theme="dark"] .mlib-tbl th {
   background: color-mix(in srgb, var(--clr-primary) 10%, rgba(255,255,255,0.02)) !important;
 }
 
-.mlib-th-name { min-width: 200px; }
-.mlib-th-num  { text-align: right !important; width: 80px; }
-.mlib-th-act  { width: 120px; }
+.mlib-th-name { min-width: 220px; }
+.mlib-th-num  { text-align: right !important; width: 90px; }
+.mlib-th-act  { width: 130px; }
+
+/* ── Table rows ── */
+.mlib-tbl td { padding: 13px 14px !important; }
+
+.mlib-tbl tbody tr { transition: background .1s; }
+
+.mlib-tbl tbody tr:hover {
+  background: color-mix(in srgb, var(--clr-primary) 4%, transparent);
+}
+
+.ml-row--low-stock { background: rgba(245,158,11,0.025); }
+.ml-row--out-stock { background: rgba(239,68,68,0.025); }
+.ml-row--low-stock:hover { background: rgba(245,158,11,0.055) !important; }
+.ml-row--out-stock:hover { background: rgba(239,68,68,0.055) !important; }
 
 /* ── Table cells ── */
 .mlib-td-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 11px;
+}
+
+.mlib-med-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.mlib-med-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
 }
 
 .mlib-med-name {
   font-weight: 600;
+  font-size: 13.5px;
   color: var(--clr-text);
 }
 
 .mlib-low-badge {
   font-size: 10.5px;
   font-weight: 600;
-  padding: 1px 7px;
+  padding: 2px 7px;
   border-radius: 99px;
   background: rgba(245,158,11,0.12);
   color: #b45309;
+  border: 1px solid rgba(245,158,11,0.22);
   white-space: nowrap;
-  flex-shrink: 0;
+  display: inline-block;
+  width: fit-content;
 }
 
-[data-theme="dark"] .mlib-low-badge { color: #fcd34d; }
+.mlib-low-badge--out {
+  background: rgba(239,68,68,0.1);
+  color: #dc2626;
+  border-color: rgba(239,68,68,0.2);
+}
+
+[data-theme="dark"] .mlib-low-badge { color: #fcd34d; border-color: rgba(252,211,77,0.2); }
+[data-theme="dark"] .mlib-low-badge--out { color: #f87171; border-color: rgba(248,113,113,0.2); }
 
 .mlib-cat-pill {
   display: inline-block;
   font-size: 11.5px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 6px;
   background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
   color: var(--clr-primary);
+  border: 1px solid color-mix(in srgb, var(--clr-primary) 20%, transparent);
 }
 
 .mlib-td-num {
@@ -890,62 +1098,80 @@ html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
   font-variant-numeric: tabular-nums;
 }
 
-.mlib-qty--low {
-  color: #d97706;
+/* ── Quantity badge ── */
+.mlib-qty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.mlib-td-act {
-  padding-right: 16px !important;
-}
+.mlib-qty-badge--ok    { background: rgba(16,185,129,0.1);  color: #059669; }
+.mlib-qty-badge--low   { background: rgba(245,158,11,0.12); color: #b45309; }
+.mlib-qty-badge--out   { background: rgba(239,68,68,0.1);   color: #dc2626; }
 
-/* ── Row action buttons (revised) ── */
+[data-theme="dark"] .mlib-qty-badge--ok  { background: rgba(16,185,129,0.14);  color: #34d399; }
+[data-theme="dark"] .mlib-qty-badge--low { background: rgba(245,158,11,0.14); color: #fbbf24; }
+[data-theme="dark"] .mlib-qty-badge--out { background: rgba(239,68,68,0.14);  color: #f87171; }
+
+.mlib-td-act { padding-right: 14px !important; }
+
+/* ── Row action buttons ── */
 .mlib-row-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border: none;
-  border-radius: 6px;
+  padding: 5px 11px;
+  border: 1px solid transparent;
+  border-radius: 7px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .12s, color .12s;
+  transition: background .12s, color .12s, border-color .12s;
   font-family: inherit;
 }
 
 .mlib-row-btn--edit {
   background: var(--clr-bg-subtle, #f1f5f9);
   color: var(--clr-text-muted);
+  border-color: var(--clr-border);
 }
 
 .mlib-row-btn--edit:hover {
   background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
   color: var(--clr-primary);
+  border-color: color-mix(in srgb, var(--clr-primary) 28%, transparent);
 }
 
 .mlib-row-btn--del {
   background: transparent;
   color: var(--clr-text-muted);
-  padding: 4px 7px;
+  padding: 5px 8px;
 }
 
 .mlib-row-btn--del:hover {
   background: #fee2e2;
   color: #dc2626;
+  border-color: #fecaca;
 }
 
 [data-theme="dark"] .mlib-row-btn--del:hover {
   background: rgba(220,38,38,.15);
   color: #f87171;
+  border-color: rgba(220,38,38,.28);
 }
 
-/* ── Empty & loading states inside card ── */
+/* ── Empty & loading states ── */
 .mlib-state-loading {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 72px 24px;
+  padding: 80px 24px;
   color: var(--clr-text-muted);
 }
 
@@ -954,14 +1180,14 @@ html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 64px 24px;
+  padding: 72px 24px;
   gap: 8px;
-  min-height: 280px;
+  min-height: 260px;
 }
 
 .mlib-empty-icon {
-  font-size: 40px;
-  opacity: 0.35;
+  font-size: 44px;
+  opacity: 0.28;
   line-height: 1;
 }
 
@@ -969,12 +1195,14 @@ html[data-role="pharmacy"] .ml-alert-dot--blue { background: #0d9488; }
   font-size: 15px;
   font-weight: 600;
   color: var(--clr-text);
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .mlib-empty-sub {
   font-size: 13px;
   color: var(--clr-text-muted);
+  text-align: center;
+  max-width: 300px;
 }
 
 /* ── Modal animations ── */
