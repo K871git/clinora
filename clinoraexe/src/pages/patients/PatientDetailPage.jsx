@@ -27,7 +27,7 @@ const AVATAR_COLORS = [
 ]
 
 function avatarColor(name) {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
+  return AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length]
 }
 
 const RX_STATUS_LABEL = {
@@ -73,7 +73,8 @@ export default function PatientDetailPage() {
   const [pageStatus, setPageStatus]       = useState('loading')
   const [historyStatus, setHistoryStatus] = useState('loading')
   const [rxPage, setRxPage]               = useState(1)
-  const [rxLoadingMore, setRxLoadingMore] = useState(false)
+  const [rxLoadingMore,  setRxLoadingMore]  = useState(false)
+  const [rxLoadMoreErr,  setRxLoadMoreErr]  = useState(false)
   const [showEdit, setShowEdit]           = useState(false)
   const [activeTab, setActiveTab]         = useState('overview')
   const [timeline, setTimeline]               = useState([])
@@ -182,13 +183,14 @@ export default function PatientDetailPage() {
 
   async function loadMoreRx() {
     setRxLoadingMore(true)
+    setRxLoadMoreErr(false)
     try {
       const res = await getPatientPrescriptions(id, { page: rxPage + 1 })
       setPrescriptions(prev => [...prev, ...(res.data.data ?? [])])
       setRxMeta(res.data.meta ?? null)
       setRxPage(p => p + 1)
     } catch {
-      // silently ignore — user can retry
+      setRxLoadMoreErr(true)
     } finally {
       setRxLoadingMore(false)
     }
@@ -399,11 +401,21 @@ export default function PatientDetailPage() {
                   ))}
                 </ul>
                 {rxMeta && rxPage < rxMeta.last_page && (
-                  <button className="btn-link"
-                    style={{ marginTop: 'var(--space-sm)', fontSize: '13px', display: 'block' }}
-                    onClick={loadMoreRx} disabled={rxLoadingMore}>
-                    {rxLoadingMore ? 'Loading…' : `Load more (${rxMeta.total - prescriptions.length} more)`}
-                  </button>
+                  <>
+                    <button className="btn-link"
+                      style={{ marginTop: 'var(--space-sm)', fontSize: '13px', display: 'block' }}
+                      onClick={loadMoreRx} disabled={rxLoadingMore}>
+                      {rxLoadingMore ? 'Loading…' : `Load more (${rxMeta.total - prescriptions.length} more)`}
+                    </button>
+                    {rxLoadMoreErr && (
+                      <div style={{ fontSize: 12, color: 'var(--clr-danger)', marginTop: 4 }}>
+                        Failed to load —{' '}
+                        <button className="btn-link" style={{ fontSize: 12 }} onClick={loadMoreRx}>
+                          Try again
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}

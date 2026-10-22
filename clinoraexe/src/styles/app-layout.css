@@ -459,18 +459,18 @@ html[data-theme="dark"] .sidebar-logo-img {
   transform: translateY(-1px);
 }
 
-/* Primary Rx button — full width, teal fill */
+/* Primary Rx button — full width, role-tinted fill (blue for doctor, teal for pharmacy) */
 .sidebar-q-btn--rx-primary {
   flex-direction: row;
   width: 100%;
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 700;
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-primary-hover) 100%);
   border-color: transparent;
   color: #fff;
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--clr-primary) 28%, transparent);
   gap: 8px;
 }
 
@@ -482,10 +482,10 @@ html[data-theme="dark"] .sidebar-logo-img {
 }
 
 .sidebar-q-btn--rx-primary:hover {
-  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+  background: linear-gradient(135deg, var(--clr-primary-hover) 0%, var(--clr-primary) 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.35);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--clr-primary) 38%, transparent);
   transform: translateY(-1px);
 }
 
@@ -494,8 +494,8 @@ html[data-theme="dark"] .sidebar-logo-img {
 }
 
 html[data-theme="dark"] .sidebar-q-btn--rx-primary {
-  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
-  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.3);
+  background: linear-gradient(135deg, var(--clr-primary-hover) 0%, var(--clr-primary) 100%);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--clr-primary) 32%, transparent);
 }
 
 .sidebar-q-btn--patient:hover {
@@ -1132,6 +1132,31 @@ html[data-theme="dark"] .sidebar-greet--pharmacy .sidebar-greet-role {
 
 @media (min-width: 768px) {
   .shell-sidebar.collapsed .sidebar-greet { display: none; }
+}
+
+/* ─── Doctor role — blue avatar & nav accents ────────────────────────── */
+html[data-role="doctor"] .shell-avatar,
+html[data-role="doctor"] .profile-menu-avatar {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+html[data-role="doctor"] .nav-link:hover .nav-icon-wrap {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+html[data-role="doctor"][data-theme="dark"] .nav-link:hover .nav-icon-wrap {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+html[data-role="doctor"] .nav-link-active .nav-icon-wrap {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35), 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+html[data-role="doctor"][data-theme="dark"] .nav-link-active .nav-icon-wrap {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  box-shadow: 0 2px 14px rgba(96, 165, 250, 0.28), 0 0 0 3px rgba(96, 165, 250, 0.10);
 }
 
 /* ─── Pharmacy role — teal avatar & nav accents ──────────────────────── */

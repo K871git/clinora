@@ -1,6 +1,6 @@
 import '../../styles/visit-detail.css'
 import '../../styles/emr.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment, listVisitCharges, addVisitCharge, deleteVisitCharge, saveDiagnosis } from '../../services/visitService'
@@ -135,6 +135,9 @@ export default function VisitDetailPage() {
   const [savingFollowup, setSavingFollowup] = useState(false)
   const [followupSaved,  setFollowupSaved]  = useState(false)
 
+  const feeSavedTimerRef      = useRef(null)
+  const followupSavedTimerRef = useRef(null)
+
   /* medical certificate modal */
   const [certModal,     setCertModal]     = useState(false)
   const [certType,      setCertType]      = useState('fitness')
@@ -170,6 +173,11 @@ export default function VisitDetailPage() {
     listFeeTemplates().then(r => { if (!cancelled) setTemplates(r.data ?? []) }).catch(() => {})
     return () => { cancelled = true }
   }, [visitId])
+
+  useEffect(() => () => {
+    clearTimeout(feeSavedTimerRef.current)
+    clearTimeout(followupSavedTimerRef.current)
+  }, [])
 
   function startEdit() {
     setEditVisitedAt(isoToLocal(visit.visited_at))
@@ -248,7 +256,8 @@ export default function VisitDetailPage() {
       const { data } = await saveFee(visitId, fee)
       setVisit(data)
       setFeeSaved(true)
-      setTimeout(() => setFeeSaved(false), 2000)
+      if (feeSavedTimerRef.current) clearTimeout(feeSavedTimerRef.current)
+      feeSavedTimerRef.current = setTimeout(() => setFeeSaved(false), 2000)
     } catch {
       toast.error('Could not save fee — try again.')
     } finally {
@@ -259,7 +268,7 @@ export default function VisitDetailPage() {
   async function handleSavePayment() {
     if (paymentStatus === 'partial') {
       const amt = parseFloat(amountPaid || '0')
-      if (isNaN(amt) || amt < 0) { toast.error('Amount paid cannot be negative.'); return }
+      if (isNaN(amt) || amt <= 0) { toast.error('Enter the amount paid.'); return }
       const fee = parseFloat(feeInput || '0') || 0
       if (fee > 0 && amt > fee) { toast.error('Amount paid cannot exceed the consultation fee.'); return }
     }
@@ -324,7 +333,8 @@ export default function VisitDetailPage() {
       const updated = await updateFollowup(visitId, followupDate || null, followupNotes.trim() || null)
       setVisit(updated)
       setFollowupSaved(true)
-      setTimeout(() => setFollowupSaved(false), 2000)
+      if (followupSavedTimerRef.current) clearTimeout(followupSavedTimerRef.current)
+      followupSavedTimerRef.current = setTimeout(() => setFollowupSaved(false), 2000)
       toast.success(followupDate ? 'Follow-up scheduled' : 'Follow-up cleared')
     } catch {
       toast.error('Could not save follow-up')
@@ -361,7 +371,7 @@ export default function VisitDetailPage() {
     setCertSaving(true)
     try {
       const { data } = await createCertificate({
-        patient_id:  visit.patient.id,
+        patient_id:  visit.patient?.id ?? 0,
         visit_id:    Number(visitId),
         cert_type:   certType,
         purpose:     certPurpose.trim() || null,
@@ -404,12 +414,12 @@ export default function VisitDetailPage() {
       <div className="card detail-header-card">
         <div
           className="detail-avatar"
-          style={{ background: avatarColor(visit.patient.name), color: '#fff' }}
+          style={{ background: avatarColor(visit.patient?.name), color: '#fff' }}
         >
-          {(visit.patient.name?.[0] ?? '?').toUpperCase()}
+          {(visit.patient?.name?.[0] ?? '?').toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 className="detail-name">{visit.patient.name}</h2>
+          <h2 className="detail-name">{visit.patient?.name ?? '—'}</h2>
           <div className="detail-sub">{fmtDateTime(visit.visited_at)}</div>
           {visit.doctor && (
             <div className="visit-attending">{doctorLabel(visit.doctor.name)}</div>
@@ -595,7 +605,7 @@ export default function VisitDetailPage() {
 
       {/* ── Visit Vitals ───────────────────────────────────────────────── */}
       <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
-        <VitalSignsTab patientId={String(visit.patient.id)} visitId={visitId} />
+        <VitalSignsTab patientId={visit.patient?.id ? String(visit.patient.id) : null} visitId={visitId} />
       </div>
 
       {/* ── Medical Certificate Modal ──────────────────────────────────── */}
