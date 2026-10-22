@@ -29,6 +29,11 @@ const BLANK_FORM = {
   name: '', generic_name: '', category: '', unit: '', quantity: '', price: '',
 }
 
+const MED_AVATAR_COLORS = ['#6366f1','#0891b2','#059669','#7c3aed','#0284c7','#0d9488','#d97706','#db2777']
+function medAvatarColor(name) {
+  return MED_AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % MED_AVATAR_COLORS.length]
+}
+
 /* ── Stock alert panel ───────────────────────────────────────────────────── */
 
 function fmtExpiry(dateStr) {
@@ -840,7 +845,8 @@ export default function MedicinesPage() {
     return <div className="card state-panel">Could not load medicine library — check your connection.</div>
   }
 
-  const lowStockCount = medicines.filter(m => (m.quantity ?? 0) < 10).length
+  const lowStockCount  = medicines.filter(m => (m.quantity ?? 0) < 10 && (m.quantity ?? 0) > 0).length
+  const outOfStockCount = medicines.filter(m => (m.quantity ?? 0) === 0).length
 
   return (
     <div className="mlib-page">
@@ -850,76 +856,122 @@ export default function MedicinesPage() {
 
       {/* ── Page header ── */}
       <div className="mlib-hdr">
+        <div className="mlib-hdr-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7z"/><path d="M5 21h14"/>
+          </svg>
+        </div>
         <div className="mlib-hdr-info">
           <h1 className="mlib-title">Medicine Library</h1>
-          <p className="mlib-sub">Stock · pricing · dosage forms</p>
-        </div>
-        <div className="mlib-hdr-meta">
-          {status === 'done' && (
-            <span className="mlib-count-pill">{total} medicines</span>
-          )}
-          {lowStockCount > 0 && (
-            <span className="mlib-warn-pill">⚠ {lowStockCount} low stock</span>
-          )}
+          <p className="mlib-sub">Manage stock · pricing · dosage forms</p>
         </div>
         <div className="mlib-hdr-actions">
           <ExportMenu list={filtered} />
           <button
-            className="btn-secondary mlib-act-btn"
+            className="mlib-act-btn mlib-act-btn--ghost"
             onClick={() => setModal('import')}
           >
             <IconUpload /> Import
           </button>
-          <button className="btn-primary mlib-act-btn" onClick={openAdd}>
+          <button className="mlib-act-btn mlib-act-btn--add" onClick={openAdd}>
             <IconPlus /> Add Medicine
           </button>
         </div>
       </div>
 
-      {/* ── Stock alerts ── */}
-      {!alertsDismissed && (
-        <div className="mlib-alerts-wrap">
-          <StockAlertPanel alerts={alerts} onDismiss={() => setAlertsDismissed(true)} />
-        </div>
-      )}
+      {/* ── Content area ── */}
+      <div className="mlib-content">
 
-      {/* ── Gray body ── */}
-      <div className="mlib-body">
-
-        {/* Search row */}
-        <div className="mlib-search-row">
-          <div className="mlib-search-wrap">
-            <svg className="mlib-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              className="mlib-search-input"
-              type="search"
-              placeholder="Search medicine, generic or category…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        {/* Stat cards */}
+        <div className="mlib-sc-row">
+          <div className="mlib-sc">
+            <div className="mlib-sc-icon mlib-sc-icon--primary">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
+              </svg>
+            </div>
+            <div className="mlib-sc-body">
+              <span className="mlib-sc-num">{status === 'loading' ? '—' : total}</span>
+              <span className="mlib-sc-lbl">Total Medicines</span>
+            </div>
           </div>
-          <span className="mlib-count-tag">
-            {status === 'loading' ? '…' : `${filtered.length} of ${total}`}
-          </span>
+
+          <div className="mlib-sc">
+            <div className="mlib-sc-icon mlib-sc-icon--warn">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div className="mlib-sc-body">
+              <span className={`mlib-sc-num${lowStockCount > 0 ? ' mlib-sc-num--warn' : ' mlib-sc-num--ok'}`}>
+                {status === 'loading' ? '—' : lowStockCount}
+              </span>
+              <span className="mlib-sc-lbl">Low Stock</span>
+            </div>
+          </div>
+
+          <div className="mlib-sc">
+            <div className="mlib-sc-icon mlib-sc-icon--danger">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+            </div>
+            <div className="mlib-sc-body">
+              <span className={`mlib-sc-num${outOfStockCount > 0 ? ' mlib-sc-num--danger' : ' mlib-sc-num--ok'}`}>
+                {status === 'loading' ? '—' : outOfStockCount}
+              </span>
+              <span className="mlib-sc-lbl">Out of Stock</span>
+            </div>
+          </div>
         </div>
 
-        {/* Table card */}
-        <div className="mlib-table-card">
+        {/* Stock alerts */}
+        {!alertsDismissed && (
+          <StockAlertPanel alerts={alerts} onDismiss={() => setAlertsDismissed(true)} />
+        )}
+
+        {/* Unified data card */}
+        <div className="mlib-data-card">
+
+          {/* Integrated toolbar */}
+          <div className="mlib-data-toolbar">
+            <div className="mlib-search-wrap">
+              <svg className="mlib-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                className="mlib-search-input"
+                type="search"
+                placeholder="Search by name, generic or category…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <span className="mlib-count-tag">
+              {status === 'loading' ? '…' : `${filtered.length} of ${total} medicines`}
+            </span>
+          </div>
+
+          {/* Table or states */}
           {status === 'loading' ? (
             <div className="mlib-state-loading"><Spinner size={26} /></div>
           ) : filtered.length === 0 ? (
             <div className="mlib-state-empty">
               <div className="mlib-empty-icon">💊</div>
               <div className="mlib-empty-title">
-                {medicines.length === 0 ? 'No medicines yet' : 'No medicines match your search'}
+                {medicines.length === 0 ? 'No medicines yet' : 'No results for your search'}
               </div>
               <div className="mlib-empty-sub">
-                {medicines.length === 0 ? 'Add a medicine or import from a CSV file' : 'Try a different name or category'}
+                {medicines.length === 0 ? 'Add your first medicine or import from a CSV file' : 'Try a different name or category'}
               </div>
               {medicines.length === 0 && (
-                <button className="btn-primary" style={{ marginTop: 14, fontSize: 13 }} onClick={openAdd}>
+                <button className="btn-primary" style={{ marginTop: 16, fontSize: 13 }} onClick={openAdd}>
                   <IconPlus /> Add First Medicine
                 </button>
               )}
@@ -940,12 +992,21 @@ export default function MedicinesPage() {
                 </thead>
                 <tbody>
                   {filtered.map(med => {
-                    const isLow = (med.quantity ?? 0) < 10
+                    const qty    = med.quantity ?? 0
+                    const isOut  = qty === 0
+                    const isLow  = qty > 0 && qty < 10
+                    const qtyMod = isOut ? 'out' : isLow ? 'low' : 'ok'
                     return (
-                      <tr key={med.id} className={isLow ? 'ml-row--low-stock' : ''}>
+                      <tr key={med.id} className={isOut ? 'ml-row--out-stock' : isLow ? 'ml-row--low-stock' : ''}>
                         <td className="mlib-td-name">
-                          <span className="mlib-med-name">{med.name}</span>
-                          {isLow && <span className="mlib-low-badge">Low stock</span>}
+                          <span className="mlib-med-avatar" style={{ background: medAvatarColor(med.name) }}>
+                            {(med.name?.[0] ?? '?').toUpperCase()}
+                          </span>
+                          <div className="mlib-med-info">
+                            <span className="mlib-med-name">{med.name}</span>
+                            {isOut && <span className="mlib-low-badge mlib-low-badge--out">Out of stock</span>}
+                            {isLow && <span className="mlib-low-badge">Low stock</span>}
+                          </div>
                         </td>
                         <td className="ml-td-muted">{med.generic_name || '—'}</td>
                         <td>
@@ -956,7 +1017,7 @@ export default function MedicinesPage() {
                         </td>
                         <td className="ml-td-muted">{med.unit || '—'}</td>
                         <td className="mlib-td-num">
-                          <span className={isLow ? 'mlib-qty--low' : ''}>{med.quantity ?? 0}</span>
+                          <span className={`mlib-qty-badge mlib-qty-badge--${qtyMod}`}>{qty}</span>
                         </td>
                         <td className="mlib-td-num">{fmtPrice(med.price)}</td>
                         <td className="mlib-td-act">
@@ -976,9 +1037,10 @@ export default function MedicinesPage() {
               </table>
             </div>
           )}
-        </div>
 
-      </div>{/* end mlib-body */}
+        </div>{/* end mlib-data-card */}
+
+      </div>{/* end mlib-content */}
 
       {/* ── Modals ── */}
       {modal === 'add' && (
