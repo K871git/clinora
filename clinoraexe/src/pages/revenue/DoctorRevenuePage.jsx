@@ -1,6 +1,7 @@
 import '../../styles/revenue-page.css'
 import '../../styles/dr-revenue.css'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useSessionState } from '../../hooks/useSessionState'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { invoke } from '@tauri-apps/api/core'
@@ -107,8 +108,8 @@ function RevenueChart({ txs, period }) {
 export default function DoctorRevenuePage() {
   const [data,        setData]        = useState(null)
   const [status,      setStatus]      = useState('loading')
-  const [period,      setPeriod]      = useState('this_month')
-  const [filter,      setFilter]      = useState('all')
+  const [period,      setPeriod]      = useSessionState('revenue:period', 'this_month')
+  const [filter,      setFilter]      = useSessionState('revenue:filter', 'all')
   const [txs,         setTxs]         = useState([])
   const [txLoading,   setTxLoading]   = useState(false)
   const [savingId,    setSavingId]    = useState(null)

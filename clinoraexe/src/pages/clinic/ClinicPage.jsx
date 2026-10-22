@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSessionState } from '../../hooks/useSessionState'
 import { toast } from 'sonner'
 import { listOpdRegister, recordVisitPayment, completeVisit, updateVisit } from '../../services/visitService'
 import { listAppointments, createAppointment, updateAppointment, deleteAppointment } from '../../services/appointmentService'
@@ -135,20 +136,20 @@ function WeekGrid({ days, appts, onBookSlot, onEdit, onQuickStatus, onDelete }) 
 /* ── Main Page ──────────────────────────────────────────────────────── */
 export default function ClinicPage() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('opd')
+  const [activeTab, setActiveTab] = useSessionState('clinic:tab', 'opd')
 
   /* ── OPD state ── */
-  const [opdDate,    setOpdDate]    = useState(todayStr())
+  const [opdDate,    setOpdDate]    = useSessionState('clinic:opd-date', todayStr)
   const [visits,     setVisits]     = useState([])
   const [opdLoading, setOpdLoading] = useState(true)
-  const [sortCol,    setSortCol]    = useState(null)
-  const [sortDir,    setSortDir]    = useState('asc')
+  const [sortCol,    setSortCol]    = useSessionState('clinic:opd-sort-col', null)
+  const [sortDir,    setSortDir]    = useSessionState('clinic:opd-sort-dir', 'asc')
 
   /* ── Appointments state ── */
   const [appointments, setAppointments] = useState([])
   const [apptLoading,  setApptLoading]  = useState(true)
-  const [selectedDate, setSelectedDate] = useState(todayStr())
-  const [statusFilter, setStatusFilter] = useState('')
+  const [selectedDate, setSelectedDate] = useSessionState('clinic:appt-date', todayStr)
+  const [statusFilter, setStatusFilter] = useSessionState('clinic:appt-status', '')
   const [showAdd,      setShowAdd]      = useState(false)
   const [editing,      setEditing]      = useState(null)
   const [form,         setForm]         = useState(EMPTY_APPT)
@@ -159,7 +160,7 @@ export default function ClinicPage() {
   const [showNewPat,   setShowNewPat]   = useState(false)
   const [newPat,       setNewPat]       = useState({ name: '', mobile: '', age: '', gender: '' })
   const [creatingPat,  setCreatingPat]  = useState(false)
-  const [apptView,     setApptView]     = useState('list')
+  const [apptView,     setApptView]     = useSessionState('clinic:appt-view', 'list')
   const [weekAppts,    setWeekAppts]    = useState([])
   const [weekLoading,  setWeekLoading]  = useState(false)
   const [dupPatient,   setDupPatient]   = useState(null)

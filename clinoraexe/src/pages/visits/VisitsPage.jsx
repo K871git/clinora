@@ -1,5 +1,6 @@
 import '../../styles/visits-page.css'
 import { useState, useEffect, useMemo } from 'react'
+import { useSessionState } from '../../hooks/useSessionState'
 import { useNavigate } from 'react-router-dom'
 import { getClinicVisits } from '../../services/visitService'
 import PageLoader from '../../components/ui/PageLoader'
@@ -56,12 +57,12 @@ export default function VisitsPage() {
 
   const [visits,     setVisits]     = useState([])
   const [status,     setStatus]     = useState('loading')
-  const [search,     setSearch]     = useState('')
-  const [activeTab,  setActiveTab]  = useState('')
+  const [search,     setSearch]     = useSessionState('visits:search', '')
+  const [activeTab,  setActiveTab]  = useSessionState('visits:tab', '')
   const [refreshing, setRefreshing] = useState(false)
   const [page,       setPage]       = useState(1)
-  const [sortCol,    setSortCol]    = useState('visited_at')
-  const [sortDir,    setSortDir]    = useState('desc')
+  const [sortCol,    setSortCol]    = useSessionState('visits:sort-col', 'visited_at')
+  const [sortDir,    setSortDir]    = useSessionState('visits:sort-dir', 'desc')
 
   function toggleSort(col) {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')

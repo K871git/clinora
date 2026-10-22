@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { getPatient, getPatientVisits, getPatientPrescriptions } from '../../services/patientService'
 import { createVisit, saveFee } from '../../services/visitService'
 import { validateFee } from '../../lib/inputValidators'
@@ -86,6 +87,7 @@ export default function PatientDetailPage() {
   const [nvNotes,         setNvNotes]         = useState('')
   const [nvDiagnosis,     setNvDiagnosis]     = useState('')
   const [nvFee,           setNvFee]           = useState('')
+  const [nvFeeErr,        setNvFeeErr]        = useState('')
   const [nvSubmitting,    setNvSubmitting]    = useState(false)
 
   function nowLocal() {
@@ -95,7 +97,7 @@ export default function PatientDetailPage() {
 
   function openNewVisit() {
     setNvVisitedAt(nowLocal())
-    setNvNotes(''); setNvDiagnosis(''); setNvFee('')
+    setNvNotes(''); setNvDiagnosis(''); setNvFee(''); setNvFeeErr('')
     setNvSubmitting(false)
     setShowNewVisit(true)
   }
@@ -103,8 +105,9 @@ export default function PatientDetailPage() {
   async function handleNewVisit() {
     if (nvFee) {
       const feeErr = validateFee(nvFee)
-      if (feeErr) { alert(feeErr); return }
+      if (feeErr) { setNvFeeErr(feeErr); return }
     }
+    setNvFeeErr('')
     setNvSubmitting(true)
     try {
       const visitPayload = {
@@ -119,7 +122,7 @@ export default function PatientDetailPage() {
       setShowNewVisit(false)
       navigate(`/visits/${visitId}/prescriptions/new`)
     } catch (e) {
-      alert(typeof e === 'string' ? e : 'Could not create visit')
+      toast.error(typeof e === 'string' ? e : 'Could not create visit — please try again.')
       setNvSubmitting(false)
     }
   }
@@ -490,7 +493,16 @@ export default function PatientDetailPage() {
             </div>
             <div className="emr-form-row">
               <label>Consultation Fee (₹)</label>
-              <input type="number" value={nvFee} onChange={e => setNvFee(e.target.value)} placeholder="0" min={0} disabled={nvSubmitting} />
+              <input
+                type="number"
+                value={nvFee}
+                onChange={e => { setNvFee(e.target.value); setNvFeeErr('') }}
+                placeholder="0"
+                min={0}
+                disabled={nvSubmitting}
+                className={nvFeeErr ? 'has-error' : undefined}
+              />
+              {nvFeeErr && <span className="field-error-msg" style={{ marginTop: 4 }}>{nvFeeErr}</span>}
             </div>
 
             <div className="emr-modal-footer">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSessionState } from '../../hooks/useSessionState'
 import { useNavigate } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { invoke } from '@tauri-apps/api/core'
@@ -122,9 +123,9 @@ export default function PatientsPage() {
   const [showAdd,  setShowAdd]  = useState(
     () => new URLSearchParams(window.location.search).get('new') === '1'
   )
-  const [search,   setSearch]   = useState('')
-  const [sortCol,  setSortCol]  = useState('name')
-  const [sortDir,  setSortDir]  = useState('asc')
+  const [search,   setSearch]   = useSessionState('patients:search', '')
+  const [sortCol,  setSortCol]  = useSessionState('patients:sort-col', 'name')
+  const [sortDir,  setSortDir]  = useSessionState('patients:sort-dir', 'asc')
   const [page,     setPage]     = useState(1)
 
   useEffect(() => {

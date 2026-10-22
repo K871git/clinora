@@ -1,12 +1,14 @@
 import '../../styles/pharmacy-pages.css'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useSessionState } from '../../hooks/useSessionState'
 import {
   getPharmacyPrescriptions, getPharmacyStats,
   getPharmacyPrescription,
   startDispensingPharmacyPrescription,
   completePharmacyPrescription,
+  savePharmacistNotes,
 } from '../../services/pharmacyService'
 import { getStockAlerts } from '../../services/medicineService'
 import Spinner from '../../components/ui/Spinner'
@@ -131,23 +133,38 @@ function IconCheck() {
 }
 
 function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
-  const [rx,         setRx]         = useState(null)
-  const [loading,    setLoading]    = useState(true)
-  const [checked,    setChecked]    = useState(new Set())
-  const [prices,     setPrices]     = useState({})
-  const [starting,   setStarting]   = useState(false)
-  const [completing, setCompleting] = useState(false)
-  const [confirming, setConfirming] = useState(false)
+  const [rx,           setRx]           = useState(null)
+  const [loading,      setLoading]      = useState(true)
+  const [checked,      setChecked]      = useState(new Set())
+  const [prices,       setPrices]       = useState({})
+  const [extraItems,   setExtraItems]   = useState([])
+  const [newItemName,  setNewItemName]  = useState('')
+  const [newItemPrice, setNewItemPrice] = useState('')
+  const [pharmNotes,   setPharmNotes]   = useState('')
+  const [savingNotes,  setSavingNotes]  = useState(false)
+  const [starting,     setStarting]     = useState(false)
+  const [completing,   setCompleting]   = useState(false)
+  const [confirming,   setConfirming]   = useState(false)
+  const notesTimerRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setChecked(new Set())
     setPrices({})
+    setExtraItems([])
+    setNewItemName('')
+    setNewItemPrice('')
     setConfirming(false)
     setRx(null)
     getPharmacyPrescription(rxId)
-      .then(({ data }) => { if (!cancelled) { setRx(data); setLoading(false) } })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setRx(data)
+          setPharmNotes(data.pharmacist_notes ?? '')
+          setLoading(false)
+        }
+      })
       .catch(() => { if (!cancelled) { toast.error('Could not load prescription'); setLoading(false) } })
     return () => { cancelled = true }
   }, [rxId])
@@ -158,6 +175,30 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
       next.has(idx) ? next.delete(idx) : next.add(idx)
       return next
     })
+  }
+
+  function addExtraItem() {
+    if (!newItemName.trim()) return
+    const price = parseFloat(newItemPrice || '0') || 0
+    if (price < 0) { toast.error('Price cannot be negative.'); return }
+    setExtraItems(prev => [...prev, { uid: Date.now(), name: newItemName.trim(), price }])
+    setNewItemName('')
+    setNewItemPrice('')
+  }
+
+  function removeExtraItem(uid) {
+    setExtraItems(prev => prev.filter(i => i.uid !== uid))
+  }
+
+  function handlePharmNotesChange(val) {
+    setPharmNotes(val)
+    if (notesTimerRef.current) clearTimeout(notesTimerRef.current)
+    notesTimerRef.current = setTimeout(() => {
+      setSavingNotes(true)
+      savePharmacistNotes(rxId, val)
+        .then(() => setSavingNotes(false))
+        .catch(() => { setSavingNotes(false); toast.error('Could not save notes') })
+    }, 900)
   }
 
   async function handleStart() {
@@ -179,7 +220,8 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
         id: item.id,
         unit_price: prices[item.id] ? parseFloat(prices[item.id]) : null,
       }))
-      const { data } = await completePharmacyPrescription(rxId, itemPrices, [])
+      const extra = extraItems.map(i => ({ name: i.name, unit_price: i.price }))
+      const { data } = await completePharmacyPrescription(rxId, itemPrices, extra)
       setRx(data)
       toast.success(`Dispensed for ${rx.patient.name}`)
       onCompleted()
@@ -197,6 +239,7 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
   const checkedCount = checked.size
   const unchecked    = totalMeds - checkedCount
   const liveTotal    = Object.values(prices).reduce((s, v) => s + (parseFloat(v) || 0), 0)
+                     + extraItems.reduce((s, i) => s + i.price, 0)
 
   return (
     <div className="pharma-dpanel">
@@ -321,6 +364,45 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
                 ))}
               </ul>
 
+              {/* Extra items — only when dispensing */}
+              {isDispensing && (
+                <div className="rx-extra-section">
+                  <div className="rx-extra-header">Additional Items</div>
+                  {extraItems.length > 0 && (
+                    <div className="rx-extra-grid">
+                      {extraItems.map(item => (
+                        <div key={item.uid} className="rx-extra-cell">
+                          <span className="rx-extra-cell-name">{item.name}</span>
+                          <span className="rx-extra-cell-price">{fmtPrice(item.price)}</span>
+                          <button className="rx-extra-remove" onClick={() => removeExtraItem(item.uid)} title="Remove">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="rx-extra-form">
+                    <input
+                      className="rx-extra-input"
+                      placeholder="Item name…"
+                      value={newItemName}
+                      onChange={e => setNewItemName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && addExtraItem()}
+                    />
+                    <div className="rx-price-wrap" style={{ flex: 'none' }}>
+                      <span className="rx-price-currency">₹</span>
+                      <input
+                        className="rx-price-input"
+                        type="number" min="0" step="0.01" placeholder="0.00"
+                        value={newItemPrice}
+                        onChange={e => setNewItemPrice(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addExtraItem()}
+                        style={{ width: 64 }}
+                      />
+                    </div>
+                    <button className="rx-extra-add-btn" onClick={addExtraItem} disabled={!newItemName.trim()}>+ Add</button>
+                  </div>
+                </div>
+              )}
+
               {isDispensing && liveTotal > 0 && (
                 <div className="pharma-dpanel-total">
                   Total: <strong>{fmtPrice(liveTotal)}</strong>
@@ -335,6 +417,37 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
             </div>
           ) : (
             <div className="pharma-dpanel-empty">No medicines on this prescription.</div>
+          )}
+
+          {/* Pharmacist notes — always visible, auto-saved */}
+          {!isCompleted && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Pharmacist Notes
+                </span>
+                {savingNotes && (
+                  <span style={{ fontSize: 10, color: 'var(--clr-text-muted)', marginLeft: 'auto' }}>saving…</span>
+                )}
+              </div>
+              <textarea
+                className="rx-pharma-notes"
+                rows={2}
+                placeholder="Substitutions, remarks, notes…"
+                value={pharmNotes}
+                onChange={e => handlePharmNotesChange(e.target.value)}
+              />
+            </div>
+          )}
+          {isCompleted && pharmNotes && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                Pharmacist Notes
+              </div>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 6, padding: '8px 10px' }}>
+                {pharmNotes}
+              </p>
+            </div>
           )}
 
           {/* Action area */}
@@ -427,9 +540,12 @@ export default function PharmacyPage() {
   const [lastSync,     setLastSync]     = useState(null)
   const [stats,        setStats]        = useState({ pending: 0, dispensing: 0, today_done: 0 })
   const [statsStatus,  setStatsStatus]  = useState('loading')
-  const [search,       setSearch]       = useState('')
+  const [search,       setSearch]       = useSessionState('pharmacy:search', '')
   const [alerts,       setAlerts]       = useState(null)
   const [selectedRxId, setSelectedRxId] = useState(null)
+
+  const qtRef = useRef(null)
+  const stRef = useRef(null)
 
   const loadQueue = useCallback((silent = false) => {
     if (!silent) setQueueStatus('loading')
@@ -449,16 +565,19 @@ export default function PharmacyPage() {
       .catch(() => setStatsStatus(prev => prev === 'loading' ? 'error' : prev))
   }, [])
 
+  function startPolling() {
+    clearInterval(qtRef.current)
+    clearInterval(stRef.current)
+    qtRef.current = setInterval(() => loadQueue(true), POLL_MS)
+    stRef.current = setInterval(() => loadStats(true), POLL_MS)
+  }
+
   useEffect(() => {
     loadQueue(); loadStats()
     getStockAlerts().then(({ data }) => setAlerts(data)).catch(() => {})
-  }, [loadQueue, loadStats])
-
-  useEffect(() => {
-    const qt = setInterval(() => loadQueue(true), POLL_MS)
-    const st = setInterval(() => loadStats(true), POLL_MS)
-    return () => { clearInterval(qt); clearInterval(st) }
-  }, [loadQueue, loadStats])
+    startPolling()
+    return () => { clearInterval(qtRef.current); clearInterval(stRef.current) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const q        = search.trim().toLowerCase()
   const filtered = q
@@ -480,7 +599,7 @@ export default function PharmacyPage() {
     alerts.low_stock?.length    > 0 && `${alerts.low_stock.length} low stock`,
   ].filter(Boolean) : []
 
-  function handleRefresh() { loadQueue(); loadStats() }
+  function handleRefresh() { loadQueue(); loadStats(); startPolling() }
 
   function openPanel(rxId) {
     setSelectedRxId(prev => prev === rxId ? null : rxId)
