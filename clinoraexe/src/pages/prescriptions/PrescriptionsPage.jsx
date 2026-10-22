@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useSessionState } from '../../hooks/useSessionState'
 import { useNavigate } from 'react-router-dom'
 import {
   getClinicPrescriptions,
@@ -419,16 +420,16 @@ function TemplatesPanel() {
 export default function PrescriptionsPage() {
   const navigate = useNavigate()
 
-  const [pageTab,        setPageTab]        = useState('prescriptions')
+  const [pageTab,        setPageTab]        = useSessionState('rx:page-tab', 'prescriptions')
   const [prescriptions,  setPrescriptions]  = useState([])
   const [loadStatus,     setLoadStatus]     = useState('loading')
-  const [activeTab,      setActiveTab]      = useState('')
-  const [dateRange,      setDateRange]      = useState('')
+  const [activeTab,      setActiveTab]      = useSessionState('rx:status-tab', '')
+  const [dateRange,      setDateRange]      = useSessionState('rx:date-range', '')
   const [dateDropdown,   setDateDropdown]   = useState(false)
   const [medModal,       setMedModal]       = useState(null)
-  const [search,         setSearch]         = useState('')
-  const [sortCol,        setSortCol]        = useState('prescribed_at')
-  const [sortDir,        setSortDir]        = useState('desc')
+  const [search,         setSearch]         = useSessionState('rx:search', '')
+  const [sortCol,        setSortCol]        = useSessionState('rx:sort-col', 'prescribed_at')
+  const [sortDir,        setSortDir]        = useSessionState('rx:sort-dir', 'desc')
   const [page,           setPage]           = useState(0)
   const [rxError,        setRxError]        = useState(null)
 

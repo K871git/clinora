@@ -107,7 +107,7 @@ export default function QuickRxPage() {
 
   /* Notes + fee */
   const [doctorNotes, setDoctorNotes] = useState('')
-  const [fee, setFee]                 = useState('100')
+  const [fee, setFee]                 = useState('')
 
   /* Language */
   const [lang, setLang] = useState(loadLang)
@@ -144,6 +144,8 @@ export default function QuickRxPage() {
           enabled: data.watermark_enabled !== false,
         },
       })
+      const defaultFee = data.default_consultation_fee ?? data.consultation_fee
+      if (defaultFee) setFee(String(defaultFee))
     }).catch(() => {})
   }, [])
 
@@ -342,9 +344,16 @@ export default function QuickRxPage() {
       if (!visitMode) {
         if (selectedPatient) {
           patientId = selectedPatient.id
-          const ptCheck = await getPatient(patientId).catch(() => null)
+          let ptCheck = null
+          try {
+            ptCheck = await getPatient(patientId)
+          } catch (err) {
+            const msg = typeof err === 'string' ? err : (err?.message ?? '')
+            const isNotFound = /not.?found|no.?record|does not exist|404/i.test(msg)
+            if (!isNotFound) throw err
+          }
           if (!ptCheck?.data?.id) {
-            // Patient missing from DB (stale draft) — re-insert using stored data
+            // Patient genuinely missing from DB (stale draft) — re-insert using stored data
             const { data: np } = await createPatient({
               name:          selectedPatient.name?.trim() || pt.name.trim(),
               mobile:        selectedPatient.mobile?.trim() || pt.mobile?.trim() || '',

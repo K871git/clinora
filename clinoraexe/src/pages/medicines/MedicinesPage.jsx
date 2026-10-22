@@ -1,5 +1,6 @@
 import '../../styles/medicines-page.css'
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useSessionState } from '../../hooks/useSessionState'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { invoke } from '@tauri-apps/api/core'
@@ -713,7 +714,7 @@ export default function MedicinesPage() {
   const [medicines, setMedicines] = useState([])
   const [total,     setTotal]     = useState(0)
   const [status,    setStatus]    = useState('loading')
-  const [search,    setSearch]    = useState('')
+  const [search,    setSearch]    = useSessionState('medicines:search', '')
   const [modal,     setModal]     = useState(null) // null | 'add' | 'edit' | 'import'
   const [editing,   setEditing]   = useState(null)
   const [form,      setForm]      = useState(BLANK_FORM)

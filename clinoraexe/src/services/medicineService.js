@@ -20,10 +20,6 @@ export async function updateMedicine(id, data) {
   return { data: result }
 }
 
-export async function patchMedicine(id, data) {
-  const result = await invoke('update_medicine', { id, data })
-  return { data: result }
-}
 
 export async function deleteMedicine(id) {
   await invoke('delete_medicine', { id })

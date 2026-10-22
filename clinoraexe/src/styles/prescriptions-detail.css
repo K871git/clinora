@@ -164,11 +164,77 @@
 .rx-detail-page {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-.rx-detail-page .detail-back {
-  margin-bottom: 0;
+/* Breadcrumb navigation */
+.rx-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 0 0;
+  flex-wrap: wrap;
+}
+.rx-breadcrumb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--clr-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 3px 0;
+  cursor: pointer;
+  line-height: 1;
+  transition: opacity 0.13s;
+}
+.rx-breadcrumb-btn:hover { opacity: 0.72; }
+.rx-breadcrumb-sep { color: var(--clr-border); font-size: 15px; line-height: 1; }
+.rx-breadcrumb-leaf { font-size: 12.5px; font-weight: 700; color: var(--clr-text); }
+.rx-breadcrumb-id {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  background: var(--clr-bg-subtle);
+  border: 1px solid var(--clr-border);
+  border-radius: 99px;
+  padding: 1px 8px;
+  line-height: 1.8;
+}
+
+/* Notes card overrides */
+.rx-content-header--between { justify-content: space-between; }
+.rx-action-btn--sm { font-size: 11px !important; padding: 3px 10px !important; }
+.rx-notes-body { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.rx-notes-section { display: flex; flex-direction: column; gap: 4px; }
+.rx-notes-pharma-hdr { display: flex; align-items: center; justify-content: space-between; }
+.rx-notes-section-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.rx-notes-section-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--clr-text);
+  white-space: pre-wrap;
+  background: var(--clr-bg-subtle);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  line-height: 1.6;
+  font-family: var(--font-sans);
+}
+.rx-notes-saving {
+  font-size: 10px;
+  color: var(--clr-text-muted);
+  font-style: italic;
 }
 
 /* Header card */

@@ -325,6 +325,88 @@ html[data-role="pharmacy"][data-theme="dark"] .prf-role-badge--pharmacy {
   color: #2dd4bf;
 }
 
+/* ─── Doctor role theme ──────────────────────────────────────────────── */
+/*
+ * Design intent:
+ *   Light — subtle cool-blue page tint, white cards, crisp blue accent.
+ *   Dark  — deep navy page, dark navy-blue cards, bright blue accent only.
+ *           Mirrors the pharmacy teal structure; swaps teal → blue.
+ */
+
+html[data-role="doctor"][data-theme="light"] {
+  --clr-bg:              #f0f4ff;   /* faint blue tint — clinical blue identity */
+  --clr-surface:         #ffffff;
+  --clr-surface-hover:   #eef2ff;
+  --clr-surface-raised:  #f5f8ff;
+  --clr-bg-subtle:       #e8eeff;
+  --clr-border:          #dae0f5;
+  --clr-border-subtle:   #eef2ff;
+  --clr-primary:         #2563eb;
+  --clr-primary-hover:   #1d4ed8;
+  --clr-primary-subtle:  #eff6ff;
+}
+
+/* ── Light — card depth (white cards need a lift off the blue-tinted bg) */
+html[data-role="doctor"][data-theme="light"] .card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 4px 12px rgba(37, 99, 235, 0.05);
+}
+
+html[data-role="doctor"][data-theme="dark"] {
+  --clr-bg:              #080e1a;   /* deep navy — not black */
+  --clr-surface:         #0f1829;   /* dark navy-blue cards */
+  --clr-surface-hover:   #162038;
+  --clr-surface-raised:  #162038;
+  --clr-bg-subtle:       rgba(96, 165, 250, 0.04);
+  --clr-border:          #1e2f50;   /* blue-tinted dark border */
+  --clr-border-subtle:   #0f1829;
+  --clr-primary:         #60a5fa;   /* brighter blue — readable on dark */
+  --clr-primary-hover:   #3b82f6;
+  --clr-primary-subtle:  #1e3a5f;
+  --clr-text:            #dce7f3;
+  --clr-text-muted:      #7d93b5;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.65);
+}
+
+/* ── Dark — card definition */
+html[data-role="doctor"][data-theme="dark"] .card {
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html[data-role="doctor"][data-theme="dark"] .shell-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 2px 0 28px rgba(0, 0, 0, 0.45);
+}
+
+html[data-role="doctor"][data-theme="dark"] .shell-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04),
+              0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Primary action button glow — blue shadow */
+html[data-role="doctor"] .rx-action-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.38);
+}
+
+html[data-role="doctor"][data-theme="dark"] .rx-action-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 2px 14px rgba(96, 165, 250, 0.3);
+}
+
+/* ── Doctor role badge */
+html[data-role="doctor"] .prf-role-badge--doctor {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+html[data-role="doctor"][data-theme="dark"] .prf-role-badge--doctor {
+  background: #1e3a5f;
+  color: #60a5fa;
+}
+
 /* ─── Base resets ───────────────────────────────────────────────────── */
 *,
 *::before,

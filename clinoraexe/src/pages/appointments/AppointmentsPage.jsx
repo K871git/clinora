@@ -33,7 +33,10 @@ function fmtDateFull(iso) {
   if (!d) return ''
   return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
-function todayStr() { return new Date().toISOString().split('T')[0] }
+function todayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 function getWeekDays(dateStr) {
   const d = new Date(dateStr + 'T12:00:00')
@@ -50,7 +53,7 @@ function getWeekDays(dateStr) {
 
 /* ── Week grid component ─────────────────────────────────────────────── */
 
-function WeekGrid({ days, appts, onBookSlot, onEdit, onQuickStatus, onDelete }) {
+function WeekGrid({ days, appts, onBookSlot, onEdit, onQuickStatus, onDelete, deletingId }) {
   const today = todayStr()
 
   // Group by date
@@ -96,7 +99,7 @@ function WeekGrid({ days, appts, onBookSlot, onEdit, onQuickStatus, onDelete }) 
                     <div className="appt-wcard-time">{fmtTime(appt.scheduled_at)}</div>
                     <div className="appt-wcard-patient">{appt.patient?.name}</div>
                     <div className="appt-wcard-type">
-                      {appt.title || appt.type.replace('_', ' ')}
+                      {appt.title || appt.type?.replace('_', ' ') || 'Consultation'}
                     </div>
                     <div className="appt-wcard-btns">
                       {appt.status === 'scheduled' && (
@@ -112,10 +115,10 @@ function WeekGrid({ days, appts, onBookSlot, onEdit, onQuickStatus, onDelete }) 
                         >Done</button>
                       )}
                       <button
-                        className="appt-wcard-del"
+                        className={`appt-wcard-del${deletingId === appt.id ? ' appt-wcard-del--confirm' : ''}`}
                         onClick={e => { e.stopPropagation(); onDelete(appt.id) }}
-                        title="Remove"
-                      >✕</button>
+                        title={deletingId === appt.id ? 'Click again to confirm removal' : 'Remove'}
+                      >{deletingId === appt.id ? '?' : '✕'}</button>
                     </div>
                   </div>
                 ))}
@@ -154,6 +157,7 @@ export default function AppointmentsPage() {
   const [view,        setView]        = useState('list')   // 'list' | 'week'
   const [weekAppts,   setWeekAppts]   = useState([])
   const [weekLoading, setWeekLoading] = useState(false)
+  const [deletingId,  setDeletingId]  = useState(null)
 
   /* ── Data loaders ── */
 
@@ -176,8 +180,8 @@ export default function AppointmentsPage() {
     const days = getWeekDays(dateStr)
     const months = [...new Set(days.map(d => d.slice(0, 7)))]
     try {
-      const results = await Promise.all(months.map(m => listAppointments({ month: m })))
-      const all  = results.flat()
+      const results = await Promise.allSettled(months.map(m => listAppointments({ month: m })))
+      const all = results.filter(r => r.status === 'fulfilled').flatMap(r => r.value)
       const daySet = new Set(days)
       setWeekAppts(all.filter(a => daySet.has(a.scheduled_at?.slice(0, 10))))
     } catch {
@@ -213,6 +217,7 @@ export default function AppointmentsPage() {
     setPatSearch(''); setPatResults([])
     setEditing(null); setShowNewPat(false)
     setNewPat({ name: '', mobile: '', age: '', gender: '' })
+    setDeletingId(null)
     setShowAdd(true)
   }
 
@@ -225,6 +230,7 @@ export default function AppointmentsPage() {
       status: appt.status, notes: appt.notes || '',
     })
     setPatSearch(appt.patient?.name || '')
+    setDeletingId(null)
     setEditing(appt)
     setShowAdd(true)
   }
@@ -274,7 +280,7 @@ export default function AppointmentsPage() {
       const payload = {
         patient_id:       Number(form.patient_id),
         scheduled_at:     form.scheduled_at.replace('T', ' ') + ':00',
-        duration_minutes: Number(form.duration_minutes),
+        duration_minutes: Math.max(5, Number(form.duration_minutes) || 15),
         type:             form.type,
         status:           form.status,
         title:            form.title  || null,
@@ -300,7 +306,11 @@ export default function AppointmentsPage() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Cancel this appointment?')) return
+    if (deletingId !== id) {
+      setDeletingId(id)
+      return
+    }
+    setDeletingId(null)
     try {
       await deleteAppointment(id)
       setAppointments(prev => prev.filter(a => a.id !== id))
@@ -424,10 +434,10 @@ export default function AppointmentsPage() {
                   <div className="appt-divider" />
                   <div className="appt-info">
                     <div className="appt-patient">{appt.patient?.name}</div>
-                    <div className="appt-type">{appt.title || appt.type.replace('_', ' ')}</div>
+                    <div className="appt-type">{appt.title || appt.type?.replace('_', ' ') || 'Consultation'}</div>
                   </div>
-                  <span className={`appt-status-badge appt-status-${appt.status}`}>
-                    {appt.status.replace('_', ' ')}
+                  <span className={`appt-status-badge appt-status-${appt.status ?? 'scheduled'}`}>
+                    {appt.status?.replace('_', ' ') ?? 'scheduled'}
                   </span>
                   <div className="appt-actions">
                     {appt.status === 'scheduled' && (
@@ -437,7 +447,11 @@ export default function AppointmentsPage() {
                       <button className="emr-icon-btn" onClick={() => quickStatus(appt, 'completed')} title="Mark done">Done</button>
                     )}
                     <button className="emr-icon-btn" onClick={() => openEdit(appt)}>Edit</button>
-                    <button className="emr-icon-btn emr-icon-btn--danger" onClick={() => handleDelete(appt.id)}>✕</button>
+                    <button
+                      className={`emr-icon-btn emr-icon-btn--danger${deletingId === appt.id ? ' emr-icon-btn--confirm' : ''}`}
+                      onClick={() => handleDelete(appt.id)}
+                      title={deletingId === appt.id ? 'Click again to confirm removal' : 'Remove'}
+                    >{deletingId === appt.id ? 'Confirm?' : '✕'}</button>
                   </div>
                 </div>
               ))}
@@ -458,6 +472,7 @@ export default function AppointmentsPage() {
             onEdit={openEdit}
             onQuickStatus={quickStatus}
             onDelete={handleDelete}
+            deletingId={deletingId}
           />
         )
       )}

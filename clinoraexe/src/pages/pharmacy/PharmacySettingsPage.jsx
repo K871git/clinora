@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getSettings, updateClinicName } from '../../services/settingsService'
 import Spinner from '../../components/ui/Spinner'
 
@@ -17,6 +17,9 @@ export default function PharmacySettingsPage() {
   const [saving,     setSaving]     = useState(false)
   const [error,      setError]      = useState(null)
   const [saved,      setSaved]      = useState(false)
+  const savedTimerRef               = useRef(null)
+
+  useEffect(() => () => clearTimeout(savedTimerRef.current), [])
 
   useEffect(() => {
     let cancelled = false
@@ -40,7 +43,8 @@ export default function PharmacySettingsPage() {
     try {
       await updateClinicName(name.trim())
       setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       const msg = err.response?.data?.errors?.name?.[0]
         ?? err.response?.data?.message
