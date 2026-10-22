@@ -607,19 +607,39 @@ export default function PharmacyPage() {
 
   return (
     <div className="phq-page">
-      <div className="phq-body">
 
-        {/* Alert banner */}
-        {hasAlerts && (
-          <button className="phq-alert-banner" onClick={() => navigate('/pharmacy/stock')}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-            <span className="phq-alert-text">Stock attention needed: {alertParts.join(' · ')}</span>
-            <span className="phq-alert-cta">View Stock →</span>
+      {/* ── Page header ── */}
+      <div className="phq-page-hdr">
+        <div className="phq-page-hdr-left">
+          <h1 className="phq-page-title">Pharmacy Queue</h1>
+          <p className="phq-page-sub">
+            Live prescription queue
+            {lastSync && <> · Synced {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</>}
+          </p>
+        </div>
+        <div className="phq-page-hdr-right">
+          {hasAlerts && (
+            <button className="phq-alert-chip" onClick={() => navigate('/pharmacy/stock')}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              {alertParts.join(' · ')} — View Stock
+            </button>
+          )}
+          <button className="phq-refresh-btn" onClick={handleRefresh} disabled={queueStatus === 'loading'}>
+            {queueStatus === 'loading' ? <Spinner size={12} /> : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+              </svg>
+            )}
+            Refresh
           </button>
-        )}
+        </div>
+      </div>
+
+      <div className="phq-body">
 
         {/* ── KPI stat cards ── */}
         <div className="phq-kpi-row">
@@ -680,9 +700,12 @@ export default function PharmacyPage() {
         {/* ── Queue card ── */}
         <div className="phq-queue-card">
 
-          {/* Toolbar: search + sync/refresh */}
+          {/* Toolbar */}
           <div className="phq-card-toolbar">
             <span className="phq-queue-label">Queue</span>
+            {queueStatus === 'done' && allRx.length > 0 && (
+              <span className="phq-queue-count">{allRx.length} active</span>
+            )}
             <div className="phq-search-box">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
@@ -695,20 +718,6 @@ export default function PharmacyPage() {
                 onChange={e => setSearch(e.target.value)}
               />
               {q && <span className="phq-search-count">{filtered.length} of {allRx.length}</span>}
-            </div>
-            <div className="phq-toolbar-right">
-              {lastSync && (
-                <span className="phq-sync-ts">Synced {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-              )}
-              <button className="phq-refresh-btn" onClick={handleRefresh} disabled={queueStatus === 'loading'}>
-                {queueStatus === 'loading' ? <Spinner size={12} /> : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 4 23 10 17 10" />
-                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-                  </svg>
-                )}
-                Refresh
-              </button>
             </div>
           </div>
 
