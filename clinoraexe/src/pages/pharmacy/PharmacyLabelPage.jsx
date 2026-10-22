@@ -12,9 +12,11 @@ export default function PharmacyLabelPage() {
   const [status, setStatus] = useState('loading')
 
   useEffect(() => {
+    let cancelled = false
     getPharmacyPrescription(prescriptionId)
-      .then(({ data }) => { setPrescription(data); setStatus('done') })
-      .catch(() => setStatus('error'))
+      .then(({ data }) => { if (!cancelled) { setPrescription(data); setStatus('done') } })
+      .catch(() => { if (!cancelled) setStatus('error') })
+    return () => { cancelled = true }
   }, [prescriptionId])
 
   if (status === 'loading') return <div className="inv-loading"><Spinner size={24} /></div>

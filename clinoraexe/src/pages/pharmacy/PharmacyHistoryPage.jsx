@@ -122,7 +122,7 @@ function ReturnModal({ rx, detail, loadingDetail, items, setItems, reason, setRe
   function changeQty(idx, delta) {
     setItems(prev => prev.map((item, j) => {
       if (j !== idx) return item
-      return { ...item, qty: Math.max(1, item.qty + delta) }
+      return { ...item, qty: Math.min(99, Math.max(1, item.qty + delta)) }
     }))
   }
 
@@ -235,10 +235,10 @@ function HistoryCard({ rx, onInvoice, onDetails, onReturn, hasReturn }) {
   const total = rx.total_amount ?? 0
   return (
     <div className="pharma-hcard">
-      <div className="pharma-hcard-avatar">{(rx.patient.name?.[0] ?? '?').toUpperCase()}</div>
+      <div className="pharma-hcard-avatar">{(rx.patient?.name?.[0] ?? '?').toUpperCase()}</div>
 
       <div className="pharma-hcard-body">
-        <div className="pharma-hcard-name">{rx.patient.name}</div>
+        <div className="pharma-hcard-name">{rx.patient?.name}</div>
         {rx.doctor && <div className="pharma-hcard-doctor">{doctorLabel(rx.doctor.name)}</div>}
         {rx.items?.length > 0 && (
           <div className="pharma-hcard-meds">
@@ -332,7 +332,11 @@ export default function PharmacyHistoryPage() {
       })
       .catch(() => setStatus(prev => prev === 'loading' ? 'error' : prev))
     getPharmacyLiveCounts()
-      .then(({ data }) => setCounts(data))
+      .then(({ data }) => setCounts({
+        today_done: data?.today_done ?? 0,
+        dispensing: data?.dispensing ?? 0,
+        pending:    data?.pending    ?? 0,
+      }))
       .catch(() => {})
   }, [q])
 
@@ -388,6 +392,7 @@ export default function PharmacyHistoryPage() {
   }
 
   async function handleConfirmReturn() {
+    if (returning) return
     const selected = returnItems.filter(i => i.selected && i.qty > 0)
     if (!selected.length) {
       setReturnError('Select at least one item to return.')
@@ -487,7 +492,7 @@ export default function PharmacyHistoryPage() {
         {q && status === 'done' && (
           <span className="pharma-search-count">
             {history.length} result{history.length !== 1 ? 's' : ''}
-            {history.length === 50 && ' — showing first 50'}
+            {history.length >= 50 && ' — refine search for more results'}
           </span>
         )}
       </div>

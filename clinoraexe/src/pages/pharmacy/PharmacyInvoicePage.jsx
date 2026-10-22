@@ -23,7 +23,7 @@ function fmtDate(iso) {
 }
 
 function fmtPrice(amount) {
-  return parseFloat(amount).toLocaleString('en-IN', {
+  return parseFloat(amount || 0).toLocaleString('en-IN', {
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   })
 }
@@ -67,17 +67,20 @@ export default function PharmacyInvoicePage() {
   const { paper, docVariant } = printSettings
 
   useEffect(() => {
+    let cancelled = false
     Promise.all([
       getPharmacyPrescription(prescriptionId),
       getSettings(),
     ])
       .then(([rxRes, stgRes]) => {
+        if (cancelled) return
         setPrescription(rxRes.data)
         setClinicName(stgRes.data.clinic.name ?? '')
         setGstPercent(parseFloat(stgRes.data.gst_percent ?? 0))
         setStatus('done')
       })
-      .catch(() => setStatus('error'))
+      .catch(() => { if (!cancelled) setStatus('error') })
+    return () => { cancelled = true }
   }, [prescriptionId])
 
   if (status === 'loading') return <div className="inv-loading"><Spinner size={24} /></div>
@@ -89,7 +92,7 @@ export default function PharmacyInvoicePage() {
   const hasPrice = items.some(i => i.unit_price != null)
   const gstAmount = (gstPercent > 0 && hasPrice && total > 0) ? (total * gstPercent / 100) : 0
   const grandTotal = total + gstAmount
-  const rxNum    = `RX-${prescription.id.toString().padStart(5, '0')}`
+  const rxNum    = `RX-${String(prescription?.id ?? '?????').padStart(5, '0')}`
 
   const patientMeta = [
     p.age != null && `${p.age} yrs`,

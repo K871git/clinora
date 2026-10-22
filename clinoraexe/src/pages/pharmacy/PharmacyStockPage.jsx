@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import { toast } from 'sonner'
 import {
-  getMedicines, patchMedicine, createMedicine, deleteMedicine, importMedicines, updateMedicine,
+  getMedicines, createMedicine, deleteMedicine, importMedicines, updateMedicine,
 } from '../../services/medicineService'
 import { getStockItems, createStockItem, updateStockItem, deleteStockItem } from '../../services/stockItemService'
 import { getStockAuditLog } from '../../services/stockAuditService'
@@ -344,10 +344,12 @@ function AuditLogModal({ item, onClose }) {
   }, [onClose])
 
   useEffect(() => {
+    let cancelled = false
     setStatus('loading')
     getStockAuditLog(item.type, item.id)
-      .then(({ data }) => { setLogs(data.data ?? []); setStatus('done') })
-      .catch(() => setStatus('error'))
+      .then(({ data }) => { if (!cancelled) { setLogs(data.data ?? []); setStatus('done') } })
+      .catch(() => { if (!cancelled) setStatus('error') })
+    return () => { cancelled = true }
   }, [item.type, item.id])
 
   function fmtTs(iso) {
@@ -557,6 +559,7 @@ function MedicineTab({ preFilter: initialFilter }) {
     const current = field === 'quantity' ? (med.quantity ?? 0) : med.price
     if (field === 'quantity' && (isNaN(parsed) || parsed < 0 || parsed === current)) { clear(); return }
     if (field === 'price' && rawValue === '' && current == null) { clear(); return }
+    if (field === 'price' && rawValue !== '' && parseFloat(rawValue) < 0) { toast.error('Price cannot be negative.'); clear(); return }
     setSavingId(med.id)
     try {
       const payload = {
@@ -571,7 +574,7 @@ function MedicineTab({ preFilter: initialFilter }) {
         received_date: med.received_date ?? null,
         reorder_level: med.reorder_level ?? 10,
       }
-      const { data } = await patchMedicine(med.id, payload)
+      const { data } = await updateMedicine(med.id, payload)
       setMedicines(prev => prev.map(m => m.id === med.id ? data : m))
       toast.success(`Updated ${field === 'quantity' ? 'stock' : 'price'} for ${med.name}`)
     } catch {
@@ -1034,19 +1037,20 @@ function StockItemsTab() {
     if (validRows.some(r => r.selling_price !== '' && parseFloat(r.selling_price) < 0)) { toast.error('Price cannot be negative.'); return }
     setAdding(true)
     try {
-      const results = await Promise.all(validRows.map(row => createStockItem({
+      const results = await Promise.allSettled(validRows.map(row => createStockItem({
         name:           row.name.trim(),
         category:       row.category.trim()       || null,
         unit:           row.unit.trim()            || null,
         selling_price:  row.selling_price !== '' ? parseFloat(row.selling_price) : null,
         stock_quantity: row.stock_quantity !== '' ? parseInt(row.stock_quantity, 10) : 0,
       })))
-      const added = results.map(r => r.data)
-      setItems(prev => [...added.reverse(), ...prev])
-      setAddRows([{ ...EMPTY_ITEM }])
-      setShowAdd(false)
-      toast.success(added.length > 1 ? `${added.length} items added` : `${added[0].name} added`)
-    } catch { toast.error('Could not add item(s) — try again.') }
+      const added  = results.filter(r => r.status === 'fulfilled').map(r => r.value.data)
+      const failed = results.filter(r => r.status === 'rejected').length
+      if (added.length) setItems(prev => [...added.reverse(), ...prev])
+      if (failed === 0) { setAddRows([{ ...EMPTY_ITEM }]); setShowAdd(false) }
+      if (added.length) toast.success(added.length > 1 ? `${added.length} items added` : `${added[0].name} added`)
+      if (failed)       toast.error(`${failed} item(s) could not be added — check for duplicates.`)
+    } catch { toast.error('Could not add items — try again.') }
     finally { setAdding(false) }
   }
 

@@ -1,7 +1,7 @@
 import '../../styles/prescriptions-detail.css'
 import '../../styles/pharmacy-pages.css'
 import '../../styles/pharmacy-stock.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { invoke } from '@tauri-apps/api/core'
@@ -13,6 +13,8 @@ import {
   savePharmacistNotes,
   getPatientDispenseHistory,
 } from '../../services/pharmacyService'
+import { getMedicines } from '../../services/medicineService'
+import { getStockItems } from '../../services/stockItemService'
 import Spinner from '../../components/ui/Spinner'
 import PageLoader from '../../components/ui/PageLoader'
 import { fmtDateTime } from '../../lib/dateUtils'
@@ -106,30 +108,78 @@ export default function PharmacyPrescriptionPage() {
   /* notes state */
   const [pharmNotes,     setPharmNotes]     = useState('')
   const [savingNotes,    setSavingNotes]    = useState(false)
-  const [notesTimer,     setNotesTimer]     = useState(null)
+  const notesTimerRef                       = useRef(null)
+  const extraNameRef                        = useRef(null)
 
   /* medication history */
   const [medHistory,     setMedHistory]     = useState([])
   const [histOpen,       setHistOpen]       = useState(true)
 
+  /* stock lookup map: lowercase name → { unit_price, id } */
+  const [stockMap,       setStockMap]       = useState({})
+  /* extra items datalist: array of { name, price } from stock */
+  const [stockSuggestions, setStockSuggestions] = useState([])
+
+  useEffect(() => () => clearTimeout(notesTimerRef.current), [])
+
   useEffect(() => {
     let cancelled = false
+
+    /* ── Primary load: prescription (must succeed) ── */
     getPharmacyPrescription(prescriptionId)
-      .then(({ data }) => {
-        if (!cancelled) {
-          const rx = data
-          setPrescription(rx)
-          setPaymentStatus(rx.payment_status ?? 'unpaid')
-          setAmountPaid(rx.amount_paid > 0 ? String(rx.amount_paid) : '')
-          setPaymentNotes(rx.payment_notes ?? '')
-          setPharmNotes(rx.pharmacist_notes ?? '')
-          setPageStatus('done')
-          if (rx.patient?.id) {
-            getPatientDispenseHistory(rx.patient.id, prescriptionId)
-              .then(({ data: hist }) => { if (!cancelled) setMedHistory(hist) })
-              .catch(() => {})
-          }
+      .then(({ data: rx }) => {
+        if (cancelled) return
+
+        setPrescription(rx)
+        setPaymentStatus(rx.payment_status ?? 'unpaid')
+        setAmountPaid(rx.amount_paid > 0 ? String(rx.amount_paid) : '')
+        setPaymentNotes(rx.payment_notes ?? '')
+        setPharmNotes(rx.pharmacist_notes ?? '')
+        setPageStatus('done')
+
+        /* Pre-fill prices from saved unit_price */
+        const savedPrices = {}
+        for (const item of (rx.items ?? [])) {
+          if (item.unit_price != null) savedPrices[item.id] = String(item.unit_price)
         }
+        if (Object.keys(savedPrices).length > 0) setPrices(savedPrices)
+
+        if (rx.patient?.id) {
+          getPatientDispenseHistory(rx.patient.id, prescriptionId)
+            .then(({ data: hist }) => { if (!cancelled) setMedHistory(hist) })
+            .catch(() => {})
+        }
+
+        /* ── Secondary load: stock catalog (nice-to-have, never blocks) ── */
+        Promise.all([getMedicines('', 500), getStockItems('')])
+          .then(([{ data: meds }, { data: items }]) => {
+            if (cancelled) return
+
+            const map = {}
+            for (const m of (meds ?? [])) {
+              if (m.name && m.unit_price != null) map[m.name.toLowerCase().trim()] = m.unit_price
+            }
+            setStockMap(map)
+            setStockSuggestions([
+              ...(meds ?? []).map(m => ({ name: m.name, price: m.unit_price ?? 0 })),
+              ...(items ?? []).map(i => ({ name: i.name, price: i.unit_price ?? i.price ?? 0 })),
+            ])
+
+            /* Fill stock prices only for items that have no saved price yet */
+            if (rx.status !== 'completed') {
+              setPrices(prev => {
+                const next = { ...prev }
+                for (const item of (rx.items ?? [])) {
+                  if (next[item.id] == null) {
+                    const sp = map[item.medicine_name?.toLowerCase().trim()]
+                    if (sp != null) next[item.id] = String(sp)
+                  }
+                }
+                return next
+              })
+            }
+          })
+          .catch(() => { /* stock catalog failure is silent — autocomplete just won't work */ })
       })
       .catch((err) => {
         if (!cancelled) {
@@ -139,6 +189,7 @@ export default function PharmacyPrescriptionPage() {
           else                setPageStatus('error')
         }
       })
+
     return () => { cancelled = true }
   }, [prescriptionId])
 
@@ -154,6 +205,13 @@ export default function PharmacyPrescriptionPage() {
     setPrices(prev => ({ ...prev, [itemId]: value }))
   }
 
+  function handleExtraNameChange(val) {
+    setNewItemName(val)
+    /* Auto-fill price when user picks a suggestion from datalist */
+    const match = stockSuggestions.find(s => s.name.toLowerCase() === val.toLowerCase())
+    if (match && match.price > 0) setNewItemPrice(String(match.price))
+  }
+
   function addExtraItem() {
     if (!newItemName.trim()) return
     const price = parseFloat(newItemPrice || '0') || 0
@@ -161,6 +219,7 @@ export default function PharmacyPrescriptionPage() {
     setExtraItems(prev => [...prev, { uid: Date.now(), name: newItemName.trim(), price }])
     setNewItemName('')
     setNewItemPrice('')
+    setTimeout(() => extraNameRef.current?.focus(), 0)
   }
 
   function removeExtraItem(uid) {
@@ -173,7 +232,7 @@ export default function PharmacyPrescriptionPage() {
       const { data } = await startDispensingPharmacyPrescription(prescriptionId)
       setPrescription(data)
       toast.success('Started dispensing', {
-        description: `Prescription for ${prescription.patient.name}`,
+        description: `Prescription for ${prescription.patient?.name ?? 'patient'}`,
         duration: 4000,
       })
     } catch (err) {
@@ -188,7 +247,10 @@ export default function PharmacyPrescriptionPage() {
   }
 
   async function handleSavePayment() {
-    if (paymentStatus === 'partial' && parseFloat(amountPaid || '0') < 0) { toast.error('Amount paid cannot be negative.'); return }
+    if (paymentStatus === 'partial') {
+      const amt = parseFloat(amountPaid || '0')
+      if (amt <= 0) { toast.error('Enter the partial amount paid.'); return }
+    }
     setSavingPayment(true)
     try {
       const { data } = await recordPrescriptionPayment(prescriptionId, {
@@ -223,7 +285,7 @@ export default function PharmacyPrescriptionPage() {
       const { data } = await completePharmacyPrescription(prescriptionId, itemPrices, extra)
       setPrescription(data)
       toast.success('Prescription completed', {
-        description: `All medicines dispensed for ${prescription.patient.name}`,
+        description: `All medicines dispensed for ${prescription.patient?.name ?? 'patient'}`,
         duration: 4000,
       })
     } catch (err) {
@@ -239,14 +301,13 @@ export default function PharmacyPrescriptionPage() {
 
   function handlePharmNotesChange(val) {
     setPharmNotes(val)
-    if (notesTimer) clearTimeout(notesTimer)
-    const t = setTimeout(() => {
+    clearTimeout(notesTimerRef.current)
+    notesTimerRef.current = setTimeout(() => {
       setSavingNotes(true)
       savePharmacistNotes(prescriptionId, val)
         .then(() => setSavingNotes(false))
         .catch(() => { setSavingNotes(false); toast.error('Could not save notes') })
     }, 900)
-    setNotesTimer(t)
   }
 
   async function handleExportText() {
@@ -320,10 +381,23 @@ export default function PharmacyPrescriptionPage() {
   const hasInvoice = isDispensing || (isCompleted && (prescription.total_amount ?? 0) > 0)
 
   return (
-    <div>
-      <button className="btn-link detail-back" onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+    <div className="rx-detail-page">
+
+      {/* ── Breadcrumb ──────────────────────────────────────────────── */}
+      <nav className="rx-breadcrumb">
+        <button className="rx-breadcrumb-btn" onClick={() => navigate(-1)}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Pharmacy
+        </button>
+        <span className="rx-breadcrumb-sep">›</span>
+        <span className="rx-breadcrumb-leaf">{p.name}</span>
+        <span className="rx-breadcrumb-id">Rx #{prescriptionId}</span>
+        <span className={`status-badge ${prescription.status}`} style={{ marginLeft: 4, fontSize: 10.5 }}>
+          {STATUS_LABEL[prescription.status] ?? prescription.status}
+        </span>
+      </nav>
 
       {/* ── Header card ──────────────────────────────────────────────── */}
       <div className="card rx-hcard">
@@ -580,8 +654,16 @@ export default function PharmacyPrescriptionPage() {
                           <input
                             className="rx-price-input"
                             type="number" min="0" step="0.01" placeholder="0.00"
+                            data-price-idx={idx}
                             value={prices[item.id] ?? ''}
                             onChange={e => setItemPrice(item.id, e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key !== 'Enter') return
+                              e.preventDefault()
+                              const next = document.querySelector(`[data-price-idx="${idx + 1}"]`)
+                              if (next) next.focus()
+                              else extraNameRef.current?.focus()
+                            }}
                           />
                         </div>
                       ) : isCompleted && item.unit_price != null ? (
@@ -612,12 +694,20 @@ export default function PharmacyPrescriptionPage() {
                   </div>
                 )}
 
+                <datalist id="rx-extra-suggestions">
+                  {stockSuggestions.map((s, i) => (
+                    <option key={i} value={s.name} />
+                  ))}
+                </datalist>
+
                 <div className="rx-extra-form">
                   <input
+                    ref={extraNameRef}
                     className="rx-extra-input"
-                    placeholder="Item name…"
+                    list="rx-extra-suggestions"
+                    placeholder="Item name… (or pick from stock)"
                     value={newItemName}
-                    onChange={e => setNewItemName(e.target.value)}
+                    onChange={e => handleExtraNameChange(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && addExtraItem()}
                   />
                   <div className="rx-price-wrap" style={{ flex: 'none' }}>
@@ -779,54 +869,38 @@ export default function PharmacyPrescriptionPage() {
       )}
 
       {/* ── Notes panel ───────────────────────────────────────────────── */}
-      {(prescription.consultation_notes || prescription.doctor_notes || !isCompleted || true) && (
-        <div className="card rx-content-card">
-          <div className="rx-content-header" style={{ justifyContent: 'space-between' }}>
-            <span className="rx-content-label">Notes</span>
-            <button
-              className="rx-action-btn"
-              style={{ fontSize: 11, padding: '3px 10px' }}
-              onClick={handleExportText}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export as Text
-            </button>
-          </div>
+      <div className="card rx-content-card">
+        <div className="rx-content-header rx-content-header--between">
+          <span className="rx-content-label">Notes</span>
+          <button className="rx-action-btn rx-action-btn--sm" onClick={handleExportText}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export as Text
+          </button>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
-            {/* Consultation / Visit notes — read-only */}
-            {prescription.consultation_notes && (
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', marginBottom: 4 }}>
-                  Visit / Consultation Notes
-                </div>
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-                  {prescription.consultation_notes}
-                </p>
-              </div>
-            )}
+        <div className="rx-notes-body">
+          {prescription.consultation_notes && (
+            <div className="rx-notes-section">
+              <span className="rx-notes-section-lbl">Visit / Consultation Notes</span>
+              <p className="rx-notes-section-text">{prescription.consultation_notes}</p>
+            </div>
+          )}
 
-            {/* Doctor notes — read-only */}
-            {prescription.doctor_notes && (
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--clr-text-muted)', marginBottom: 4 }}>
-                  Doctor Notes
-                </div>
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--clr-text)', whiteSpace: 'pre-wrap', background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-                  {prescription.doctor_notes}
-                </p>
-              </div>
-            )}
+          {prescription.doctor_notes && (
+            <div className="rx-notes-section">
+              <span className="rx-notes-section-lbl">Doctor Notes</span>
+              <p className="rx-notes-section-text">{prescription.doctor_notes}</p>
+            </div>
+          )}
 
-            {/* Pharmacist notes — editable */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              {savingNotes && (
-                <span style={{ fontSize: 10, color: 'var(--clr-text-muted)', marginLeft: 'auto' }}>saving…</span>
-              )}
+          <div className="rx-notes-section">
+            <div className="rx-notes-pharma-hdr">
+              <span className="rx-notes-section-lbl">Pharmacist Notes</span>
+              {savingNotes && <span className="rx-notes-saving">saving…</span>}
             </div>
             <textarea
               className="rx-pharma-notes"
@@ -837,7 +911,7 @@ export default function PharmacyPrescriptionPage() {
             />
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

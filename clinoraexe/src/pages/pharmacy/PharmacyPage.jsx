@@ -8,9 +8,11 @@ import {
   getPharmacyPrescription,
   startDispensingPharmacyPrescription,
   completePharmacyPrescription,
+  recordPrescriptionPayment,
   savePharmacistNotes,
 } from '../../services/pharmacyService'
-import { getStockAlerts } from '../../services/medicineService'
+import { getStockAlerts, getMedicines } from '../../services/medicineService'
+import { getStockItems } from '../../services/stockItemService'
 import Spinner from '../../components/ui/Spinner'
 
 const POLL_MS    = 30_000
@@ -85,11 +87,11 @@ function RxCard({ rx, selected, onClick }) {
       onClick={onClick}
     >
       {/* Col 1: avatar */}
-      <div className="pharma-qcard-avatar">{(rx.patient.name?.[0] ?? '?').toUpperCase()}</div>
+      <div className="pharma-qcard-avatar">{(rx.patient?.name?.[0] ?? '?').toUpperCase()}</div>
 
       {/* Col 2: patient name */}
       <div className="pharma-qcard-patient">
-        <div className="pharma-qcard-name">{rx.patient.name}</div>
+        <div className="pharma-qcard-name">{rx.patient?.name}</div>
       </div>
 
       {/* Col 3: doctor · medicines (fills center) */}
@@ -133,19 +135,25 @@ function IconCheck() {
 }
 
 function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
-  const [rx,           setRx]           = useState(null)
-  const [loading,      setLoading]      = useState(true)
-  const [checked,      setChecked]      = useState(new Set())
-  const [prices,       setPrices]       = useState({})
-  const [extraItems,   setExtraItems]   = useState([])
-  const [newItemName,  setNewItemName]  = useState('')
-  const [newItemPrice, setNewItemPrice] = useState('')
-  const [pharmNotes,   setPharmNotes]   = useState('')
-  const [savingNotes,  setSavingNotes]  = useState(false)
-  const [starting,     setStarting]     = useState(false)
-  const [completing,   setCompleting]   = useState(false)
-  const [confirming,   setConfirming]   = useState(false)
+  const [rx,              setRx]           = useState(null)
+  const [loading,         setLoading]      = useState(true)
+  const [checked,         setChecked]      = useState(new Set())
+  const [prices,          setPrices]       = useState({})
+  const [extraItems,      setExtraItems]   = useState([])
+  const [newItemName,     setNewItemName]  = useState('')
+  const [newItemPrice,    setNewItemPrice] = useState('')
+  const [pharmNotes,      setPharmNotes]   = useState('')
+  const [savingNotes,     setSavingNotes]  = useState(false)
+  const [starting,        setStarting]     = useState(false)
+  const [completing,      setCompleting]   = useState(false)
+  const [confirming,      setConfirming]   = useState(false)
+  const [stockSuggestions, setStockSuggestions] = useState([])
+  /* payment (shown after completion) */
+  const [payStatus,    setPayStatus]   = useState('unpaid')
+  const [amountPaid,   setAmountPaid]  = useState('')
+  const [savingPay,    setSavingPay]   = useState(false)
   const notesTimerRef = useRef(null)
+  const extraNameRef  = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -157,16 +165,59 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
     setNewItemPrice('')
     setConfirming(false)
     setRx(null)
+
+    /* ── Primary load: prescription (must succeed) ── */
     getPharmacyPrescription(rxId)
       .then(({ data }) => {
-        if (!cancelled) {
-          setRx(data)
-          setPharmNotes(data.pharmacist_notes ?? '')
-          setLoading(false)
+        if (cancelled) return
+        setRx(data)
+        setPharmNotes(data.pharmacist_notes ?? '')
+        setPayStatus(data.payment_status ?? 'unpaid')
+        setAmountPaid(data.amount_paid > 0 ? String(data.amount_paid) : '')
+
+        /* Pre-fill from saved unit_price */
+        const savedPrices = {}
+        for (const item of (data.items ?? [])) {
+          if (item.unit_price != null) savedPrices[item.id] = String(item.unit_price)
         }
+        if (Object.keys(savedPrices).length > 0) setPrices(savedPrices)
+
+        setLoading(false)
+
+        /* ── Secondary load: stock catalog (nice-to-have, never blocks) ── */
+        Promise.all([getMedicines('', 500), getStockItems('')])
+          .then(([{ data: meds }, { data: items }]) => {
+            if (cancelled) return
+            const map = {}
+            for (const m of (meds ?? [])) {
+              if (m.name && m.unit_price != null) map[m.name.toLowerCase().trim()] = m.unit_price
+            }
+            setStockSuggestions([
+              ...(meds ?? []).map(m => ({ name: m.name, price: m.unit_price ?? 0 })),
+              ...(items ?? []).map(i => ({ name: i.name, price: i.unit_price ?? i.price ?? 0 })),
+            ])
+            if (data.status !== 'completed') {
+              setPrices(prev => {
+                const next = { ...prev }
+                for (const item of (data.items ?? [])) {
+                  if (next[item.id] == null) {
+                    const sp = map[item.medicine_name?.toLowerCase().trim()]
+                    if (sp != null) next[item.id] = String(sp)
+                  }
+                }
+                return next
+              })
+            }
+          })
+          .catch(() => { /* stock catalog failure is silent */ })
       })
-      .catch(() => { if (!cancelled) { toast.error('Could not load prescription'); setLoading(false) } })
-    return () => { cancelled = true }
+      .catch(() => {
+        if (!cancelled) { toast.error('Could not load prescription'); setLoading(false) }
+      })
+    return () => {
+      cancelled = true
+      clearTimeout(notesTimerRef.current)
+    }
   }, [rxId])
 
   function toggleCheck(idx) {
@@ -177,6 +228,12 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
     })
   }
 
+  function handleExtraNameChange(val) {
+    setNewItemName(val)
+    const match = stockSuggestions.find(s => s.name.toLowerCase() === val.toLowerCase())
+    if (match && match.price > 0) setNewItemPrice(String(match.price))
+  }
+
   function addExtraItem() {
     if (!newItemName.trim()) return
     const price = parseFloat(newItemPrice || '0') || 0
@@ -184,6 +241,7 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
     setExtraItems(prev => [...prev, { uid: Date.now(), name: newItemName.trim(), price }])
     setNewItemName('')
     setNewItemPrice('')
+    setTimeout(() => extraNameRef.current?.focus(), 0)
   }
 
   function removeExtraItem(uid) {
@@ -213,6 +271,8 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
   }
 
   async function handleComplete() {
+    const hasNeg = Object.values(prices).some(v => v !== '' && parseFloat(v) < 0)
+    if (hasNeg) { toast.error('Medicine prices cannot be negative.'); return }
     setCompleting(true)
     setConfirming(false)
     try {
@@ -223,12 +283,37 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
       const extra = extraItems.map(i => ({ name: i.name, unit_price: i.price }))
       const { data } = await completePharmacyPrescription(rxId, itemPrices, extra)
       setRx(data)
-      toast.success(`Dispensed for ${rx.patient.name}`)
+      setPayStatus(data.payment_status ?? 'unpaid')
+      toast.success(`Dispensed for ${rx.patient?.name ?? 'patient'}`)
       onCompleted()
     } catch (err) {
       toast.error(err.response?.data?.message ?? 'Could not complete — try again.')
-      setCompleting(false)
+    } finally { setCompleting(false) }
+  }
+
+  async function handleMarkPaid() {
+    if (savingPay) return
+    if (payStatus === 'partial') {
+      const amt = parseFloat(amountPaid || '0')
+      if (amt <= 0) { toast.error('Enter the partial amount paid.'); return }
     }
+    setSavingPay(true)
+    try {
+      const { data } = await recordPrescriptionPayment(rxId, {
+        payment_status: payStatus,
+        amount_paid: payStatus === 'paid'
+          ? (rx.total_amount ?? 0)
+          : payStatus === 'partial'
+            ? parseFloat(amountPaid || '0') || 0
+            : 0,
+        payment_notes: null,
+      })
+      setRx(data)
+      setPayStatus(data.payment_status)
+      toast.success('Payment recorded')
+    } catch {
+      toast.error('Could not save payment — try again.')
+    } finally { setSavingPay(false) }
   }
 
   const isPending    = rx?.status === 'sent_to_pharmacy'
@@ -246,59 +331,67 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
 
       {/* Panel header */}
       <div className="pharma-dpanel-hdr">
-        <div className="pharma-dpanel-hdr-left">
-          {loading
-            ? <span className="pharma-dpanel-hdr-title">Loading…</span>
-            : rx
-              ? <span className="pharma-dpanel-hdr-title">{rx.patient.name}</span>
-              : <span className="pharma-dpanel-hdr-title">Prescription</span>
-          }
-        </div>
-        <div className="pharma-dpanel-hdr-right">
-          {rx && (
-            <button
-              className="pharma-dpanel-full-btn"
-              onClick={() => navigate(`/pharmacy/prescriptions/${rxId}`)}
-              title="Open full detail page"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-              Full page
-            </button>
-          )}
-          <button className="pharma-dpanel-close" onClick={onClose} title="Close">✕</button>
-        </div>
+        {loading ? (
+          <>
+            <div className="pharma-dpanel-hdr-left">
+              <div className="pharma-dpanel-hdr-avatar pharma-dpanel-hdr-avatar--loading">…</div>
+              <div className="pharma-dpanel-hdr-info">
+                <div className="pharma-dpanel-hdr-name pharma-dpanel-hdr-name--loading" />
+                <div className="pharma-dpanel-hdr-sub pharma-dpanel-hdr-sub--loading" />
+              </div>
+            </div>
+            <button className="pharma-dpanel-close" onClick={onClose} title="Close">✕</button>
+          </>
+        ) : rx ? (
+          <>
+            <div className="pharma-dpanel-hdr-left">
+              <div className="pharma-dpanel-hdr-avatar">
+                {(rx.patient?.name?.[0] ?? '?').toUpperCase()}
+              </div>
+              <div className="pharma-dpanel-hdr-info">
+                <div className="pharma-dpanel-hdr-name">{rx.patient?.name}</div>
+                <div className="pharma-dpanel-hdr-sub">
+                  {rx.doctor && <span>{doctorLabel(rx.doctor.name)}</span>}
+                  {rx.doctor && (rx.patient?.age != null || rx.patient?.gender) && (
+                    <span className="pharma-dpanel-hdr-dot">·</span>
+                  )}
+                  {(rx.patient?.age != null || rx.patient?.gender) && (
+                    <span>{[rx.patient?.age != null && `${rx.patient?.age} yrs`, rx.patient?.gender].filter(Boolean).join(', ')}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="pharma-dpanel-hdr-right">
+              <span className={`status-badge ${rx.status}`}>
+                {isPending ? 'Pending' : isDispensing ? 'Dispensing' : 'Completed'}
+              </span>
+              <button
+                className="pharma-dpanel-full-btn"
+                onClick={() => navigate(`/pharmacy/prescriptions/${rxId}`)}
+                title="Open full page"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                Full page
+              </button>
+              <button className="pharma-dpanel-close" onClick={onClose} title="Close">✕</button>
+            </div>
+          </>
+        ) : null}
       </div>
 
       {/* Body */}
       {loading && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+        <div className="pharma-dpanel-loading-body">
           <Spinner size={22} />
         </div>
       )}
 
       {rx && (
         <div className="pharma-dpanel-body">
-
-          {/* Patient info strip */}
-          <div className="pharma-dpanel-patient">
-            <div className="pharma-dpanel-avatar">{(rx.patient.name?.[0] ?? '?').toUpperCase()}</div>
-            <div className="pharma-dpanel-patient-info">
-              <div className="pharma-dpanel-pname">{rx.patient.name}</div>
-              {rx.doctor && <div className="pharma-dpanel-doctor">{doctorLabel(rx.doctor.name)}</div>}
-              {(rx.patient.age != null || rx.patient.gender) && (
-                <div className="pharma-dpanel-meta">
-                  {[rx.patient.age != null && `${rx.patient.age} yrs`, rx.patient.gender].filter(Boolean).join(', ')}
-                </div>
-              )}
-            </div>
-            <span className={`status-badge ${rx.status}`} style={{ marginLeft: 'auto', flexShrink: 0 }}>
-              {isPending ? 'Pending' : isDispensing ? 'Dispensing' : 'Completed'}
-            </span>
-          </div>
 
           {/* Progress when dispensing */}
           {isDispensing && totalMeds > 0 && (
@@ -351,8 +444,16 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
                         <input
                           className="rx-price-input"
                           type="number" min="0" step="0.01" placeholder="0"
+                          data-dp-price-idx={idx}
                           value={prices[item.id] ?? ''}
                           onChange={e => setPrices(p => ({ ...p, [item.id]: e.target.value }))}
+                          onKeyDown={e => {
+                            if (e.key !== 'Enter') return
+                            e.preventDefault()
+                            const next = document.querySelector(`[data-dp-price-idx="${idx + 1}"]`)
+                            if (next) next.focus()
+                            else extraNameRef.current?.focus()
+                          }}
                           style={{ width: 64 }}
                         />
                       </div>
@@ -379,12 +480,18 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
                       ))}
                     </div>
                   )}
+                  <datalist id="dp-extra-suggestions">
+                    {stockSuggestions.map((s, i) => <option key={i} value={s.name} />)}
+                  </datalist>
+
                   <div className="rx-extra-form">
                     <input
+                      ref={extraNameRef}
                       className="rx-extra-input"
-                      placeholder="Item name…"
+                      list="dp-extra-suggestions"
+                      placeholder="Item name… (or pick from stock)"
                       value={newItemName}
-                      onChange={e => setNewItemName(e.target.value)}
+                      onChange={e => handleExtraNameChange(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && addExtraItem()}
                     />
                     <div className="rx-price-wrap" style={{ flex: 'none' }}>
@@ -511,6 +618,41 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
                   </svg>
                   Dispensed successfully
                 </div>
+
+                {/* ── Inline payment ── */}
+                <div className="pharma-dpanel-pay">
+                  <div className="pharma-dpanel-pay-label">Payment</div>
+                  <div className="pharma-dpanel-pay-pills">
+                    {['unpaid', 'partial', 'paid'].map(s => (
+                      <button
+                        key={s}
+                        className={`pharma-dpanel-pay-pill pharma-dpanel-pay-pill--${s}${payStatus === s ? ' pharma-dpanel-pay-pill--on' : ''}`}
+                        onClick={() => setPayStatus(s)}
+                      >
+                        {s === 'unpaid' ? 'Unpaid' : s === 'partial' ? 'Partial' : 'Paid ✓'}
+                      </button>
+                    ))}
+                  </div>
+                  {payStatus === 'partial' && (
+                    <div className="pharma-dpanel-pay-partial">
+                      <span>₹</span>
+                      <input
+                        type="number" min="0" step="0.01" placeholder="0.00"
+                        className="pharma-dpanel-pay-amount"
+                        value={amountPaid}
+                        onChange={e => setAmountPaid(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  <button
+                    className="pharma-dpanel-pay-save"
+                    onClick={handleMarkPaid}
+                    disabled={savingPay}
+                  >
+                    {savingPay ? 'Saving…' : 'Save Payment'}
+                  </button>
+                </div>
+
                 <div className="pharma-dpanel-done-btns">
                   <button className="btn-secondary" style={{ flex: 1 }}
                     onClick={() => navigate(`/pharmacy/prescriptions/${rxId}/invoice`)}>
@@ -577,14 +719,24 @@ export default function PharmacyPage() {
     getStockAlerts().then(({ data }) => setAlerts(data)).catch(() => {})
     startPolling()
     return () => { clearInterval(qtRef.current); clearInterval(stRef.current) }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadQueue, loadStats]) // startPolling reads stable loadQueue/loadStats refs
+
+  useEffect(() => {
+    function handleKey(e) {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return
+      if (e.key === 'P') navigate('/pharmacy/history')
+      if (e.key === 'R') navigate('/pharmacy/revenue')
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [navigate])
 
   const q        = search.trim().toLowerCase()
   const filtered = q
     ? allRx.filter(rx =>
-        rx.patient.name.toLowerCase().includes(q) ||
-        rx.doctor?.name.toLowerCase().includes(q) ||
-        rx.items?.some(i => i.medicine_name.toLowerCase().includes(q))
+        rx.patient?.name?.toLowerCase().includes(q) ||
+        rx.doctor?.name?.toLowerCase().includes(q) ||
+        rx.items?.some(i => i.medicine_name?.toLowerCase().includes(q))
       )
     : allRx
 
@@ -613,8 +765,16 @@ export default function PharmacyPage() {
         <div className="phq-page-hdr-left">
           <h1 className="phq-page-title">Pharmacy Queue</h1>
           <p className="phq-page-sub">
-            Live prescription queue
+            {queueStatus === 'done' && allRx.length > 0
+              ? <><strong>{allRx.length}</strong> active prescription{allRx.length !== 1 ? 's' : ''}</>
+              : 'Live prescription queue'
+            }
             {lastSync && <> · Synced {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</>}
+            <span className="phq-page-sub-keys">
+              <kbd>N</kbd> Queue &nbsp;
+              <kbd>P</kbd> History &nbsp;
+              <kbd>R</kbd> Revenue
+            </span>
           </p>
         </div>
         <div className="phq-page-hdr-right">
