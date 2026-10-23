@@ -18,7 +18,7 @@
   z-index: 40;
   overflow-y: auto;
   overflow-x: visible;
-  transition: left 0.22s ease, width 0.25s ease;
+  transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1), width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html[data-theme="dark"] .shell-sidebar {
@@ -63,7 +63,7 @@ html[data-theme="dark"] .shell-sidebar {
 @media (min-width: 768px) {
   .shell-main {
     margin-left: 252px;
-    transition: margin-left 0.25s ease;
+    transition: margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .shell-main.sidebar-collapsed {
@@ -551,7 +551,10 @@ html[data-theme="dark"] .sidebar-q-btn--rx-primary {
   height: 34px;
   border-radius: 9px;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: background 0.18s ease, color 0.18s ease,
+              box-shadow 0.22s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* ─── Nav links ──────────────────────────────────────────────────────────── */
@@ -1217,11 +1220,12 @@ html[data-role="pharmacy"] .nav-link-active::after {
 /* ── Page content fade-in on route change ────────────────────────────── */
 
 .page-enter {
-  animation: page-enter-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: page-enter-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
 @keyframes page-enter-in {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 

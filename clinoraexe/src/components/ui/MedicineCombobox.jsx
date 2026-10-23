@@ -2,6 +2,38 @@ import '../../styles/medicines-page.css'
 import { useState, useEffect, useRef, forwardRef } from 'react'
 import { searchMedicines } from '../../services/medicineService'
 
+function parseLocalDate(str) {
+  if (!str) return null
+  const [y, m, d] = str.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function MedBadges({ med }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const qty   = med.quantity ?? null
+  const exp   = parseLocalDate(med.expiry_date)
+
+  const isExpired  = exp && exp < today
+  const expSoon    = exp && !isExpired && (exp - today) / 86400000 <= 30
+  const outOfStock = qty !== null && qty === 0 && !isExpired
+  const lowStock   = qty !== null && qty > 0 && qty < 10 && !isExpired
+
+  if (!isExpired && !expSoon && !outOfStock && !lowStock) return null
+
+  const expLabel = exp
+    ? exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+    : ''
+
+  return (
+    <span className="mc-badges">
+      {isExpired   && <span className="mc-badge mc-badge--danger">Expired</span>}
+      {expSoon     && <span className="mc-badge mc-badge--warn">Exp {expLabel}</span>}
+      {outOfStock  && <span className="mc-badge mc-badge--danger">Out of stock</span>}
+      {lowStock    && <span className="mc-badge mc-badge--warn">{qty} left</span>}
+    </span>
+  )
+}
+
 const MedicineCombobox = forwardRef(function MedicineCombobox(
   { value, onChange, hasError, placeholder },
   fwdRef,
@@ -107,6 +139,7 @@ const MedicineCombobox = forwardRef(function MedicineCombobox(
               {med.generic_name && (
                 <span className="mc-option-generic">{med.generic_name}</span>
               )}
+              <MedBadges med={med} />
             </li>
           ))}
         </ul>

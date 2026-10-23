@@ -53,6 +53,41 @@ function parseDosageStructured(str) {
 
 /* ── Icons ───────────────────────────────────────────────────────────── */
 
+/* Resolves expiry_date string to a local-midnight Date (avoids UTC shift in IST) */
+function parseLocalDate(str) {
+  if (!str) return null
+  const [y, m, d] = str.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+/* Shows stock warnings for a dispensing row — expired / expiring / short stock */
+function StockChips({ item, neededQty, stockInfoMap }) {
+  const info = stockInfoMap[(item.medicine_name ?? '').toLowerCase().trim()]
+  if (!info) return null
+
+  const today     = new Date(); today.setHours(0, 0, 0, 0)
+  const exp       = parseLocalDate(info.expiry_date)
+  const isExpired = exp && exp < today
+  const expSoon   = exp && !isExpired && (exp - today) / 86400000 <= 30
+  const outOfStock = !isExpired && info.qty === 0
+  const stockShort = !isExpired && !outOfStock && neededQty > 0 && info.qty < neededQty
+
+  if (!isExpired && !expSoon && !outOfStock && !stockShort) return null
+
+  const expLabel = exp
+    ? exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+    : ''
+
+  return (
+    <div className="rx-stock-flags">
+      {isExpired   && <span className="rx-stock-chip rx-stock-chip--danger">⚠ Expired</span>}
+      {expSoon     && <span className="rx-stock-chip rx-stock-chip--warn">Exp: {expLabel}</span>}
+      {outOfStock  && <span className="rx-stock-chip rx-stock-chip--danger">Out of stock</span>}
+      {stockShort  && <span className="rx-stock-chip rx-stock-chip--warn">Stock: {info.qty} left</span>}
+    </div>
+  )
+}
+
 function IconCheck({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -115,8 +150,10 @@ export default function PharmacyPrescriptionPage() {
   const [medHistory,     setMedHistory]     = useState([])
   const [histOpen,       setHistOpen]       = useState(true)
 
-  /* stock lookup map: lowercase name → { unit_price, id } */
+  /* stock lookup map: lowercase name → unit_price */
   const [stockMap,       setStockMap]       = useState({})
+  /* stock info map: lowercase name → { qty, expiry_date } for dispensing warnings */
+  const [stockInfoMap,   setStockInfoMap]   = useState({})
   /* extra items datalist: array of { name, price } from stock */
   const [stockSuggestions, setStockSuggestions] = useState([])
 
@@ -155,13 +192,25 @@ export default function PharmacyPrescriptionPage() {
           .then(([{ data: meds }, { data: items }]) => {
             if (cancelled) return
 
+            /* price map for auto-fill (fix: field is `price` not `unit_price`) */
             const map = {}
             for (const m of (meds ?? [])) {
-              if (m.name && m.unit_price != null) map[m.name.toLowerCase().trim()] = m.unit_price
+              if (m.name && m.price != null) map[m.name.toLowerCase().trim()] = m.price
             }
             setStockMap(map)
+
+            /* stock info map for dispensing warnings */
+            const infoMap = {}
+            for (const m of (meds ?? [])) {
+              if (m.name) infoMap[m.name.toLowerCase().trim()] = {
+                qty:         m.quantity ?? 0,
+                expiry_date: m.expiry_date ?? null,
+              }
+            }
+            setStockInfoMap(infoMap)
+
             setStockSuggestions([
-              ...(meds ?? []).map(m => ({ name: m.name, price: m.unit_price ?? 0 })),
+              ...(meds ?? []).map(m => ({ name: m.name, price: m.price ?? 0 })),
               ...(items ?? []).map(i => ({ name: i.name, price: i.unit_price ?? i.price ?? 0 })),
             ])
 
@@ -626,11 +675,18 @@ export default function PharmacyPrescriptionPage() {
                       )}
                     </div>
 
-                    {/* Name + instructions */}
+                    {/* Name + instructions + stock status */}
                     <div>
                       <div className="rx-medicine-name">{item.medicine_name}</div>
                       {item.instructions && (
                         <div className="rx-medicine-instructions">{item.instructions}</div>
+                      )}
+                      {isDispensing && (
+                        <StockChips
+                          item={item}
+                          neededQty={parseInt(ds.qty) || 0}
+                          stockInfoMap={stockInfoMap}
+                        />
                       )}
                     </div>
 
