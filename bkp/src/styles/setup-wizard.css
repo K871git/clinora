@@ -1,0 +1,262 @@
+.sw-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  z-index: 9999;
+  font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+}
+
+.sw-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+  padding: 36px 40px 32px;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+}
+
+.sw-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.sw-logo img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.sw-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.sw-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px;
+}
+
+/* Role selection */
+.sw-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sw-role-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sw-role-btn:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.sw-role-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.sw-role-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.sw-role-desc {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Credentials form */
+.sw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.sw-row {
+  display: flex;
+  gap: 10px;
+}
+
+.sw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.sw-field--wide { flex: 3; }
+.sw-field--narrow { flex: 1; }
+
+.sw-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.sw-input {
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 7px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sw-input:focus {
+  border-color: #2563eb;
+}
+
+.sw-input--readonly {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: default;
+}
+
+.sw-info-box {
+  padding: 10px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #1e40af;
+  text-align: left;
+  line-height: 1.6;
+}
+
+.sw-info-box code {
+  background: #dbeafe;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'Consolas', monospace;
+}
+
+.sw-info-box--warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.sw-result {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sw-result--ok {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.sw-result--error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.sw-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.sw-btn {
+  padding: 9px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.sw-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sw-btn--ghost {
+  background: transparent;
+  color: #64748b;
+  border: 1.5px solid #e2e8f0;
+}
+
+.sw-btn--ghost:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.sw-btn--secondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1.5px solid #e2e8f0;
+}
+
+.sw-btn--secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.sw-btn--primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.sw-btn--primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+/* Done state */
+.sw-done {
+  padding: 20px 0;
+}
+
+.sw-done-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #15803d;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.sw-done p {
+  font-size: 15px;
+  color: #0f172a;
+  font-weight: 500;
+}

@@ -1,0 +1,152 @@
+/* ── OPD Register ─────────────────────────────────────────────────────── */
+/* Layout/header/stats handled by clinic.css (cpd-* classes) */
+
+/* Table */
+.opd-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--clr-border); }
+.opd-table { width: 100%; border-collapse: collapse; background: var(--clr-surface); font-size: 13px; }
+.opd-table thead th {
+  padding: 10px 12px; text-align: left; font-weight: 700; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--clr-text-muted);
+  background: color-mix(in srgb, var(--clr-primary) 5%, #f8fafc);
+  border-bottom: 1.5px solid var(--clr-border);
+}
+[data-theme="dark"] .opd-table thead th {
+  background: color-mix(in srgb, var(--clr-primary) 10%, rgba(255,255,255,0.02));
+}
+.opd-tr {
+  cursor: pointer; transition: background .1s;
+  border-bottom: 1px solid var(--clr-border);
+}
+.opd-tr:last-child { border-bottom: none; }
+.opd-tr:hover { background: var(--clr-surface-hover); }
+.opd-table td { padding: 10px 12px; vertical-align: middle; }
+
+.opd-th-num,  .opd-td-num  { width: 36px; text-align: center; color: var(--clr-text-muted); font-size: 12px; }
+.opd-th-time, .opd-td-time { width: 72px; color: var(--clr-text-muted); font-size: 12px; white-space: nowrap; }
+.opd-th-age,  .opd-td-age  { width: 72px; color: var(--clr-text-muted); font-size: 12px; }
+.opd-th-status,.opd-td-status{ width: 80px; text-align: center; }
+.opd-th-fee,  .opd-td-fee  { width: 90px; text-align: right; font-weight: 600; }
+.opd-th-pay,  .opd-td-pay  { width: 100px; }
+.opd-th-fu,   .opd-td-fu   { width: 100px; white-space: nowrap; }
+
+.opd-td-name { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+.opd-avatar {
+  width: 32px; height: 32px; border-radius: 50%; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.opd-patient-name { font-weight: 600; color: var(--clr-text); }
+.opd-patient-mob  { font-size: 11px; color: var(--clr-text-muted); }
+.opd-gender { font-size: 11px; color: var(--clr-text-muted); }
+
+.opd-td-notes { max-width: 220px; color: var(--clr-text-muted); font-size: 12px; }
+.opd-muted    { color: var(--clr-text-muted); opacity: .5; }
+
+/* Status pill */
+.opd-status-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  letter-spacing: .3px;
+}
+.opd-status-pill--open      { background: rgba(245,158,11,.12); color: #b45309; }
+.opd-status-pill--completed { background: rgba(16,185,129,.12); color: #065f46; }
+
+[data-theme="dark"] .opd-status-pill--open      { color: #fcd34d; }
+[data-theme="dark"] .opd-status-pill--completed { color: #6ee7b7; }
+
+/* Payment dot */
+.opd-pay-dot { font-size: 12px; white-space: nowrap; }
+
+/* Inline mark-paid button */
+.opd-mark-paid-btn {
+  padding: 2px 8px; border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--clr-success) 40%, transparent);
+  background: color-mix(in srgb, var(--clr-success) 8%, transparent);
+  color: var(--clr-success); font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: background .12s, opacity .12s;
+}
+.opd-mark-paid-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--clr-success) 16%, transparent); }
+.opd-mark-paid-btn:disabled { opacity: .5; cursor: not-allowed; }
+.opd-th-pay, .opd-td-pay { width: 140px; }
+
+/* Follow-up badge */
+.opd-fu-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 99px;
+  background: rgba(99,102,241,.12); color: var(--clr-primary);
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+
+/* Clickable status toggle button */
+.opd-status-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  letter-spacing: .3px; border: none; cursor: pointer; transition: opacity .15s, transform .1s;
+  font-family: inherit;
+}
+.opd-status-btn--open      { background: rgba(245,158,11,.12); color: #b45309; }
+.opd-status-btn--completed { background: rgba(16,185,129,.12); color: #065f46; }
+.opd-status-btn:hover:not(:disabled) { opacity: .75; transform: scale(1.04); }
+.opd-status-btn:disabled { opacity: .5; cursor: not-allowed; }
+[data-theme="dark"] .opd-status-btn--open      { color: #fcd34d; }
+[data-theme="dark"] .opd-status-btn--completed { color: #6ee7b7; }
+
+/* Rx action column — wide enough for "View Rx" label */
+.opd-th-actions, .opd-td-actions { width: 80px; text-align: center; }
+
+/* "+ Rx" — create new prescription */
+.opd-rx-btn {
+  padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700;
+  border: 1px solid color-mix(in srgb, #0d9488 35%, transparent);
+  background: color-mix(in srgb, #0d9488 8%, transparent);
+  color: #0d9488; cursor: pointer; font-family: inherit;
+  transition: background .12s, border-color .12s, transform .1s;
+  white-space: nowrap;
+}
+.opd-rx-btn:hover { background: color-mix(in srgb, #0d9488 16%, transparent); transform: translateY(-1px); }
+
+/* "View Rx" — open existing prescription PDF */
+.opd-rx-btn--view {
+  border-color: color-mix(in srgb, var(--clr-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--clr-primary) 8%, transparent);
+  color: var(--clr-primary);
+}
+.opd-rx-btn--view:hover { background: color-mix(in srgb, var(--clr-primary) 16%, transparent); }
+
+/* Sortable column headers */
+.opd-th--sortable { cursor: pointer; user-select: none; }
+.opd-th--sortable:hover { color: var(--clr-text); }
+.opd-sort {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  vertical-align: middle;
+  margin-left: 4px;
+  opacity: 0.35;
+}
+.opd-sort--active { opacity: 1; color: var(--clr-primary); }
+
+/* Clinic tab bar replaced by cpd-tabs in clinic.css */
+
+/* ── Print: OPD Summary ───────────────────────────────────────────────── */
+@media print {
+  body > * { display: none !important; }
+  #root > * { display: none !important; }
+  .cpd-page { display: block !important; }
+  .cpd-tabs, .cpd-hdr-right, .cpd-date-nav, .btn-primary, .btn-secondary { display: none !important; }
+  .cpd-hdr { border: none !important; padding: 0 0 8px !important; }
+  .cpd-strip { border: 1px solid #ccc !important; margin-bottom: 10px !important; }
+  .opd-table-wrap { border: 1px solid #ccc !important; border-radius: 0 !important; }
+  .opd-table { font-size: 11px !important; }
+  .opd-table thead th { background: #f5f5f5 !important; }
+  .opd-tr { cursor: default !important; }
+  .opd-tr:hover { background: none !important; }
+  .opd-avatar { display: none !important; }
+  .opd-td-name { gap: 0 !important; }
+  .opd-status-pill--open      { background: #fff3cd !important; color: #856404 !important; }
+  .opd-status-pill--completed { background: #d1e7dd !important; color: #0a3622 !important; }
+  .cpd-page::after {
+    content: 'Printed from Clinora · Confidential';
+    display: block; text-align: center;
+    font-size: 9px; color: #999; margin-top: 16px;
+  }
+}

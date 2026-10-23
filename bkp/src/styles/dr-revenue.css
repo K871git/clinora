@@ -1,0 +1,445 @@
+/* ── Doctor Revenue Page ──────────────────────────────────────────────────── */
+
+.drv-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 32px;
+}
+
+/* Header */
+.drv-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.drv-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.drv-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 2px 0 0;
+}
+
+/* Period segmented control */
+.drv-period-seg {
+  display: flex;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.drv-period-btn {
+  padding: 5px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.drv-period-btn:hover { color: var(--text-primary); }
+
+.drv-period-btn--on {
+  background: var(--bg-card, #fff);
+  color: var(--color-primary, #2563eb);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* ── Stat Strip ──────────────────────────────────────────────────────────── */
+.drv-strip {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.drv-stat {
+  flex: 1;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background 0.12s;
+  min-width: 0;
+}
+
+.drv-stat:hover { background: var(--bg-secondary, #f8fafc); }
+
+.drv-stat-divider {
+  width: 1px;
+  background: var(--border-light, #e2e8f0);
+  flex-shrink: 0;
+  margin: 8px 0;
+}
+
+.drv-stat-val {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.drv-stat-val--sm {
+  font-size: 1.2rem;
+}
+
+.drv-stat-lbl {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.drv-stat-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 3px;
+}
+
+.drv-stat--blue .drv-stat-val  { color: var(--color-primary, #2563eb); }
+.drv-stat--green .drv-stat-val { color: #16a34a; }
+.drv-stat--amber .drv-stat-val { color: var(--text-primary); }
+.drv-stat--alert .drv-stat-val { color: #dc2626; }
+
+/* ── Chart Row ───────────────────────────────────────────────────────────── */
+.drv-chart-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.drv-chart-card {
+  padding: 16px 20px;
+}
+
+.drv-chart-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.drv-chart {
+  width: 100%;
+  height: 140px;
+  display: block;
+}
+
+.drv-chart-empty {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* By Doctor sidebar */
+.drv-doctors {
+  padding: 16px;
+  min-width: 200px;
+  max-width: 240px;
+}
+
+.drv-doctors-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.drv-doctor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+}
+
+.drv-doctor-row:last-child { border-bottom: none; }
+
+.drv-doctor-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.drv-doctor-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 2px;
+}
+
+.drv-doctor-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+/* ── Transaction Section ─────────────────────────────────────────────────── */
+.drv-txn {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.drv-txn-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Filter tabs */
+.drv-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.drv-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.drv-tab:hover { background: var(--bg-secondary, #f1f5f9); color: var(--text-primary); }
+
+.drv-tab--on {
+  background: var(--color-primary-soft, #eff6ff);
+  color: var(--color-primary, #2563eb);
+  border-color: var(--color-primary-20, #bfdbfe);
+}
+
+.drv-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--bg-secondary, #e2e8f0);
+  color: var(--text-secondary);
+}
+
+.drv-tab-badge--warn {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Export button */
+.drv-export {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-card, #fff);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.drv-export:hover {
+  border-color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
+}
+
+/* Loading / empty states */
+.drv-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.drv-empty {
+  text-align: center;
+  padding: 48px 24px;
+  font-size: 0.85rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* ── Table ───────────────────────────────────────────────────────────────── */
+.drv-table-wrap {
+  overflow-x: auto;
+}
+
+.drv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.drv-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  background: var(--bg-secondary, #f8fafc);
+  white-space: nowrap;
+}
+
+.drv-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.drv-row:last-of-type td { border-bottom: none; }
+
+.drv-row:hover td { background: var(--bg-secondary, #f8fafc); }
+
+/* Column widths */
+.drv-th-patient { min-width: 140px; }
+.drv-th-date    { min-width: 100px; white-space: nowrap; }
+.drv-th-status  { min-width: 80px; }
+.drv-th-num     { text-align: right !important; min-width: 90px; }
+.drv-th-act     { min-width: 160px; }
+
+.drv-num { text-align: right; font-variant-numeric: tabular-nums; }
+.drv-muted { color: var(--text-secondary); }
+.drv-due { color: #dc2626; font-weight: 600; }
+
+.drv-patient-link {
+  color: var(--color-primary, #2563eb);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.drv-patient-link:hover { text-decoration: underline; }
+
+/* Status pill */
+.drv-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.drv-pill--paid    { background: #dcfce7; color: #16a34a; }
+.drv-pill--partial { background: #fef9c3; color: #92400e; }
+.drv-pill--unpaid  { background: #fee2e2; color: #dc2626; }
+
+/* Action cell */
+.drv-act-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.drv-view-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-card, #fff);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.12s;
+}
+
+.drv-view-btn:hover {
+  border-color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
+}
+
+.drv-pay-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid #16a34a;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.drv-pay-btn:hover:not(:disabled) {
+  background: #16a34a;
+  color: #fff;
+}
+
+.drv-pay-btn:disabled { opacity: 0.5; cursor: wait; }
+
+/* Footer totals */
+.drv-total-row td {
+  padding: 10px 12px;
+  border-top: 2px solid var(--border-light, #e2e8f0);
+  border-bottom: none !important;
+  background: var(--bg-secondary, #f8fafc);
+}
+
+.drv-total-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.drv-total-fee  { font-weight: 700; color: var(--text-primary); }
+.drv-total-paid { font-weight: 700; color: #16a34a; }
+.drv-total-due  { font-weight: 700; color: #dc2626; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .drv-chart-row { grid-template-columns: 1fr; }
+  .drv-doctors   { max-width: none; }
+  .drv-strip     { flex-direction: column; }
+  .drv-stat-divider { width: auto; height: 1px; margin: 0 8px; }
+}

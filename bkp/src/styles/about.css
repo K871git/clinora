@@ -1,0 +1,547 @@
+/* ─── About page (abt-*) ──────────────────────────────────────────────── */
+
+.abt-page {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 0 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   HERO
+   ══════════════════════════════════════════════════════════════════════ */
+
+.abt-hero {
+  text-align: center;
+  padding: 44px 32px 36px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-xl);
+  background: var(--clr-surface);
+  position: relative;
+  overflow: hidden;
+}
+
+.abt-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 50% at 50% -10%,
+    color-mix(in srgb, var(--clr-primary) 10%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.abt-logo-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 18px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--clr-primary) 18%, transparent),
+    0 8px 28px color-mix(in srgb, var(--clr-primary) 22%, transparent);
+}
+
+.abt-app-name {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--clr-text);
+  letter-spacing: -1px;
+  margin: 0 0 10px;
+  line-height: 1;
+}
+
+.abt-version-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.abt-version-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--clr-primary) 13%, transparent);
+  color: var(--clr-primary);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid color-mix(in srgb, var(--clr-primary) 25%, transparent);
+}
+
+.abt-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--clr-text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid var(--clr-border);
+}
+
+.abt-tagline {
+  font-size: 15.5px;
+  color: var(--clr-text-muted);
+  margin: 0;
+  line-height: 1.6;
+  letter-spacing: -0.1px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SHARED CARD STRUCTURE
+   ══════════════════════════════════════════════════════════════════════ */
+
+.abt-card {
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-xl);
+  background: var(--clr-surface);
+  overflow: hidden;
+  padding: 0;
+}
+
+.abt-card-head {
+  padding: 14px 22px 13px;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.abt-section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--clr-primary);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   ABOUT CLINORA CARD
+   ══════════════════════════════════════════════════════════════════════ */
+
+.abt-about-body {
+  padding: 22px 22px 20px;
+}
+
+.abt-desc {
+  font-size: 14px;
+  color: var(--clr-text);
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+/* ── Feature chips — each with own color identity ────────────────────── */
+
+.abt-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--clr-border);
+}
+
+.abt-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  letter-spacing: -0.1px;
+}
+
+.abt-chip--teal {
+  background: color-mix(in srgb, #14b8a6 9%, transparent);
+  border-color: color-mix(in srgb, #14b8a6 22%, transparent);
+  color: #0d9488;
+}
+[data-theme="dark"] .abt-chip--teal { color: #2dd4bf; }
+
+.abt-chip--orange {
+  background: color-mix(in srgb, #f97316 9%, transparent);
+  border-color: color-mix(in srgb, #f97316 22%, transparent);
+  color: #c2560a;
+}
+[data-theme="dark"] .abt-chip--orange { color: #fb923c; }
+
+.abt-chip--green {
+  background: color-mix(in srgb, #22c55e 9%, transparent);
+  border-color: color-mix(in srgb, #22c55e 22%, transparent);
+  color: #15803d;
+}
+[data-theme="dark"] .abt-chip--green { color: #4ade80; }
+
+.abt-chip--rust {
+  background: color-mix(in srgb, #ef4444 9%, transparent);
+  border-color: color-mix(in srgb, #ef4444 22%, transparent);
+  color: #dc2626;
+}
+[data-theme="dark"] .abt-chip--rust { color: #f87171; }
+
+.abt-chip--blue {
+  background: color-mix(in srgb, #3b82f6 9%, transparent);
+  border-color: color-mix(in srgb, #3b82f6 22%, transparent);
+  color: #2563eb;
+}
+[data-theme="dark"] .abt-chip--blue { color: #60a5fa; }
+
+.abt-chip--purple {
+  background: color-mix(in srgb, #8b5cf6 9%, transparent);
+  border-color: color-mix(in srgb, #8b5cf6 22%, transparent);
+  color: #7c3aed;
+}
+[data-theme="dark"] .abt-chip--purple { color: #a78bfa; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   BUILT BY CARD
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Builder bio zone — tinted background */
+.abt-builder {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 22px 20px;
+  background: color-mix(in srgb, var(--clr-primary) 3%, var(--clr-surface));
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.abt-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--clr-primary) 0%, color-mix(in srgb, var(--clr-primary) 60%, #6366f1) 100%);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--clr-primary) 15%, transparent),
+    0 6px 18px color-mix(in srgb, var(--clr-primary) 28%, transparent);
+  letter-spacing: -0.5px;
+}
+
+.abt-builder-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+
+.abt-builder-role {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  margin-bottom: 5px;
+  font-weight: 400;
+}
+
+.abt-builder-company {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--clr-primary);
+  letter-spacing: -0.1px;
+}
+
+/* ── Socials zone — clearly separated ────────────────────────────────── */
+
+.abt-socials-zone {
+  padding: 16px 22px 20px;
+}
+
+.abt-socials-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--clr-text-muted);
+  margin-bottom: 12px;
+}
+
+.abt-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.abt-social-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.16s, color 0.16s, background 0.16s, box-shadow 0.16s;
+}
+
+.abt-social-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: color 0.16s;
+}
+
+.abt-social-btn--github:hover {
+  background: #24292e;
+  border-color: #24292e;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(36,41,46,0.3);
+}
+[data-theme="dark"] .abt-social-btn--github:hover {
+  background: #f0f6ff;
+  border-color: #f0f6ff;
+  color: #24292e;
+}
+
+.abt-social-btn--linkedin:hover {
+  background: #0077b5;
+  border-color: #0077b5;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0,119,181,0.35);
+}
+
+.abt-social-btn--whatsapp:hover {
+  background: #25d366;
+  border-color: #25d366;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(37,211,102,0.35);
+}
+
+.abt-social-btn--instagram:hover {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  border-color: #dc2743;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(220,39,67,0.35);
+}
+
+.abt-social-btn--x:hover {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+[data-theme="dark"] .abt-social-btn--x:hover {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
+.abt-social-btn--facebook:hover {
+  background: #1877f2;
+  border-color: #1877f2;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(24,119,242,0.35);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   THAELON SECTION
+   ══════════════════════════════════════════════════════════════════════ */
+
+.abt-thaelon {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 22px 22px 20px;
+}
+
+.abt-thaelon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--clr-primary) 6%, var(--clr-surface));
+  border: 1px solid var(--clr-border);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--clr-text);
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 88px;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color 0.16s, background 0.16s, color 0.16s, box-shadow 0.16s;
+  cursor: pointer;
+}
+
+.abt-thaelon-badge:hover {
+  border-color: var(--clr-primary);
+  background: color-mix(in srgb, var(--clr-primary) 10%, var(--clr-surface));
+  color: var(--clr-primary);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--clr-primary) 16%, transparent);
+}
+
+.abt-thaelon-content {}
+
+.abt-thaelon-motto {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--clr-text);
+  margin-bottom: 6px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.abt-thaelon-desc {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONTACT SECTION
+   ══════════════════════════════════════════════════════════════════════ */
+
+.abt-contact-body {
+  padding: 20px 22px 20px;
+}
+
+.abt-contact-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.abt-contact-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.16s, color 0.16s, background 0.16s, box-shadow 0.16s;
+}
+
+.abt-contact-btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.16s;
+}
+
+.abt-contact-btn-icon svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.abt-contact-btn-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: inherit;
+  line-height: 1.2;
+}
+
+.abt-contact-btn-value {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--clr-text-muted);
+  line-height: 1.2;
+  letter-spacing: -0.1px;
+  transition: color 0.16s;
+}
+
+.abt-contact-btn:hover .abt-contact-btn-value {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.abt-contact-btn--email .abt-contact-btn-icon {
+  background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  color: var(--clr-primary);
+}
+.abt-contact-btn--email:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  background: color-mix(in srgb, var(--clr-primary) 4%, var(--clr-surface));
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--clr-primary) 14%, transparent);
+}
+
+.abt-contact-btn--whatsapp .abt-contact-btn-icon {
+  background: color-mix(in srgb, #25d366 12%, transparent);
+  color: #16a34a;
+}
+.abt-contact-btn--whatsapp:hover {
+  border-color: #25d366;
+  color: #15803d;
+  background: color-mix(in srgb, #25d366 5%, var(--clr-surface));
+  box-shadow: 0 2px 10px rgba(37,211,102,0.2);
+}
+[data-theme="dark"] .abt-contact-btn--whatsapp .abt-contact-btn-icon { color: #4ade80; }
+[data-theme="dark"] .abt-contact-btn--whatsapp:hover { color: #4ade80; }
+
+.abt-contact-btn--call .abt-contact-btn-icon {
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+  color: #2563eb;
+}
+.abt-contact-btn--call:hover {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  background: color-mix(in srgb, #3b82f6 5%, var(--clr-surface));
+  box-shadow: 0 2px 10px rgba(59,130,246,0.2);
+}
+[data-theme="dark"] .abt-contact-btn--call .abt-contact-btn-icon { color: #60a5fa; }
+[data-theme="dark"] .abt-contact-btn--call:hover { color: #60a5fa; }
+
+.abt-contact-note {
+  font-size: 12.5px;
+  color: var(--clr-text-muted);
+  margin: 0;
+  line-height: 1.6;
+  padding-top: 14px;
+  border-top: 1px solid var(--clr-border);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FOOTER STRIP
+   ══════════════════════════════════════════════════════════════════════ */
+
+.abt-footer-strip {
+  text-align: center;
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  padding: 6px 0 0;
+  letter-spacing: 0.01em;
+}
+
+.abt-footer-strip strong {
+  color: var(--clr-primary);
+  font-weight: 600;
+}

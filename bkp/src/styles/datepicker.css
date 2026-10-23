@@ -1,0 +1,238 @@
+/* ─── DatePicker component ─────────────────────────────────────────────── */
+
+.dp-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+/* ── Trigger button ── */
+.dp-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--clr-surface);
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  color: var(--clr-text);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 160px;
+  white-space: nowrap;
+}
+
+.dp-trigger:hover:not(:disabled) {
+  border-color: var(--clr-primary);
+}
+
+.dp-trigger--open {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(var(--clr-primary-rgb, 99,102,241), 0.15);
+}
+
+.dp-trigger--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dp-icon {
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+
+.dp-val {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.dp-ph {
+  flex: 1;
+  text-align: left;
+  color: var(--clr-text-muted);
+}
+
+.dp-chevron {
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ── Popup ── */
+.dp-popup {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: 1200;
+  width: 256px;
+  background: var(--clr-surface);
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
+  padding: 12px;
+  animation: dp-in 0.12s ease;
+}
+
+@keyframes dp-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Month/year navigation ── */
+.dp-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.dp-nav-btn {
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--clr-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--clr-text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+
+.dp-nav-btn:hover:not(:disabled) {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+  color: #fff;
+}
+
+.dp-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dp-mv {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dp-mn {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+.dp-yr {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--clr-text);
+  background: var(--clr-bg, var(--clr-surface));
+  border: 1.5px solid var(--clr-border);
+  border-radius: 5px;
+  padding: 2px 4px;
+  cursor: pointer;
+  font-family: inherit;
+  outline: none;
+}
+
+.dp-yr:focus {
+  border-color: var(--clr-primary);
+}
+
+/* ── Day-of-week header ── */
+.dp-dow-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+
+.dp-dow {
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  padding: 3px 0;
+  letter-spacing: 0.03em;
+}
+
+/* ── Day grid ── */
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.dp-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+}
+
+.dp-cell--blank {
+  background: transparent;
+}
+
+.dp-cell--day {
+  border: none;
+  background: transparent;
+  color: var(--clr-text);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  font-weight: 500;
+}
+
+.dp-cell--day:hover:not(:disabled):not(.dp-cell--sel) {
+  background: var(--clr-surface-raised, rgba(99,102,241,0.08));
+  color: var(--clr-primary);
+}
+
+.dp-cell--today {
+  font-weight: 700;
+  color: var(--clr-primary);
+  background: rgba(99,102,241,0.09);
+}
+
+.dp-cell--sel {
+  background: var(--clr-primary) !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+.dp-cell--dis {
+  color: var(--clr-text-muted);
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Clear button ── */
+.dp-clear {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 5px;
+  border: none;
+  border-top: 1px solid var(--clr-border);
+  background: transparent;
+  color: var(--clr-text-muted);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.12s;
+}
+
+.dp-clear:hover {
+  color: #ef4444;
+}

@@ -1,0 +1,959 @@
+import '../../styles/visit-detail.css'
+import '../../styles/emr.css'
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { getVisit, updateVisit, saveFee, completeVisit, recordVisitPayment, listVisitCharges, addVisitCharge, deleteVisitCharge, saveDiagnosis } from '../../services/visitService'
+import { createCertificate } from '../../services/certificateService'
+import '../../styles/certificate-print.css'
+import { listFeeTemplates } from '../../services/feeTemplateService'
+import { validateFee } from '../../lib/inputValidators'
+import Spinner from '../../components/ui/Spinner'
+import PageLoader from '../../components/ui/PageLoader'
+import { confirmDiscard } from '../../lib/swal'
+import SoapNotesSection from '../../components/emr/SoapNotesSection'
+import VitalSignsTab from '../../components/emr/VitalSignsTab'
+import DatePicker from '../../components/ui/DatePicker'
+import { updateFollowup } from '../../services/visitService'
+
+/* ── Avatar ──────────────────────────────────────────────────────────────── */
+
+const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#10b981','#06b6d4','#3b82f6']
+function avatarColor(name) { return AVATAR_COLORS[(name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length] }
+
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+
+function fmtDateTime(iso) {
+  if (!iso) return '—'
+  const utc = iso.endsWith('Z') ? iso : iso + 'Z'
+  return new Date(utc).toLocaleString('en-IN', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+function fmtPrice(amount) {
+  return parseFloat(amount || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  })
+}
+
+function isoToLocal(iso) {
+  if (!iso) return ''
+  const d  = new Date(iso.endsWith('Z') ? iso : iso + 'Z')
+  const y  = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const dy = String(d.getDate()).padStart(2, '0')
+  const h  = String(d.getHours()).padStart(2, '0')
+  const m  = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${mo}-${dy}T${h}:${m}`
+}
+
+function doctorLabel(name) {
+  if (!name) return ''
+  return /^dr\.?\s/i.test(name) ? name : `Dr. ${name}`
+}
+
+/* ── Icons ───────────────────────────────────────────────────────────────── */
+
+function IconCheck({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+function IconPrint() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 6 2 18 2 18 9" />
+      <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
+    </svg>
+  )
+}
+
+function IconSave() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  )
+}
+
+/* ── Page ────────────────────────────────────────────────────────────────── */
+
+export default function VisitDetailPage() {
+  const { visitId } = useParams()
+  const navigate    = useNavigate()
+
+  const [visit,      setVisit]      = useState(null)
+  const [pageStatus, setPageStatus] = useState('loading')
+
+  /* edit form */
+  const [editing,          setEditing]          = useState(false)
+  const [editVisitedAt,    setEditVisitedAt]    = useState('')
+  const [editNotes,        setEditNotes]        = useState('')
+  const [fieldErrors,      setFieldErrors]      = useState({})
+  const [apiError,         setApiError]         = useState(null)
+  const [saving,           setSaving]           = useState(false)
+
+  /* diagnosis */
+  const [diagnosisInput,   setDiagnosisInput]   = useState('')
+  const [savingDiagnosis,  setSavingDiagnosis]  = useState(false)
+
+  /* billing */
+  const [feeInput,        setFeeInput]        = useState('')
+  const [savingFee,       setSavingFee]       = useState(false)
+  const [feeSaved,        setFeeSaved]        = useState(false)
+  const [completing,      setCompleting]      = useState(false)
+  const [confirmComplete, setConfirmComplete] = useState(false)
+
+  /* payment status */
+  const [paymentStatus,  setPaymentStatus]  = useState('unpaid')
+  const [amountPaid,     setAmountPaid]     = useState('')
+  const [paymentNotes,   setPaymentNotes]   = useState('')
+  const [paymentMethod,  setPaymentMethod]  = useState('cash')
+  const [savingPayment,  setSavingPayment]  = useState(false)
+
+  /* procedure charges */
+  const [charges,       setCharges]       = useState([])
+  const [chargeDesc,    setChargeDesc]    = useState('')
+  const [chargeAmt,     setChargeAmt]     = useState('')
+  const [addingCharge,  setAddingCharge]  = useState(false)
+  const [templates,     setTemplates]     = useState([])
+
+  /* follow-up */
+  const [followupDate,   setFollowupDate]   = useState('')
+  const [followupNotes,  setFollowupNotes]  = useState('')
+  const [savingFollowup, setSavingFollowup] = useState(false)
+  const [followupSaved,  setFollowupSaved]  = useState(false)
+
+  const feeSavedTimerRef      = useRef(null)
+  const followupSavedTimerRef = useRef(null)
+
+  /* medical certificate modal */
+  const [certModal,     setCertModal]     = useState(false)
+  const [certType,      setCertType]      = useState('fitness')
+  const [certPurpose,   setCertPurpose]   = useState('')
+  const [certValidFrom, setCertValidFrom] = useState('')
+  const [certValidUntil,setCertValidUntil]= useState('')
+  const [certNotes,     setCertNotes]     = useState('')
+  const [certSaving,    setCertSaving]    = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    getVisit(visitId)
+      .then(({ data }) => {
+        if (!cancelled) {
+          const v = data
+          setVisit(v)
+          const fee = v.consultation_fee
+          setFeeInput(fee > 0 ? String(fee) : '')
+          setPaymentStatus(v.payment_status ?? 'unpaid')
+          setAmountPaid(v.amount_paid > 0 ? String(v.amount_paid) : '')
+          setPaymentNotes(v.payment_notes ?? '')
+          setPaymentMethod(v.payment_method ?? 'cash')
+          setFollowupDate(v.followup_date ?? '')
+          setFollowupNotes(v.followup_notes ?? '')
+          setDiagnosisInput(v.diagnosis ?? '')
+          setPageStatus('done')
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setPageStatus(err.response?.status === 404 ? 'not-found' : 'error')
+      })
+    listVisitCharges(visitId).then(r => { if (!cancelled) setCharges(r.data.data ?? []) }).catch(() => {})
+    listFeeTemplates().then(r => { if (!cancelled) setTemplates(r.data ?? []) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [visitId])
+
+  useEffect(() => () => {
+    clearTimeout(feeSavedTimerRef.current)
+    clearTimeout(followupSavedTimerRef.current)
+  }, [])
+
+  function startEdit() {
+    setEditVisitedAt(isoToLocal(visit.visited_at))
+    setEditNotes(visit.consultation_notes ?? '')
+    setFieldErrors({})
+    setApiError(null)
+    setEditing(true)
+  }
+
+  async function handleSaveDiagnosis() {
+    const trimmed = diagnosisInput.trim()
+    if (trimmed === (visit.diagnosis ?? '')) return
+    setSavingDiagnosis(true)
+    try {
+      const { data } = await saveDiagnosis(visitId, trimmed || null)
+      setVisit(data)
+    } catch {
+      toast.error('Could not save diagnosis — try again.')
+    } finally {
+      setSavingDiagnosis(false)
+    }
+  }
+
+  async function cancelEdit() {
+    const changed = editNotes !== (visit.consultation_notes ?? '') ||
+      editVisitedAt !== isoToLocal(visit.visited_at) ||
+      diagnosisInput.trim() !== (visit.diagnosis ?? '')
+    if (changed) {
+      const ok = await confirmDiscard()
+      if (!ok) return
+    }
+    setEditing(false)
+    setFieldErrors({})
+    setApiError(null)
+  }
+
+  async function handleSave(e) {
+    e.preventDefault()
+    if (!editVisitedAt) {
+      setFieldErrors({ visitedAt: 'Visit date and time is required.' })
+      return
+    }
+    setSaving(true)
+    setApiError(null)
+    setFieldErrors({})
+    try {
+      const { data } = await updateVisit(visitId, {
+        visited_at:         new Date(editVisitedAt).toISOString(),
+        consultation_notes: editNotes.trim() || null,
+        diagnosis:          diagnosisInput.trim() || null,
+      })
+      setVisit(data)
+      setEditing(false)
+      toast.success('Visit updated')
+    } catch (err) {
+      const body = err.response?.data
+      if (err.response?.status === 422 && body?.errors) {
+        const errs = {}
+        Object.entries(body.errors).forEach(([k, msgs]) => { errs[k] = Array.isArray(msgs) ? msgs[0] : msgs })
+        setFieldErrors(errs)
+      } else {
+        setApiError(body?.message ?? 'Could not save changes — please try again.')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleSaveFee() {
+    const feeErr = validateFee(feeInput)
+    if (feeErr) { toast.error(feeErr); return }
+    setSavingFee(true)
+    setFeeSaved(false)
+    try {
+      const fee = feeInput ? parseFloat(feeInput) : 0
+      const { data } = await saveFee(visitId, fee)
+      setVisit(data)
+      setFeeSaved(true)
+      if (feeSavedTimerRef.current) clearTimeout(feeSavedTimerRef.current)
+      feeSavedTimerRef.current = setTimeout(() => setFeeSaved(false), 2000)
+    } catch {
+      toast.error('Could not save fee — try again.')
+    } finally {
+      setSavingFee(false)
+    }
+  }
+
+  async function handleSavePayment() {
+    if (paymentStatus === 'partial') {
+      const amt = parseFloat(amountPaid || '0')
+      if (isNaN(amt) || amt <= 0) { toast.error('Enter the amount paid.'); return }
+      const fee = parseFloat(feeInput || '0') || 0
+      if (fee > 0 && amt > fee) { toast.error('Amount paid cannot exceed the consultation fee.'); return }
+    }
+    setSavingPayment(true)
+    try {
+      const { data } = await recordVisitPayment(visitId, {
+        payment_status:  paymentStatus,
+        amount_paid:     paymentStatus === 'paid'
+          ? parseFloat(feeInput || '0') || 0
+          : paymentStatus === 'partial'
+            ? parseFloat(amountPaid || '0') || 0
+            : 0,
+        payment_notes:  paymentNotes.trim() || null,
+        payment_method: paymentMethod || null,
+      })
+      setVisit(data)
+      setPaymentStatus(data.payment_status)
+      toast.success('Payment status saved')
+    } catch {
+      toast.error('Could not save payment — try again.')
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
+  async function handleAddCharge() {
+    const amt = parseFloat(chargeAmt)
+    if (!chargeDesc.trim()) { toast.error('Description is required.'); return }
+    if (isNaN(amt) || amt <= 0) { toast.error('Amount must be greater than 0.'); return }
+    setAddingCharge(true)
+    try {
+      const res = await addVisitCharge(visitId, { description: chargeDesc.trim(), amount: amt })
+      setCharges(prev => [...prev, res.data.data])
+      setChargeDesc('')
+      setChargeAmt('')
+    } catch { toast.error('Could not add charge.') }
+    finally { setAddingCharge(false) }
+  }
+
+  async function handleDeleteCharge(chargeId) {
+    try {
+      await deleteVisitCharge(chargeId, visitId)
+      setCharges(prev => prev.filter(c => c.id !== chargeId))
+    } catch { toast.error('Could not remove charge.') }
+  }
+
+  async function handleSaveFollowup() {
+    if (followupDate) {
+      const year = parseInt(followupDate.slice(0, 4), 10)
+      if (year < 2000 || year > 2099) {
+        toast.error('Please enter a valid year between 2000 and 2099.')
+        return
+      }
+      const todayStr = new Date().toISOString().split('T')[0]
+      if (followupDate < todayStr) {
+        toast.error('Follow-up date must be today or in the future.')
+        return
+      }
+    }
+    setSavingFollowup(true)
+    try {
+      const updated = await updateFollowup(visitId, followupDate || null, followupNotes.trim() || null)
+      setVisit(updated)
+      setFollowupSaved(true)
+      if (followupSavedTimerRef.current) clearTimeout(followupSavedTimerRef.current)
+      followupSavedTimerRef.current = setTimeout(() => setFollowupSaved(false), 2000)
+      toast.success(followupDate ? 'Follow-up scheduled' : 'Follow-up cleared')
+    } catch {
+      toast.error('Could not save follow-up')
+    } finally {
+      setSavingFollowup(false)
+    }
+  }
+
+  async function handleComplete() {
+    setCompleting(true)
+    setConfirmComplete(false)
+    try {
+      const fee = feeInput ? parseFloat(feeInput) : null
+      const { data } = await completeVisit(visitId, fee)
+      setVisit(data)
+      toast.success('Visit completed', { description: 'Invoice recorded.', duration: 4000 })
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Could not complete visit — try again.')
+    } finally {
+      setCompleting(false)
+    }
+  }
+
+  function openCertModal() {
+    setCertType('fitness')
+    setCertPurpose('')
+    setCertValidFrom('')
+    setCertValidUntil('')
+    setCertNotes('')
+    setCertModal(true)
+  }
+
+  async function handleGenerateCert() {
+    setCertSaving(true)
+    try {
+      const { data } = await createCertificate({
+        patient_id:  visit.patient?.id ?? 0,
+        visit_id:    Number(visitId),
+        cert_type:   certType,
+        purpose:     certPurpose.trim() || null,
+        valid_from:  certValidFrom || null,
+        valid_until: certValidUntil || null,
+        notes:       certNotes.trim() || null,
+      })
+      setCertModal(false)
+      navigate(`/certificates/${data.id}/print`)
+    } catch {
+      toast.error('Could not generate certificate — try again.')
+    } finally {
+      setCertSaving(false)
+    }
+  }
+
+  /* ── Loading / error screens ─────────────────────────────────────────── */
+
+  if (pageStatus === 'loading') {
+    return <PageLoader />
+  }
+  if (pageStatus === 'not-found') return <div className="card state-panel">Visit not found.</div>
+  if (pageStatus === 'error')     return <div className="card state-panel">Could not load visit.</div>
+
+  const isOpen      = (visit.status ?? 'open') === 'open'
+  const isCompleted = visit.status === 'completed'
+
+  const consultFee    = parseFloat(feeInput || '0') || 0
+  const medTotal      = visit.medicine_total ?? 0
+  const chargesTotal  = charges.reduce((s, c) => s + parseFloat(c.amount || 0), 0)
+  const hasPharmacy   = medTotal > 0
+
+  return (
+    <div>
+      <button className="btn-link detail-back" onClick={() => navigate(-1)}>
+        ← Back
+      </button>
+
+      {/* Header card */}
+      <div className="card detail-header-card">
+        <div
+          className="detail-avatar"
+          style={{ background: avatarColor(visit.patient?.name), color: '#fff' }}
+        >
+          {(visit.patient?.name?.[0] ?? '?').toUpperCase()}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 className="detail-name">{visit.patient?.name ?? '—'}</h2>
+          <div className="detail-sub">{fmtDateTime(visit.visited_at)}</div>
+          {visit.doctor && (
+            <div className="visit-attending">{doctorLabel(visit.doctor.name)}</div>
+          )}
+        </div>
+        <div className="detail-actions" style={{ alignItems: 'center', gap: '8px' }}>
+          <span className={`vst-status-badge vst-status-badge--${visit.status ?? 'open'}`}>
+            {isCompleted ? 'Completed' : 'Open'}
+          </span>
+          {!editing && isOpen && (
+            <>
+              <button className="btn-secondary" onClick={startEdit}>Edit</button>
+              <button className="btn-secondary" onClick={openCertModal} title="Generate medical certificate">
+                Certificate
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => navigate(`/visits/${visitId}/prescriptions/new`)}
+              >
+                + Prescription
+              </button>
+            </>
+          )}
+          {!editing && isCompleted && (
+            <button className="btn-secondary" onClick={openCertModal} title="Generate medical certificate">
+              Certificate
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Completed banner */}
+      {isCompleted && (
+        <div className="vst-completed-banner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Visit completed — records are locked
+        </div>
+      )}
+
+      {/* API error */}
+      {apiError && (
+        <div className="form-alert danger" style={{ marginTop: 'var(--space-md)' }}>
+          <p className="form-alert-body">{apiError}</p>
+        </div>
+      )}
+
+      {/* Consultation notes card */}
+      <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        {editing ? (
+          <form onSubmit={handleSave} className="form-enter">
+            <div className="form-stack">
+              <div className="field-group">
+                <label className="field-label">Visit Date &amp; Time</label>
+                <input
+                  type="datetime-local"
+                  className={`field${fieldErrors.visitedAt || fieldErrors.visited_at ? ' has-error' : ''}`}
+                  value={editVisitedAt}
+                  onChange={(e) => setEditVisitedAt(e.target.value)}
+                />
+                {(fieldErrors.visitedAt || fieldErrors.visited_at) && (
+                  <span className="field-error-msg">{fieldErrors.visitedAt ?? fieldErrors.visited_at}</span>
+                )}
+              </div>
+              <div className="field-group">
+                <label className="field-label">Consultation Notes</label>
+                <textarea
+                  className={`field visit-notes-textarea${fieldErrors.consultation_notes ? ' has-error' : ''}`}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  autoFocus
+                />
+                {fieldErrors.consultation_notes && (
+                  <span className="field-error-msg">{fieldErrors.consultation_notes}</span>
+                )}
+              </div>
+              <div className="field-group">
+                <label className="field-label">
+                  Diagnosis
+                  <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: 'var(--clr-text-muted)' }}>optional</span>
+                </label>
+                <input
+                  className="field"
+                  placeholder="e.g. Viral URTI, Type 2 DM follow-up…"
+                  value={diagnosisInput}
+                  onChange={e => setDiagnosisInput(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="visit-form-actions">
+              <button type="button" className="btn-secondary" onClick={cancelEdit} disabled={saving}>Cancel</button>
+              <button type="submit" className="btn-primary" disabled={saving}>
+                {saving ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="visit-diag-row">
+              <label className="visit-notes-section-label" style={{ marginBottom: 6, display: 'block' }}>
+                Diagnosis
+              </label>
+              <input
+                className="field"
+                placeholder={isCompleted ? '—' : 'e.g. Viral URTI, Type 2 DM follow-up…'}
+                value={diagnosisInput}
+                onChange={e => setDiagnosisInput(e.target.value)}
+                onBlur={handleSaveDiagnosis}
+                disabled={isCompleted || savingDiagnosis}
+              />
+              {savingDiagnosis && (
+                <span style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginTop: 4, display: 'block' }}>Saving…</span>
+              )}
+            </div>
+            <div style={{ marginTop: 'var(--space-md)' }}>
+              <span className="visit-notes-section-label">Consultation Notes</span>
+              {visit.consultation_notes ? (
+                <p className="visit-notes-display">{visit.consultation_notes}</p>
+              ) : (
+                <p className="visit-notes-empty">No consultation notes recorded.</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── SOAP Notes ─────────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        <span className="visit-notes-section-label" style={{ display: 'block', marginBottom: 'var(--space-md)' }}>
+          SOAP Notes
+        </span>
+        <SoapNotesSection visitId={visitId} />
+      </div>
+
+      {/* ── Follow-up ──────────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        <span className="visit-notes-section-label" style={{ display: 'block', marginBottom: 'var(--space-md)' }}>
+          Follow-up
+        </span>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 12, color: 'var(--clr-text-muted)', fontWeight: 600 }}>Follow-up Date</label>
+            <DatePicker
+              value={followupDate}
+              onChange={setFollowupDate}
+              minDate={new Date().toISOString().split('T')[0]}
+              maxDate="2099-12-31"
+              placeholder="DD/MM/YYYY"
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 200 }}>
+            <label style={{ fontSize: 12, color: 'var(--clr-text-muted)', fontWeight: 600 }}>Instructions / Reason</label>
+            <input
+              className="field"
+              placeholder="e.g. Check BP, Review reports…"
+              value={followupNotes}
+              onChange={e => setFollowupNotes(e.target.value)}
+            />
+          </div>
+          <button
+            className={`rx-action-btn${followupSaved ? ' vst-save-fee-btn--saved' : ''}`}
+            onClick={handleSaveFollowup}
+            disabled={savingFollowup}
+            style={{ marginBottom: 1 }}
+          >
+            {savingFollowup ? <Spinner size={12} /> : null}
+            {savingFollowup ? 'Saving…' : followupSaved ? '✓ Saved' : 'Save Follow-up'}
+          </button>
+          {followupDate && (
+            <button className="rx-action-btn" onClick={() => { setFollowupDate(''); setFollowupNotes('') }} style={{ marginBottom: 1, fontSize: 12 }}>
+              Clear
+            </button>
+          )}
+        </div>
+        {visit.followup_date && (
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--clr-primary)', fontWeight: 600 }}>
+            ✓ Follow-up on {new Date(visit.followup_date + 'T00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            {visit.followup_notes && ` — ${visit.followup_notes}`}
+          </div>
+        )}
+      </div>
+
+      {/* ── Visit Vitals ───────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: 'var(--space-lg)', marginTop: 'var(--space-md)' }}>
+        <VitalSignsTab patientId={visit.patient?.id ? String(visit.patient.id) : null} visitId={visitId} />
+      </div>
+
+      {/* ── Medical Certificate Modal ──────────────────────────────────── */}
+      {certModal && (
+        <div className="cert-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setCertModal(false) }}>
+          <div className="cert-modal">
+            <div className="cert-modal-header">
+              <span className="cert-modal-title">Generate Medical Certificate</span>
+              <button className="cert-modal-close" onClick={() => setCertModal(false)}>×</button>
+            </div>
+            <div className="cert-modal-body">
+
+              {/* Type selector */}
+              <div className="cert-modal-field">
+                <span className="cert-modal-label">Certificate Type</span>
+                <div className="cert-type-grid">
+                  {[
+                    { key: 'fitness',      icon: '✅', label: 'Fitness',      sub: 'Medically fit for duty/activity' },
+                    { key: 'sick_leave',   icon: '🏥', label: 'Sick Leave',   sub: 'Rest advised for given period' },
+                    { key: 'medico_legal', icon: '⚖️', label: 'Medico-Legal', sub: 'For legal or insurance use' },
+                    { key: 'custom',       icon: '📄', label: 'Custom',       sub: 'Free-text / other purpose' },
+                  ].map(t => (
+                    <button
+                      key={t.key}
+                      className={`cert-type-btn cert-type-btn--${t.key}${certType === t.key ? ' cert-type-btn--on' : ''}`}
+                      onClick={() => setCertType(t.key)}
+                    >
+                      <span className="cert-type-btn-icon">{t.icon}</span>
+                      <span className="cert-type-btn-label">{t.label}</span>
+                      <span className="cert-type-btn-sub">{t.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Purpose */}
+              {certType !== 'custom' && (
+                <div className="cert-modal-field">
+                  <label className="cert-modal-label">
+                    {certType === 'fitness'      ? 'Fit for (purpose)' :
+                     certType === 'sick_leave'   ? 'Diagnosis / reason' :
+                     certType === 'medico_legal' ? 'Findings / reason' : 'Purpose'}
+                    <span style={{ fontWeight: 400, color: 'var(--clr-text-muted)', marginLeft: 4 }}>optional</span>
+                  </label>
+                  <input
+                    className="field"
+                    placeholder={
+                      certType === 'fitness'      ? 'e.g. Employment / Sports / School admission' :
+                      certType === 'sick_leave'   ? 'e.g. Viral URTI, Fever' :
+                      'e.g. Injury examination, MLC case'
+                    }
+                    value={certPurpose}
+                    onChange={e => setCertPurpose(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Validity dates */}
+              {(certType === 'sick_leave' || certType === 'fitness') && (
+                <div className="cert-modal-field">
+                  <label className="cert-modal-label">
+                    {certType === 'sick_leave' ? 'Rest Period' : 'Valid Period'}
+                    <span style={{ fontWeight: 400, color: 'var(--clr-text-muted)', marginLeft: 4 }}>optional</span>
+                  </label>
+                  <div className="cert-date-row">
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginBottom: 3 }}>From</div>
+                      <input type="date" className="field" value={certValidFrom} onChange={e => setCertValidFrom(e.target.value)} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--clr-text-muted)', marginBottom: 3 }}>Until</div>
+                      <input type="date" className="field" value={certValidUntil} onChange={e => setCertValidUntil(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes / custom content */}
+              <div className="cert-modal-field">
+                <label className="cert-modal-label">
+                  {certType === 'custom' ? 'Certificate Content' : 'Additional Notes'}
+                  {certType !== 'custom' && <span style={{ fontWeight: 400, color: 'var(--clr-text-muted)', marginLeft: 4 }}>optional</span>}
+                </label>
+                <textarea
+                  className="field"
+                  rows={certType === 'custom' ? 5 : 2}
+                  placeholder={
+                    certType === 'custom'
+                      ? 'Write the full certificate text here…'
+                      : 'Any additional clinical notes to include…'
+                  }
+                  value={certNotes}
+                  onChange={e => setCertNotes(e.target.value)}
+                />
+              </div>
+
+            </div>
+            <div className="cert-modal-footer">
+              <button className="btn-secondary" onClick={() => setCertModal(false)} disabled={certSaving}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={handleGenerateCert} disabled={certSaving}>
+                {certSaving ? 'Generating…' : 'Generate & Print'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Billing / Invoice card ─────────────────────────────────────── */}
+      <div className="card vst-billing-card" style={{ marginTop: 'var(--space-md)' }}>
+
+        <div className="vst-billing-head">
+          <span className="vst-billing-head-label">Billing &amp; Invoice</span>
+          {isCompleted && visit.invoiced_at && (
+            <span className="vst-billing-head-date">Completed {fmtDateTime(visit.invoiced_at)}</span>
+          )}
+        </div>
+
+        <div className="vst-billing-body">
+
+          {/* Consultation fee */}
+          <div className="vst-billing-row">
+            <span className="vst-billing-row-label">Consultation Fee</span>
+            {isOpen ? (
+              <div className="vst-fee-row">
+                <div className="vst-billing-fee-wrap">
+                  <span className="vst-billing-currency">₹</span>
+                  <input
+                    className="vst-billing-fee-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={feeInput}
+                    onChange={e => { setFeeInput(e.target.value); setFeeSaved(false) }}
+                  />
+                </div>
+                <button
+                  className={`vst-save-fee-btn${feeSaved ? ' vst-save-fee-btn--saved' : ''}`}
+                  onClick={handleSaveFee}
+                  disabled={savingFee}
+                  title="Save consultation fee"
+                >
+                  {savingFee ? <Spinner size={12} /> : feeSaved ? <IconCheck size={12} /> : <IconSave />}
+                  {savingFee ? 'Saving…' : feeSaved ? 'Saved' : 'Save'}
+                </button>
+              </div>
+            ) : (
+              <span className="vst-billing-row-value">₹{fmtPrice(visit.consultation_fee)}</span>
+            )}
+          </div>
+
+          {/* Procedure Charges */}
+          {(charges.length > 0 || isOpen) && (
+            <div className="vst-charges-section">
+              <div className="vst-charges-head">Procedure Charges</div>
+              {charges.length > 0 && (
+                <div className="vst-charge-list">
+                  {charges.map(c => (
+                    <div key={c.id} className="vst-charge-item">
+                      <span className="vst-charge-desc">{c.description}</span>
+                      <span className="vst-charge-amount">₹{fmtPrice(c.amount)}</span>
+                      {isOpen && (
+                        <button
+                          className="vst-charge-del"
+                          onClick={() => handleDeleteCharge(c.id)}
+                          title="Remove charge"
+                        >×</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isOpen && (
+                <>
+                  <div className="vst-charge-add-form">
+                    <input
+                      className="field vst-charge-desc-input"
+                      placeholder="Description (e.g. ECG, X-ray)"
+                      value={chargeDesc}
+                      onChange={e => setChargeDesc(e.target.value)}
+                    />
+                    <input
+                      className="field vst-charge-amt-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="₹ Amount"
+                      value={chargeAmt}
+                      onChange={e => setChargeAmt(e.target.value)}
+                    />
+                    <button
+                      className="rx-action-btn"
+                      onClick={handleAddCharge}
+                      disabled={addingCharge}
+                    >
+                      {addingCharge ? 'Adding…' : '+ Add'}
+                    </button>
+                  </div>
+                  {templates.length > 0 && (
+                    <div className="vst-charge-tmpl-row">
+                      {templates.map(t => (
+                        <button
+                          key={t.id}
+                          className="vst-charge-tmpl-btn"
+                          onClick={() => { setChargeDesc(t.name); setChargeAmt(String(t.amount)) }}
+                        >
+                          {t.name} ₹{t.amount}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="vst-billing-total-row">
+            <span className="vst-billing-total-label">Total (Consultation)</span>
+            <span className="vst-billing-total-amount">
+              ₹{fmtPrice(isCompleted ? (parseFloat(visit.consultation_fee ?? 0) + chargesTotal) : (consultFee + chargesTotal))}
+            </span>
+          </div>
+
+          {hasPharmacy && (
+            <div className="vst-billing-pharmacy-note">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+              </svg>
+              Pharmacy billed separately — ₹{fmtPrice(medTotal)} via pharmacy invoice
+            </div>
+          )}
+        </div>
+
+        {/* ── Payment Status ──────────────────────────────────────── */}
+        <div className="vst-payment-section">
+          <div className="vst-payment-head">
+            <span className="vst-payment-label">Payment Status</span>
+            <div className="vst-payment-pills">
+              {['unpaid', 'partial', 'paid'].map(s => (
+                <button
+                  key={s}
+                  className={`vst-payment-pill vst-payment-pill--${s}${paymentStatus === s ? ' vst-payment-pill--on' : ''}`}
+                  onClick={() => setPaymentStatus(s)}
+                >
+                  {s === 'unpaid' ? 'Unpaid' : s === 'partial' ? 'Partial' : 'Paid'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {paymentStatus === 'partial' && (
+            <div className="vst-payment-partial-row">
+              <span className="vst-payment-partial-label">Amount Paid</span>
+              <div className="vst-billing-fee-wrap" style={{ width: '140px' }}>
+                <span className="vst-billing-currency">₹</span>
+                <input
+                  className="vst-billing-fee-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amountPaid}
+                  onChange={e => setAmountPaid(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="vst-method-row">
+            <span className="vst-method-label">Via</span>
+            <div className="vst-method-pills">
+              {[['cash','Cash'],['upi','UPI'],['card','Card'],['insurance','Insurance']].map(([val, label]) => (
+                <button
+                  key={val}
+                  className={`vst-method-pill${paymentMethod === val ? ' vst-method-pill--on' : ''}`}
+                  onClick={() => setPaymentMethod(val)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <textarea
+            className="field vst-payment-notes-input"
+            rows={1}
+            placeholder="Payment notes (optional)…"
+            value={paymentNotes}
+            onChange={e => setPaymentNotes(e.target.value)}
+          />
+
+          <button
+            className="rx-action-btn vst-save-payment-btn"
+            onClick={handleSavePayment}
+            disabled={savingPayment}
+          >
+            {savingPayment ? <Spinner size={12} /> : null}
+            {savingPayment ? 'Saving…' : 'Save Payment'}
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className="vst-billing-actions">
+
+          {/* Doctor invoice — always available */}
+          <button
+            className="rx-action-btn vst-invoice-btn"
+            onClick={() => navigate(`/visits/${visitId}/invoice`)}
+          >
+            <IconPrint />
+            Doctor Invoice
+          </button>
+
+          {/* Complete visit */}
+          {isOpen && !confirmComplete && (
+            <button
+              className="rx-action-btn"
+              onClick={() => setConfirmComplete(true)}
+              disabled={completing}
+            >
+              <IconCheck size={12} />
+              Complete Visit
+            </button>
+          )}
+
+          {isOpen && confirmComplete && (
+            <div className="rx-send-confirm">
+              <span className="rx-send-confirm-label">Mark visit as complete?</span>
+              <button className="rx-action-btn rx-action-btn--primary" onClick={handleComplete} disabled={completing}>
+                {completing ? <Spinner size={12} /> : null}
+                {completing ? 'Completing…' : 'Yes, Complete'}
+              </button>
+              <button className="rx-action-btn" onClick={() => setConfirmComplete(false)} disabled={completing}>
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {isCompleted && (
+            <div className="pharma-done-pill">
+              <IconCheck size={13} />
+              Visit Complete
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

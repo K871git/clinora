@@ -320,7 +320,7 @@ function CategoryCombobox({ value, onChange, categories = [] }) {
 let _rowSeq = 0
 function makeRow() {
   _rowSeq += 1
-  return { id: _rowSeq, name: '', generic_name: '', category: '', unit: '', quantity: '', price: '' }
+  return { id: _rowSeq, name: '', generic_name: '', category: '', unit: '', quantity: '', price: '', expiry_date: '' }
 }
 
 function AddMedicineModal({ onClose, onDone, categories = [], existingNames = [] }) {
@@ -360,8 +360,9 @@ function AddMedicineModal({ onClose, onDone, categories = [], existingNames = []
           generic_name: r.generic_name.trim() || null,
           category:     r.category.trim()     || null,
           unit:         r.unit.trim()         || null,
-          quantity:     r.quantity !== '' ? parseInt(r.quantity, 10) : 0,
-          price:        r.price    !== '' ? parseFloat(r.price)     : null,
+          quantity:     r.quantity  !== '' ? parseInt(r.quantity, 10) : 0,
+          price:        r.price     !== '' ? parseFloat(r.price)     : null,
+          expiry_date:  r.expiry_date?.trim() || null,
         })
       ))
       toast.success(
@@ -395,6 +396,7 @@ function AddMedicineModal({ onClose, onDone, categories = [], existingNames = []
               <span className="mlam-lbl mlam-c-unit">Unit / Form</span>
               <span className="mlam-lbl mlam-c-qty">Qty</span>
               <span className="mlam-lbl mlam-c-price">Price (₹)</span>
+              <span className="mlam-lbl mlam-c-expiry">Expiry</span>
               <span className="mlam-c-del" />
             </div>
 
@@ -456,6 +458,13 @@ function AddMedicineModal({ onClose, onDone, categories = [], existingNames = []
                     placeholder="0.00"
                     value={row.price}
                     onChange={e => updateRow(row.id, 'price', e.target.value)}
+                  />
+
+                  <input
+                    className="mlam-input mlam-c-expiry"
+                    type="date"
+                    value={row.expiry_date}
+                    onChange={e => updateRow(row.id, 'expiry_date', e.target.value)}
                   />
 
                   <div className="mlam-c-del">
@@ -791,11 +800,18 @@ export default function MedicinesPage() {
           (m.category ?? '').toLowerCase().includes(q)
         )
       : medicines
-    return [...list].sort((a, b) => {
-      const aLow = (a.quantity ?? 0) < 10 ? 0 : 1
-      const bLow = (b.quantity ?? 0) < 10 ? 0 : 1
-      return aLow - bLow
-    })
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    function priority(m) {
+      if (m.expiry_date) {
+        const [y, mo, d] = m.expiry_date.slice(0, 10).split('-').map(Number)
+        if (new Date(y, mo - 1, d) < today) return 0
+      }
+      const qty = m.quantity ?? 0
+      if (qty === 0) return 1
+      if (qty < 10)  return 2
+      return 3
+    }
+    return [...list].sort((a, b) => priority(a) - priority(b))
   }, [medicines, search])
 
   function openAdd() {
@@ -869,11 +885,13 @@ export default function MedicinesPage() {
 
   function expiryStatus(dateStr) {
     if (!dateStr) return null
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const exp   = new Date(dateStr); exp.setHours(0, 0, 0, 0)
+    // Parse as local date (split avoids UTC midnight timezone shift in IST)
+    const [y, mo, d] = dateStr.slice(0, 10).split('-').map(Number)
+    const today    = new Date(); today.setHours(0, 0, 0, 0)
+    const exp      = new Date(y, mo - 1, d)
     const daysLeft = Math.floor((exp - today) / 86400000)
-    const label = exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
-    if (daysLeft < 0)  return { mod: 'expired', label: 'Expired' }
+    const label    = exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+    if (daysLeft < 0)   return { mod: 'expired', label: 'Expired' }
     if (daysLeft <= 30) return { mod: 'soon',    label }
     return { mod: 'ok', label }
   }

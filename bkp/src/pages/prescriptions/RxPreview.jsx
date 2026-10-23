@@ -1,0 +1,226 @@
+import '../../styles/rx-preview.css'
+import { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import DefaultPrescriptionTemplate from './DefaultPrescriptionTemplate'
+
+const isPdf = name => (name ?? '').toLowerCase().endsWith('.pdf')
+
+// Horizontal: % of A4 width — corrects for iframe PDF display scaling (720px not 794px)
+// Vertical: direct mm — CSS mm at 96dpi matches PDF rendering scale (same as PrintPrescriptionPage)
+const px = mm => `${(mm / 210) * 100}%`
+const py = mm => `${mm - 5}mm`   // -5mm corrects CSS 96dpi vs PDF iframe display scale gap
+const pw = mm => `${(mm / 210) * 100}%`
+
+export default function RxPreview({
+  onClose, patient, medicines, doctorNotes, fee,
+  lang, langLabels: L, doctorName, clinicName,
+  vitals,
+  templateUrl,    // asset:// URL for display
+  templatePath,   // absolute file path for scan_template_layout
+  clinicSettings, // { clinic, watermark }
+}) {
+  const [layout, setLayout] = useState(null)
+
+  const d = new Date()
+  const dd   = String(d.getDate()).padStart(2,'0')
+  const mm   = String(d.getMonth()+1).padStart(2,'0')
+  const yyyy = d.getFullYear()
+
+  const filled = medicines.filter(m => m.name.trim())
+
+  // Scan PDF layout to get field positions in mm
+  useEffect(() => {
+    if (!templatePath || !isPdf(templatePath)) { setLayout(null); return }
+    invoke('scan_template_layout', { path: templatePath })
+      .then(l => setLayout(l))
+      .catch(() => setLayout(null))
+  }, [templatePath])
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  /* Build prescription object in DB format for DefaultPrescriptionTemplate */
+  const livePrescription = {
+    patient: {
+      name:    patient?.name    || '',
+      age:     patient?.age     || null,
+      gender:  patient?.gender  || null,
+      mobile:  patient?.mobile  || null,
+      address: patient?.address || null,
+    },
+    prescribed_at: new Date().toISOString(),
+    visit: vitals || null,
+    items: filled.map((m, i) => ({
+      id:            i,
+      medicine_name: m.name,
+      dosage: [
+        m.morning   ? String(Number(m.dosePerIntake) || 1) : '0',
+        m.afternoon ? String(Number(m.dosePerIntake) || 1) : '0',
+        m.evening   ? String(Number(m.dosePerIntake) || 1) : '0',
+      ].join('-') + (m.afterMeal ? ' After meal' : m.beforeMeal ? ' Before meal' : ''),
+      duration:     m.days  ? `${m.days} days` : '',
+      instructions: m.notes || '',
+    })),
+    doctor_notes: doctorNotes || '',
+  }
+
+  const cl = clinicSettings?.clinic ?? {}
+  const previewClinic = {
+    name:          cl.name               || clinicName  || '',
+    doctorName:    cl.doctor_name        || doctorName  || '',
+    qualification: cl.qualification      || '',
+    regNo:         cl.registration_number || '',
+    speciality:    cl.speciality         || '',
+    institution:   cl.institution        || '',
+    address:       cl.address            || '',
+    contact:       cl.contact            || '',
+    timing:        cl.clinic_timing      || '',
+    days:          cl.clinic_days        || '',
+    logoUrl:       cl.logo_url           || null,
+  }
+
+  return (
+    <div className="rxp-overlay" onClick={onClose}>
+      <div className={`rxp-sheet${!templateUrl ? ' rxp-sheet--a4' : ''}`} onClick={e => e.stopPropagation()}>
+
+        {/* Controls */}
+        <div className="rxp-controls no-print">
+          <button className="rxp-close-btn" onClick={onClose}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Close
+          </button>
+          <button className="rxp-print-btn" onClick={() => window.print()}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"/>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Print
+          </button>
+        </div>
+
+        {/* No custom template — render default HTML prescription */}
+        {!templateUrl ? (
+          <div className="rxp-paper">
+            <DefaultPrescriptionTemplate
+              clinic={previewClinic}
+              watermark={clinicSettings?.watermark}
+              prescription={livePrescription}
+              lang={lang || 'en'}
+            />
+          </div>
+
+        ) : (
+          <div className="rxp-paper" id="rx-print-area">
+
+            {/* Template — full page background */}
+            {isPdf(templatePath)
+              ? <iframe src={templateUrl} title="Prescription" className="rxp-tpl-bg rxp-tpl-bg--pdf" />
+              : <img    src={templateUrl} alt="Prescription"   className="rxp-tpl-bg rxp-tpl-bg--img" />
+            }
+
+            {/* Data overlaid at scanned mm positions (PDF) or padded fallback (image) */}
+            {layout ? (
+              /* ── Absolute mm overlay — from scan_template_layout ── */
+              <div className="rxp-on-tpl rxp-on-tpl--abs">
+
+                {/* Patient name at Name field */}
+                <span className="rxp-tpl-val" style={{ top: py(layout.name_y), left: px(layout.name_x) }}>
+                  {patient?.name || '—'}
+                </span>
+
+                {/* Date at Date field — three parts separated by template's "/" chars */}
+                {(() => {
+                  const dy = layout.date_y
+                  const dx = layout.date_x
+                  const SLOT = layout.date_slot_w ?? 10.5
+                  return (
+                    <>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx) }}>{dd}</span>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx + SLOT) }}>{mm}</span>
+                      <span className="rxp-tpl-val" style={{ top: py(dy), left: px(dx + SLOT * 2) }}>{yyyy}</span>
+                    </>
+                  )
+                })()}
+
+                {/* Medicines in the Rx area */}
+                <div style={{ position: 'absolute', top: py(layout.meds_start_y), left: px(layout.meds_x), width: pw(layout.meds_w ?? 130) }}>
+                  <RxMedList filled={filled} L={L} />
+                  {doctorNotes?.trim() && (
+                    <div className="rxp-tpl-notes">{doctorNotes}</div>
+                  )}
+                </div>
+
+              </div>
+
+            ) : (
+              /* ── Fallback: CSS padding for image templates ── */
+              <div className="rxp-on-tpl rxp-on-tpl--pad">
+
+                <div className="rxp-pt-row">
+                  <span className="rxp-tpl-val">{patient?.name || '—'}</span>
+                  <span className="rxp-tpl-val">{dd}  {mm}  {yyyy}</span>
+                </div>
+
+                <RxMedList filled={filled} L={L} />
+
+                {doctorNotes?.trim() && (
+                  <div className="rxp-tpl-notes">{doctorNotes}</div>
+                )}
+
+              </div>
+            )}
+
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function RxMedList({ filled, L }) {
+  if (!filled.length) return <p className="rxp-empty-meds">No medicines added.</p>
+  return (
+    <table className="rxp-med-table">
+      <tbody>
+        {filled.map((m) => {
+          const timingParts = [
+            m.morning   && L.morning,
+            m.afternoon && L.afternoon,
+            m.evening   && L.evening,
+          ].filter(Boolean)
+          const meal = m.beforeMeal ? L.beforeMeal : m.afterMeal ? L.afterMeal : '—'
+          const dose = Number(m.dosePerIntake) || 1
+          const qty  = m.quantity || (timingParts.length > 0 && m.days
+            ? String(timingParts.length * dose * Number(m.days)) : '')
+          return (
+            <tr key={m.id} className="rxp-med-tr">
+              <td className="rxp-td rxp-td--name">
+                <span className="rxp-med-name">{m.name}</span>
+                {qty && <div className="rxp-med-qty">Qty: {qty} tab</div>}
+                {m.notes?.trim() && <div className="rxp-med-note">↳ {m.notes}</div>}
+              </td>
+              <td className="rxp-td rxp-td--timing">
+                {timingParts.length > 0 ? timingParts.join(' + ') : '—'}
+              </td>
+              <td className="rxp-td rxp-td--meal">{meal}</td>
+              <td className="rxp-td rxp-td--days">
+                {m.days ? <>{m.days}<div className="rxp-days-label">{L.days}</div></> : '—'}
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+}

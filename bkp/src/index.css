@@ -1,0 +1,1534 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Playfair+Display:ital,wght@0,700;0,800;1,500;1,700&display=swap');
+@import "tailwindcss";
+
+/*
+ * Clinora Design System — CSS Custom Properties
+ *
+ * These tokens define the visual foundation: colors, spacing,
+ * radius, shadows, and typography. All custom components reference
+ * these variables so changing a token updates the whole UI.
+ *
+ * Tailwind utilities handle layout, padding, and responsive behavior.
+ * Write custom CSS only when Tailwind utilities are insufficient.
+ */
+
+/* ─── Light theme (default) ─────────────────────────────────────────── */
+:root {
+  /* Brand — primary action color */
+  --clr-primary: #2563eb;
+  --clr-primary-hover: #1d4ed8;
+  --clr-primary-subtle: #eff6ff;
+
+  /* Page surfaces */
+  --clr-bg: #f8fafc;
+  --clr-surface: #ffffff;
+  --clr-surface-hover: #f1f5f9;
+  --clr-surface-raised: #f8fafc;
+  --clr-bg-subtle: #f1f5f9;
+
+  /* Borders */
+  --clr-border: #e2e8f0;
+  --clr-border-subtle: #f1f5f9;
+
+  /* Typography */
+  --clr-text: #0f172a;
+  --clr-text-muted: #64748b;
+  --clr-text-inverse: #ffffff;
+
+  /* Status */
+  --clr-success: #16a34a;
+  --clr-success-bg: #f0fdf4;
+  --clr-warning: #d97706;
+  --clr-warning-bg: #fffbeb;
+  --clr-danger: #dc2626;
+  --clr-danger-bg: #fef2f2;
+  --clr-info: #0891b2;
+  --clr-info-bg: #ecfeff;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.09), 0 4px 6px -2px rgba(0,0,0,0.05);
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Spacing scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Typography — font stacks */
+  --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+
+  /* Typography — size scale */
+  --text-xs:   11px;
+  --text-sm:   12.5px;
+  --text-base: 14px;
+  --text-md:   15px;
+  --text-lg:   17px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+  --text-3xl:  30px;
+
+  /* Typography — weight */
+  --fw-normal:    400;
+  --fw-medium:    500;
+  --fw-semibold:  600;
+  --fw-bold:      700;
+  --fw-extrabold: 800;
+
+  /* Typography — line height */
+  --lh-tight:   1.25;
+  --lh-snug:    1.4;
+  --lh-base:    1.6;
+  --lh-relaxed: 1.75;
+
+  /* Additional tokens */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.10), 0 10px 10px -5px rgba(0,0,0,0.04);
+  --transition-fast: 0.12s cubic-bezier(0.16,1,0.3,1);
+  --transition-base: 0.2s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* ─── Dark theme (follows system preference) ────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --clr-primary: #3b82f6;
+    --clr-primary-hover: #2563eb;
+    --clr-primary-subtle: #1e3a5f;
+
+    --clr-bg: #0f172a;
+    --clr-surface: #1e293b;
+    --clr-surface-hover: #273548;
+    --clr-surface-raised: #273548;
+    --clr-bg-subtle: rgba(255,255,255,0.04);
+
+    --clr-border: #334155;
+    --clr-border-subtle: #1e293b;
+
+    --clr-text: #f1f5f9;
+    --clr-text-muted: #94a3b8;
+    --clr-text-inverse: #0f172a;
+
+    --clr-success-bg: #052e16;
+    --clr-warning-bg: #1c1100;
+    --clr-danger-bg: #1c0a0a;
+    --clr-info-bg: #042f2e;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ─── Manual theme override ─────────────────────────────────────────── */
+html[data-theme="dark"] {
+  --clr-primary: #3b82f6;
+  --clr-primary-hover: #2563eb;
+  --clr-primary-subtle: #1e3a5f;
+  --clr-bg: #0f172a;
+  --clr-surface: #1e293b;
+  --clr-surface-hover: #273548;
+  --clr-surface-raised: #273548;
+  --clr-bg-subtle: rgba(255,255,255,0.04);
+  --clr-border: #334155;
+  --clr-border-subtle: #1e293b;
+  --clr-text: #f1f5f9;
+  --clr-text-muted: #94a3b8;
+  --clr-text-inverse: #0f172a;
+  --clr-success-bg: #052e16;
+  --clr-warning-bg: #1c1100;
+  --clr-danger-bg: #1c0a0a;
+  --clr-info-bg: #042f2e;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="light"] {
+  --clr-primary: #2563eb;
+  --clr-primary-hover: #1d4ed8;
+  --clr-primary-subtle: #eff6ff;
+  --clr-bg: #f8fafc;
+  --clr-surface: #ffffff;
+  --clr-surface-hover: #f1f5f9;
+  --clr-surface-raised: #f8fafc;
+  --clr-bg-subtle: #f1f5f9;
+  --clr-border: #e2e8f0;
+  --clr-border-subtle: #f1f5f9;
+  --clr-text: #0f172a;
+  --clr-text-muted: #64748b;
+  --clr-text-inverse: #ffffff;
+  --clr-success: #16a34a;
+  --clr-success-bg: #f0fdf4;
+  --clr-warning: #d97706;
+  --clr-warning-bg: #fffbeb;
+  --clr-danger: #dc2626;
+  --clr-danger-bg: #fef2f2;
+  --clr-info: #0891b2;
+  --clr-info-bg: #ecfeff;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.10);
+}
+
+/* ─── Pharmacy role theme ────────────────────────────────────────────── */
+/*
+ * Design intent:
+ *   Light — cool clinical gray page, white cards float above it, teal accent.
+ *   Dark  — near-black neutral page, dark navy-blue cards, teal as accent ONLY.
+ *           The previous deep-green backgrounds made everything look saturated.
+ *           Teal belongs on buttons/badges, not on every surface.
+ */
+
+html[data-role="pharmacy"][data-theme="light"] {
+  --clr-bg: #edf2f8;          /* cool blue-gray — clinical, not mint-white */
+  --clr-surface: #ffffff;
+  --clr-surface-hover: #f3f6fa;
+  --clr-surface-raised: #f3f6fa;
+  --clr-bg-subtle: #e5eaf2;
+  --clr-border: #d1d9e6;      /* slightly blue-tinted, more defined */
+  --clr-border-subtle: #e8edf5;
+  --clr-primary: #0d9488;
+  --clr-primary-hover: #0f766e;
+  --clr-primary-subtle: #e8faf8;
+}
+
+/* ── Light — card depth (white cards on #edf2f8 need shadow to lift) ─── */
+html[data-role="pharmacy"][data-theme="light"] .card,
+html[data-role="pharmacy"][data-theme="light"] .pharma-stat-card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+html[data-role="pharmacy"][data-theme="light"] .pharma-qcard,
+html[data-role="pharmacy"][data-theme="light"] .pharma-hcard {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 3px 8px rgba(15, 23, 42, 0.04);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] {
+  --clr-bg: #0d1117;          /* near-black — neutral, not green */
+  --clr-surface: #161b27;     /* dark navy-blue cards, clear contrast from bg */
+  --clr-surface-hover: #1e2636;
+  --clr-surface-raised: #1e2636;
+  --clr-bg-subtle: rgba(255,255,255,0.04);
+  --clr-border: #2d3a52;      /* slate-blue borders */
+  --clr-border-subtle: #161b27;
+  --clr-primary: #2dd4bf;     /* bright teal — accent only */
+  --clr-primary-hover: #14b8a6;
+  --clr-primary-subtle: #0c2b28;
+  --clr-text: #dce7f3;
+  --clr-text-muted: #7d8fa9;
+  --clr-success-bg: #0a2218;
+  --clr-warning-bg: #1c1200;
+  --clr-danger-bg: #1c0a0a;
+  --clr-info-bg: #071e2e;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.65);
+}
+
+/* ── Dark — card definition ──────────────────────────────────────────── */
+/* Cards need more depth definition since bg-to-surface step is subtle */
+html[data-role="pharmacy"][data-theme="dark"] .card {
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .shell-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 2px 0 28px rgba(0, 0, 0, 0.45);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .shell-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04),
+              0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Dark — queue & history card hovers ─────────────────────────────── */
+html[data-role="pharmacy"][data-theme="dark"] .pharma-qcard:hover {
+  border-color: var(--clr-primary);
+  border-left-color: var(--clr-primary);
+  box-shadow: 0 4px 20px rgba(45, 212, 191, 0.1);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .pharma-hcard:hover {
+  border-color: var(--clr-primary);
+  border-left-color: #22c55e;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Dark — queue card avatars (bright teal bg → contrast issue) ─────── */
+html[data-role="pharmacy"][data-theme="dark"] .pharma-qcard-avatar {
+  background: rgba(45, 212, 191, 0.14);
+  color: #2dd4bf;
+}
+
+/* ── Dark — section count badge (muted, not solid-bright) ───────────── */
+html[data-role="pharmacy"][data-theme="dark"] .pharma-section-hdr-count {
+  background: rgba(45, 212, 191, 0.16);
+  color: var(--clr-primary);
+}
+
+/* ── Dark — check btn filled state (bright primary bg → dark icon) ───── */
+html[data-role="pharmacy"][data-theme="dark"] .pharma-check-btn--checked {
+  color: #0c2b28;
+}
+
+/* ── Dark — action bar & timeline strip ─────────────────────────────── */
+html[data-role="pharmacy"][data-theme="dark"] .pharma-tl-strip {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .rx-hcard-actions {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── Primary action button shadow ───────────────────────────────────── */
+html[data-role="pharmacy"] .rx-action-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.38);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .rx-action-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 2px 14px rgba(45, 212, 191, 0.3);
+}
+
+/* ── Stat card — pharmacy "Total" icon uses teal (not doctor-blue) ─── */
+html[data-role="pharmacy"] .pharma-stat-card--total .pharma-stat-icon {
+  background: rgba(13,148,136,0.16);
+}
+html[data-role="pharmacy"][data-theme="dark"] .pharma-stat-card--total .pharma-stat-icon {
+  background: rgba(45,212,191,0.13);
+}
+
+/* ── Progress bar, role badge ────────────────────────────────────────── */
+html[data-role="pharmacy"] .pharma-prg-fill {
+  background: var(--clr-primary);
+}
+
+html[data-role="pharmacy"] .prf-role-badge--pharmacy {
+  background: #e8faf8;
+  color: #0d9488;
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .prf-role-badge--pharmacy {
+  background: #0c2b28;
+  color: #2dd4bf;
+}
+
+/* ─── Doctor role theme ──────────────────────────────────────────────── */
+/*
+ * Design intent:
+ *   Light — subtle cool-blue page tint, white cards, crisp blue accent.
+ *   Dark  — deep navy page, dark navy-blue cards, bright blue accent only.
+ *           Mirrors the pharmacy teal structure; swaps teal → blue.
+ */
+
+html[data-role="doctor"][data-theme="light"] {
+  --clr-bg:              #f0f4ff;   /* faint blue tint — clinical blue identity */
+  --clr-surface:         #ffffff;
+  --clr-surface-hover:   #eef2ff;
+  --clr-surface-raised:  #f5f8ff;
+  --clr-bg-subtle:       #e8eeff;
+  --clr-border:          #dae0f5;
+  --clr-border-subtle:   #eef2ff;
+  --clr-primary:         #2563eb;
+  --clr-primary-hover:   #1d4ed8;
+  --clr-primary-subtle:  #eff6ff;
+}
+
+/* ── Light — card depth (white cards need a lift off the blue-tinted bg) */
+html[data-role="doctor"][data-theme="light"] .card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 4px 12px rgba(37, 99, 235, 0.05);
+}
+
+html[data-role="doctor"][data-theme="dark"] {
+  --clr-bg:              #080e1a;   /* deep navy — not black */
+  --clr-surface:         #0f1829;   /* dark navy-blue cards */
+  --clr-surface-hover:   #162038;
+  --clr-surface-raised:  #162038;
+  --clr-bg-subtle:       rgba(96, 165, 250, 0.04);
+  --clr-border:          #1e2f50;   /* blue-tinted dark border */
+  --clr-border-subtle:   #0f1829;
+  --clr-primary:         #60a5fa;   /* brighter blue — readable on dark */
+  --clr-primary-hover:   #3b82f6;
+  --clr-primary-subtle:  #1e3a5f;
+  --clr-text:            #dce7f3;
+  --clr-text-muted:      #7d93b5;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.65);
+}
+
+/* ── Dark — card definition */
+html[data-role="doctor"][data-theme="dark"] .card {
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html[data-role="doctor"][data-theme="dark"] .shell-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 2px 0 28px rgba(0, 0, 0, 0.45);
+}
+
+html[data-role="doctor"][data-theme="dark"] .shell-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04),
+              0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Primary action button glow — blue shadow */
+html[data-role="doctor"] .rx-action-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.38);
+}
+
+html[data-role="doctor"][data-theme="dark"] .rx-action-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 2px 14px rgba(96, 165, 250, 0.3);
+}
+
+/* ── Doctor role badge */
+html[data-role="doctor"] .prf-role-badge--doctor {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+html[data-role="doctor"][data-theme="dark"] .prf-role-badge--doctor {
+  background: #1e3a5f;
+  color: #60a5fa;
+}
+
+/* ─── Base resets ───────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Hide scrollbars globally (still scrollable) ───────────────────── */
+* {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari/Opera */
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--clr-bg);
+  color: var(--clr-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-base, 14px);
+  line-height: var(--lh-base, 1.6);
+  letter-spacing: -0.009em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+  font-feature-settings: "cv02","cv03","cv04","cv11","kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Global component classes ──────────────────────────────────────── */
+
+/* Text input / textarea / select */
+.field {
+  background-color: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    border-color: var(--clr-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+
+  &::placeholder {
+    color: var(--clr-text-muted);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* Primary action button */
+.btn-primary {
+  background-color: var(--clr-primary);
+  color: var(--clr-text-inverse);
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.15s, transform 0.12s, box-shadow 0.15s;
+  white-space: nowrap;
+  width: auto;
+  letter-spacing: -0.01em;
+
+  &:hover:not(:disabled) {
+    background-color: var(--clr-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.30), 0 2px 6px rgba(59,130,246,0.15);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* Surface card */
+.card {
+  background-color: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast, 0.12s), border-color var(--transition-fast, 0.12s);
+}
+
+/* Text link button — used for secondary actions, "View all", back links */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--clr-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  white-space: nowrap;
+  line-height: inherit;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* ─── Spinner ───────────────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56vh;
+  color: var(--clr-primary);
+}
+
+/* ─── Skeleton / shimmer ─────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton-block {
+  background: linear-gradient(
+    90deg,
+    var(--clr-border) 25%,
+    var(--clr-surface-hover) 50%,
+    var(--clr-border) 75%
+  );
+  background-size: 1200px 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+[data-theme="dark"] .skeleton-block {
+  background: linear-gradient(
+    90deg,
+    #1e293b 25%,
+    #273548 50%,
+    #1e293b 75%
+  );
+  background-size: 1200px 100%;
+}
+
+.page-loader-skeleton {
+  margin-top: 4px;
+}
+
+.skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.skeleton-table-head {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--clr-border);
+  margin-bottom: 4px;
+}
+
+.skeleton-table-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--clr-border-subtle);
+  animation: skeleton-row-in 0.3s ease both;
+}
+
+.skeleton-table-row:nth-child(2) { animation-delay: 0.04s; }
+.skeleton-table-row:nth-child(3) { animation-delay: 0.08s; }
+.skeleton-table-row:nth-child(4) { animation-delay: 0.12s; }
+.skeleton-table-row:nth-child(5) { animation-delay: 0.16s; }
+.skeleton-table-row:nth-child(6) { animation-delay: 0.20s; }
+.skeleton-table-row:nth-child(7) { animation-delay: 0.24s; }
+.skeleton-table-row:nth-child(8) { animation-delay: 0.28s; }
+
+@keyframes skeleton-row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.skeleton-card {
+  padding: 20px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  background: var(--clr-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block { animation: none; }
+  .skeleton-table-row { animation: none; }
+}
+
+/* ─── Button loading state ────────────────────────────────────────────── */
+.btn-with-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+}
+
+.btn-spinner-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  animation: spinner-fade-in 0.15s ease;
+}
+
+@keyframes spinner-fade-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.btn-label-loading {
+  opacity: 0.75;
+}
+
+.btn-is-loading {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ─── Secondary button ───────────────────────────────────────────────── */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, transform 0.14s cubic-bezier(0.16,1,0.3,1), box-shadow 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--clr-surface-hover);
+    border-color: color-mix(in srgb, var(--clr-border) 60%, var(--clr-primary));
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+/* ─── Modal ──────────────────────────────────────────────────────────── */
+/* Prefixed .dlg-* to avoid collision with Bootstrap's .modal classes    */
+.dlg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+  animation: dlg-overlay-in 0.18s ease-out;
+}
+
+@keyframes dlg-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.dlg {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: dlg-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .dlg {
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+@keyframes dlg-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.dlg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.dlg-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--clr-text);
+}
+
+.dlg-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dlg-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+
+/* ─── Form layout ────────────────────────────────────────────────────── */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.field-error-msg {
+  font-size: 0.75rem;
+  color: var(--clr-danger);
+}
+
+.field.has-error {
+  border-color: var(--clr-danger);
+
+  &:focus {
+    border-color: var(--clr-danger);
+  }
+}
+
+.form-alert {
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid;
+}
+
+.form-alert.warning {
+  background: var(--clr-warning-bg);
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.form-alert.danger {
+  background: var(--clr-danger-bg);
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.form-alert-title {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 4px;
+}
+
+.form-alert-body {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+  color: var(--clr-text-muted);
+  line-height: 1.5;
+}
+
+.form-alert-body:last-child {
+  margin-bottom: 0;
+}
+
+/* ─── State panel (empty / error full-card) ──────────────────────────── */
+.state-panel {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--clr-text-muted);
+  font-size: 0.9375rem;
+}
+
+/* ─── Status badge ───────────────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.status-badge.draft {
+  background: var(--clr-info-bg);
+  color: var(--clr-info);
+  border-color: rgba(8, 145, 178, 0.2);
+}
+
+.status-badge.sent_to_pharmacy {
+  background: var(--clr-warning-bg);
+  color: var(--clr-warning);
+  border-color: rgba(217, 119, 6, 0.2);
+}
+
+.status-badge.completed {
+  background: var(--clr-success-bg);
+  color: var(--clr-success);
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+/* ─── Detail page — shared header card ──────────────────────────────── */
+.detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-md);
+  padding: 5px 13px 5px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted) !important;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: all 0.15s;
+}
+
+.detail-back:hover {
+  background: color-mix(in srgb, var(--clr-primary) 7%, var(--clr-surface));
+  color: var(--clr-primary) !important;
+  border-color: var(--clr-primary);
+  transform: translateX(-2px);
+}
+
+.detail-header-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.detail-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--clr-primary-subtle);
+  color: var(--clr-primary);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.15);
+}
+
+.detail-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--clr-text);
+  letter-spacing: -0.3px;
+  margin-bottom: 2px;
+}
+
+.detail-sub {
+  font-size: 14px;
+  color: var(--clr-text-muted);
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  align-self: center;
+}
+
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-md);
+}
+
+.detail-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-meta-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--clr-text-muted);
+}
+
+.detail-meta-value {
+  font-size: 14px;
+  color: var(--clr-text);
+}
+
+
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  margin-top: 4px;
+}
+
+.form-alert.success {
+  background-color: var(--clr-success-bg);
+  border-color: var(--clr-success);
+  color: var(--clr-success);
+}
+
+/* status-badge variants for new statuses */
+.status-badge.dispensing {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+html[data-theme="dark"] .status-badge.dispensing {
+  background: rgba(234, 88, 12, 0.12);
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.25);
+}
+
+/* Danger button */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 16px;
+  height: 36px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: var(--clr-danger, #dc2626);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ─── Teal focus ring for pharmacy role ──────────────────────────────── */
+html[data-role="pharmacy"] .field:focus {
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14);
+}
+
+/* ─── Edit form entrance animation ──────────────────────────────────── */
+@keyframes form-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.form-enter {
+  animation: form-slide-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+/* ─── Respect prefers-reduced-motion ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   GLOBAL COMPONENT LIBRARY — consistent building blocks across all pages
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Data table system ──────────────────────────────────────────────────
+   Usage: <div class="data-wrap"><table class="data-table">…</table></div>
+   thead tint auto-adapts via --clr-primary (blue for doctor, teal for pharmacy).
+   ────────────────────────────────────────────────────────────────────── */
+.data-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.data-table thead {
+  border-bottom: 1.5px solid var(--clr-border);
+}
+
+.data-table thead th {
+  padding: 11px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+  text-align: left;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--clr-primary) 4%, #f8fafc);
+}
+
+[data-theme="dark"] .data-table thead th {
+  background: color-mix(in srgb, var(--clr-primary) 9%, rgba(255,255,255,0.02));
+}
+
+.data-table td {
+  padding: 12px 16px;
+  color: var(--clr-text);
+  border-bottom: 1px solid var(--clr-border-subtle, #f1f5f9);
+  vertical-align: middle;
+}
+
+[data-theme="dark"] .data-table td {
+  border-bottom-color: rgba(255,255,255,0.05);
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table tbody tr {
+  transition: background 0.10s;
+}
+
+.data-table tbody tr:hover {
+  background: var(--clr-surface-hover);
+  cursor: pointer;
+}
+
+.data-table tbody tr.no-hover { cursor: default; }
+.data-table tbody tr.no-hover:hover { background: transparent; }
+
+.data-table th.col-right,
+.data-table td.col-right  { text-align: right; }
+.data-table th.col-center,
+.data-table td.col-center { text-align: center; }
+.data-table td.td-muted   { color: var(--clr-text-muted); font-size: 12.5px; }
+.data-table td.td-bold    { font-weight: 700; }
+.data-table td.td-num     { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+
+/* ─── KPI / stat card grid ───────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.kpi-card {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--clr-primary) 0%, color-mix(in srgb, var(--clr-primary) 60%, transparent) 100%);
+  border-radius: 3px 0 0 3px;
+}
+
+.kpi-card--green::before  { background: #10b981; }
+.kpi-card--amber::before  { background: #f59e0b; }
+.kpi-card--red::before    { background: #ef4444; }
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.kpi-card--green .kpi-value  { color: #059669; }
+.kpi-card--amber .kpi-value  { color: #d97706; }
+.kpi-card--red   .kpi-value  { color: #dc2626; }
+
+[data-theme="dark"] .kpi-card--green .kpi-value { color: #34d399; }
+[data-theme="dark"] .kpi-card--amber .kpi-value { color: #fbbf24; }
+[data-theme="dark"] .kpi-card--red   .kpi-value { color: #f87171; }
+
+.kpi-sub {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+/* ─── Card header / body / footer ────────────────────────────────────── */
+.card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.card-hdr-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.2px;
+}
+
+.card-hdr-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-body-pad {
+  padding: 18px;
+}
+
+.card-ftr {
+  padding: 12px 18px;
+  border-top: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Empty state — consistent across pages ──────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--clr-text-muted);
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  opacity: 0.45;
+  line-height: 1;
+}
+
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+/* ─── Page section header — list pages, detail page sections ─────────── */
+.section-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.section-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -0.2px;
+}
+
+.section-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  color: var(--clr-primary);
+}
+
+/* ─── Status badge extended variants ─────────────────────────────────── */
+/* Extends the existing .status-badge — adds color-key modifier classes   */
+.status-badge--green {
+  background: var(--clr-success-bg);
+  color: var(--clr-success);
+  border-color: rgba(22,163,74,0.2);
+}
+
+.status-badge--amber {
+  background: var(--clr-warning-bg);
+  color: var(--clr-warning);
+  border-color: rgba(217,119,6,0.2);
+}
+
+.status-badge--red {
+  background: var(--clr-danger-bg);
+  color: var(--clr-danger);
+  border-color: rgba(220,38,38,0.2);
+}
+
+.status-badge--blue {
+  background: var(--clr-primary-subtle);
+  color: var(--clr-primary);
+  border-color: color-mix(in srgb, var(--clr-primary) 20%, transparent);
+}
+
+.status-badge--muted {
+  background: var(--clr-surface-hover);
+  color: var(--clr-text-muted);
+  border-color: var(--clr-border);
+}
+
+[data-theme="dark"] .status-badge--green {
+  background: rgba(22,163,74,0.12); color: #4ade80; border-color: rgba(22,163,74,0.25);
+}
+[data-theme="dark"] .status-badge--amber {
+  background: rgba(217,119,6,0.12); color: #fbbf24; border-color: rgba(217,119,6,0.25);
+}
+[data-theme="dark"] .status-badge--red {
+  background: rgba(220,38,38,0.12); color: #f87171; border-color: rgba(220,38,38,0.25);
+}
+[data-theme="dark"] .status-badge--blue {
+  background: rgba(37,99,235,0.12); color: #93c5fd; border-color: rgba(37,99,235,0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TYPOGRAPHY SYSTEM — Clinora Design Language
+   Professional hierarchy: where to bold, where to italic, where dark
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Page titles — Playfair Display for gravitas ────────────────── */
+.typo-page-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--clr-text);
+  line-height: var(--lh-tight, 1.25);
+}
+
+/* ── Section / card titles ──────────────────────────────────────── */
+.typo-section-title {
+  font-size: var(--text-md, 15px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--clr-text);
+  line-height: var(--lh-snug, 1.4);
+}
+
+/* ── Overline / eyebrow — small ALL-CAPS label above a section ──── */
+.typo-overline {
+  font-size: var(--text-xs, 11px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+
+/* ── Body copy ──────────────────────────────────────────────────── */
+.typo-body {
+  font-size: var(--text-base, 14px);
+  font-weight: 400;
+  line-height: var(--lh-base, 1.6);
+  color: var(--clr-text);
+}
+
+/* ── Caption / hint — italic, muted, small ──────────────────────── */
+.typo-caption {
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--clr-text-muted);
+  line-height: var(--lh-relaxed, 1.75);
+}
+
+/* ── Numeric amounts — tabular nums, bold ───────────────────────── */
+.typo-amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* ── Metadata row — small muted inline facts ────────────────────── */
+.typo-meta {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+/* ── Emphasis — inline bold highlight ───────────────────────────── */
+.typo-em {
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+/* ── Subtle emphasis — italic within body ───────────────────────── */
+.typo-em-soft {
+  font-style: italic;
+  color: var(--clr-text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   GLOBAL COMPONENT TYPOGRAPHY REFINEMENTS
+   These apply to shared component classes used throughout the app
+   ───────────────────────────────────────────────────────────────── */
+
+/* Page-level headings (h1 used in AppLayout shell header) */
+h1, .page-heading {
+  font-size: var(--text-lg, 17px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: var(--lh-tight, 1.25);
+  color: var(--clr-text);
+}
+
+h2, .section-heading {
+  font-size: var(--text-md, 15px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--clr-text);
+}
+
+h3, .card-heading {
+  font-size: var(--text-base, 14px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--clr-text);
+}
+
+/* Tables — tighter, professional */
+table {
+  font-size: var(--text-base, 14px);
+  border-collapse: collapse;
+}
+
+th {
+  font-size: var(--text-xs, 11px);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* Code blocks and monospaced snippets */
+code, pre, .mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0;
+}
+
+/* Labels for form fields (global .label class) */
+.label, label {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--clr-text);
+}
+
+/* Inline hint / help text below fields */
+.hint {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--clr-text-muted);
+  line-height: 1.55;
+}
+
+/* Stat / KPI numbers — large bold figures on dashboards */
+.stat-number {
+  font-size: var(--text-2xl, 24px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--clr-text);
+}
+
+/* Stat label below a number */
+.stat-label {
+  font-size: var(--text-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+
+/* ── Dark mode typography refinements ────────────────────────────── */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3 {
+  /* Slightly reduce weight visually — bold appears heavier on dark bg */
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+[data-theme="dark"] .typo-caption,
+[data-theme="dark"] .hint {
+  color: var(--clr-text-muted);
+  opacity: 0.85;
+}
+
+/* ── Print: restore colors for printed documents ─────────────────── */
+@media print {
+  body { font-size: 12pt; line-height: 1.5; }
+  h1   { font-size: 18pt; }
+  h2   { font-size: 15pt; }
+  h3   { font-size: 13pt; }
+}

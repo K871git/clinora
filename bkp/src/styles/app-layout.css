@@ -1,0 +1,1562 @@
+/* ─── App Shell — sidebar, header, nav ───────────────────────────────────
+ * Scoped entirely to layout infrastructure. Never import this in page
+ * components — AppLayout.jsx owns it.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+.shell-sidebar {
+  position: fixed;
+  top: 0;
+  left: -252px;
+  bottom: 0;
+  width: 252px;
+  background-color: var(--clr-surface);
+  border-right: 1px solid var(--clr-border);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  overflow-y: auto;
+  overflow-x: visible;
+  transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1), width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .shell-sidebar {
+  box-shadow: 2px 0 18px rgba(0, 0, 0, 0.22);
+}
+
+.shell-sidebar.open {
+  left: 0;
+}
+
+@media (min-width: 768px) {
+  .shell-sidebar {
+    left: 0;
+  }
+
+  .shell-sidebar.collapsed {
+    width: 66px;
+  }
+}
+
+/* Mobile overlay */
+.shell-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 30;
+}
+
+.shell-overlay.visible {
+  display: block;
+}
+
+/* ─── Main area ──────────────────────────────────────────────────────────── */
+.shell-main {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .shell-main {
+    margin-left: 252px;
+    transition: margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .shell-main.sidebar-collapsed {
+    margin-left: 66px;
+  }
+}
+
+/* ─── Top header ─────────────────────────────────────────────────────────── */
+.shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 57px;
+  flex-shrink: 0;
+  background-color: color-mix(in srgb, var(--clr-surface) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid var(--clr-border);
+  box-shadow: 0 1px 0 var(--clr-border), 0 4px 16px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  padding: 0 22px;
+  gap: 10px;
+}
+
+html[data-theme="dark"] .shell-header {
+  background-color: color-mix(in srgb, var(--clr-surface) 82%, transparent);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.shell-page-title {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--clr-text);
+  margin: 0;
+}
+
+/* ─── User chip ──────────────────────────────────────────────────────────── */
+.shell-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px 3px 3px;
+  border: 1px solid var(--clr-border);
+  border-radius: 20px;
+  background: var(--clr-bg);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.shell-user-chip:hover {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clr-primary) 10%, transparent);
+}
+
+/* ─── Avatar — gradient identity mark ───────────────────────────────────── */
+/* When a real photo is set, img replaces the span — keep geometry consistent */
+.shell-avatar--photo {
+  object-fit: cover;
+  background: none;
+  display: block;
+  padding: 0;
+}
+
+.shell-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0;
+  transition: box-shadow 0.15s;
+}
+
+.shell-user-chip-text {
+  display: none;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.25;
+}
+
+@media (min-width: 640px) {
+  .shell-user-chip-text { display: flex; }
+}
+
+.shell-chip-greeting {
+  font-size: 9.5px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.shell-user-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+}
+
+/* ─── Header clock ───────────────────────────────────────────────────────── */
+.shell-clock {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--clr-surface-hover);
+  border: 1px solid var(--clr-border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .shell-clock { display: flex; }
+}
+.shell-clock-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clr-text);
+  letter-spacing: 0.01em;
+}
+.shell-clock-sep {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  opacity: 0.5;
+}
+.shell-clock-day {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  font-weight: 500;
+}
+
+/* ─── Content area ───────────────────────────────────────────────────────── */
+.shell-content {
+  flex: 1;
+  padding: 24px 32px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+/* Prescription editor — full width needed for the live preview split panel */
+.shell-content:has(.qrx-page) {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0;
+}
+
+/* Revenue pages — wider, no inner max-width cap */
+.shell-content:has(.rv2-page) {
+  max-width: 1440px;
+}
+
+/* Clinic page — wider canvas, keep top/bottom shell padding, kill horizontal only */
+.shell-content:has(.cpd-page) {
+  max-width: 1440px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Medicine library — flush horizontal, header owns its own padding */
+.shell-content:has(.mlib-page) {
+  max-width: 1440px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+/* Patients list — flush, header owns padding */
+.shell-content:has(.ptl-page) {
+  max-width: 1440px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+/* Pharmacy queue — fills viewport exactly, inner list scrolls */
+.shell-content:has(.phq-page) {
+  max-width: none;
+  padding: 0;
+  background: var(--clr-bg, #f1f5f9);
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 57px);
+  overflow: hidden;
+}
+
+/* Medicine library and patients pages also need bg coverage */
+.shell-content:has(.mlib-page),
+.shell-content:has(.ptl-page) {
+  background: var(--clr-bg, #f1f5f9);
+}
+
+/* ─── Icon button (hamburger, theme toggle) ──────────────────────────────── */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+  &:hover {
+    background: var(--clr-surface-hover);
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-only { display: none; }
+}
+
+/* ─── Role-tinted sidebar gradient ──────────────────────────────────────── */
+html[data-role="doctor"] .shell-sidebar {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--clr-primary) 5%, var(--clr-surface)) 0%,
+    var(--clr-surface) 28%
+  );
+}
+html[data-role="pharmacy"] .shell-sidebar {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--clr-primary) 5%, var(--clr-surface)) 0%,
+    var(--clr-surface) 28%
+  );
+}
+html[data-theme="dark"][data-role="doctor"] .shell-sidebar {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--clr-primary) 10%, var(--clr-surface)) 0%,
+    var(--clr-surface) 30%
+  );
+}
+html[data-theme="dark"][data-role="pharmacy"] .shell-sidebar {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--clr-primary) 10%, var(--clr-surface)) 0%,
+    var(--clr-surface) 30%
+  );
+}
+
+/* ─── Sidebar brand (logo area) ──────────────────────────────────────────── */
+.sidebar-brand {
+  height: 57px;
+  flex-shrink: 0;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.sidebar-logo-area {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+
+.sidebar-logo-img {
+  display: block;
+  height: 34px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+html[data-theme="dark"] .sidebar-logo-img {
+  filter: brightness(1.4) saturate(0.85);
+}
+
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-logo-area {
+    width: 34px;
+    height: 34px;
+    padding-left: 0;
+    justify-content: center;
+  }
+
+  .shell-sidebar.collapsed .sidebar-logo-img {
+    height: 34px;
+    width: 34px;
+    border-radius: 8px;
+  }
+
+  .shell-sidebar.collapsed .sidebar-brand {
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+/* Expand button — hover reveal when collapsed */
+.sidebar-expand-btn {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: var(--clr-surface-hover);
+  color: var(--clr-text);
+  cursor: pointer;
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  font-family: inherit;
+}
+
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-expand-btn {
+    display: flex;
+  }
+
+  .shell-sidebar.collapsed .sidebar-logo-area:hover .sidebar-expand-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .shell-sidebar.collapsed .sidebar-collapse-row {
+    display: none;
+  }
+}
+
+/* ─── Sidebar quick-actions block ───────────────────────────────────────── */
+.sidebar-quick {
+  padding: 10px 12px 12px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sidebar-quick-grid--3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.sidebar-q-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 6px;
+  border: 1px solid var(--clr-border);
+  border-radius: 10px;
+  background: var(--clr-bg);
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  font-family: inherit;
+  line-height: 1.1;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+
+.sidebar-q-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Primary Rx button — full width, role-tinted fill (blue for doctor, teal for pharmacy) */
+.sidebar-q-btn--rx-primary {
+  flex-direction: row;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-primary-hover) 100%);
+  border-color: transparent;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--clr-primary) 28%, transparent);
+  gap: 8px;
+}
+
+.sidebar-q-btn--rx-primary .sidebar-q-icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  width: 24px;
+  height: 24px;
+}
+
+.sidebar-q-btn--rx-primary:hover {
+  background: linear-gradient(135deg, var(--clr-primary-hover) 0%, var(--clr-primary) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--clr-primary) 38%, transparent);
+  transform: translateY(-1px);
+}
+
+.sidebar-q-btn--rx-primary:hover .sidebar-q-icon {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+html[data-theme="dark"] .sidebar-q-btn--rx-primary {
+  background: linear-gradient(135deg, var(--clr-primary-hover) 0%, var(--clr-primary) 100%);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--clr-primary) 32%, transparent);
+}
+
+.sidebar-q-btn--patient:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  background: color-mix(in srgb, var(--clr-primary) 6%, var(--clr-surface));
+}
+
+.sidebar-q-btn--clinic:hover {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: color-mix(in srgb, #f59e0b 6%, var(--clr-surface));
+}
+
+.sidebar-q-btn--revenue:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  background: color-mix(in srgb, #8b5cf6 6%, var(--clr-surface));
+}
+
+.sidebar-q-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--clr-surface);
+  transition: background 0.15s;
+}
+
+.sidebar-q-btn--patient:hover .sidebar-q-icon { background: color-mix(in srgb, var(--clr-primary) 12%, var(--clr-bg)); }
+.sidebar-q-btn--clinic:hover .sidebar-q-icon  { background: color-mix(in srgb, #f59e0b 12%, var(--clr-bg)); }
+.sidebar-q-btn--revenue:hover .sidebar-q-icon { background: color-mix(in srgb, #8b5cf6 12%, var(--clr-bg)); }
+
+/* ─── Sidebar nav ────────────────────────────────────────────────────────── */
+.sidebar-nav {
+  flex: 1;
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ─── Nav icon wrap ──────────────────────────────────────────────────────── */
+.nav-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  transition: background 0.18s ease, color 0.18s ease,
+              box-shadow 0.22s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* ─── Nav links ──────────────────────────────────────────────────────────── */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 10px;
+  color: var(--clr-text-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.13s, color 0.13s;
+  cursor: pointer;
+  position: relative;
+  border: none;
+  background: none;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  min-height: 40px;
+
+  &:hover {
+    background-color: var(--clr-surface-hover);
+    color: var(--clr-text);
+  }
+
+  &:hover .nav-icon-wrap {
+    background: color-mix(in srgb, var(--clr-primary) 10%, var(--clr-surface));
+    color: var(--clr-primary);
+    transform: scale(1.06);
+  }
+
+  html[data-theme="dark"] &:hover .nav-icon-wrap {
+    background: color-mix(in srgb, var(--clr-primary) 16%, var(--clr-surface));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
+  }
+}
+
+.nav-link-active {
+  background: color-mix(in srgb, var(--clr-primary) 9%, var(--clr-surface));
+  color: var(--clr-primary);
+  font-weight: 600;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 44%;
+    width: 3px;
+    background: var(--clr-primary);
+    border-radius: 0 4px 4px 0;
+    box-shadow: 2px 0 8px color-mix(in srgb, var(--clr-primary) 40%, transparent);
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--clr-primary) 12%, var(--clr-surface));
+    color: var(--clr-primary);
+  }
+
+  & .nav-icon-wrap {
+    background: linear-gradient(135deg, var(--clr-primary) 0%, color-mix(in srgb, var(--clr-primary) 70%, #818cf8) 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px color-mix(in srgb, var(--clr-primary) 35%, transparent),
+                0 0 0 3px color-mix(in srgb, var(--clr-primary) 12%, transparent);
+  }
+
+  &:hover .nav-icon-wrap {
+    background: linear-gradient(135deg, var(--clr-primary) 0%, color-mix(in srgb, var(--clr-primary) 70%, #818cf8) 100%);
+    color: #fff;
+    transform: scale(1.04);
+  }
+}
+
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Nav section dividers ───────────────────────────────────────────────── */
+.nav-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 4px 5px;
+  margin-top: 2px;
+}
+
+.nav-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+.nav-section-label::before {
+  content: '';
+  display: block;
+  width: 12px;
+  height: 1.5px;
+  background: var(--clr-border);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.nav-section-divider--collapsed {
+  padding: 12px 0 4px;
+  justify-content: center;
+}
+
+.nav-section-divider--collapsed .nav-section-label {
+  display: none;
+}
+
+.nav-section-divider--collapsed::after {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: var(--clr-border);
+  border-radius: 1px;
+}
+
+/* ─── Sidebar user section ───────────────────────────────────────────────── */
+.sidebar-user {
+  padding: 8px 8px 12px;
+  border-top: 1px solid var(--clr-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sidebar-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background-color 0.12s;
+
+  &:hover {
+    background: var(--clr-surface-hover);
+  }
+
+  &:hover .shell-avatar {
+    box-shadow: 0 0 0 2px var(--clr-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
+  }
+}
+
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.sidebar-user-role {
+  font-size: 10.5px;
+  color: var(--clr-text-muted);
+  margin: 1px 0 0;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.sidebar-profile-arrow {
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.sidebar-collapse-row {
+  color: var(--clr-text-muted) !important;
+  font-size: 12.5px !important;
+}
+
+/* ─── Collapsed state overrides ─────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-quick           { display: none; }
+  .shell-sidebar.collapsed .nav-label              { display: none; }
+  .shell-sidebar.collapsed .sidebar-user-info      { display: none; }
+  .shell-sidebar.collapsed .sidebar-profile-arrow  { display: none; }
+
+  .shell-sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 6px;
+  }
+
+  .shell-sidebar.collapsed .nav-icon-wrap {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+
+  .shell-sidebar.collapsed .sidebar-profile-btn {
+    justify-content: center;
+    padding: 7px 4px;
+    gap: 0;
+  }
+
+  .shell-sidebar.collapsed .sidebar-user {
+    align-items: center;
+    padding: 8px 4px 12px;
+  }
+}
+
+/* ─── Profile popup menu ─────────────────────────────────────────────────── */
+.profile-menu {
+  position: fixed;
+  bottom: 112px;
+  left: 8px;
+  width: 238px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08),
+              0 20px 48px -4px rgba(0, 0, 0, 0.16);
+  z-index: 9999;
+  overflow: hidden;
+  animation: menu-pop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .profile-menu {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4),
+              0 20px 48px -4px rgba(0, 0, 0, 0.55);
+}
+
+.profile-menu--collapsed {
+  left: 74px;
+  bottom: 12px;
+  width: 240px;
+  animation: menu-pop-right 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes menu-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@keyframes menu-pop-right {
+  from { opacity: 0; transform: translateX(-8px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0)    scale(1); }
+}
+
+/* Profile menu head */
+.profile-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  background: var(--clr-bg);
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.profile-menu-avatar-wrap { position: relative; flex-shrink: 0; }
+
+.profile-menu-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Upload label — cursor + hover overlay */
+.profile-menu-avatar--upload {
+  cursor: pointer;
+}
+
+.profile-menu-avatar--busy {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Actual uploaded photo */
+.profile-menu-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Camera icon — appears on hover */
+.profile-menu-avatar-cam {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.48);
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: #fff;
+}
+
+.profile-menu-avatar--upload:hover .profile-menu-avatar-cam { opacity: 1; }
+
+/* Spinner while uploading */
+.pm-avatar-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+/* Remove photo link inside info section */
+.pm-remove-photo {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-family: inherit;
+  color: var(--clr-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pm-remove-photo:hover { color: var(--clr-danger, #ef4444); }
+
+.profile-menu-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.profile-menu-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-menu-role {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  font-weight: 400;
+}
+
+.profile-menu-head-arrow {
+  color: var(--clr-text-muted);
+  opacity: 0.5;
+}
+
+.profile-menu-sep {
+  height: 1px;
+  background: var(--clr-border);
+  margin: 3px 0;
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--clr-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.1s;
+
+  &:hover { background: var(--clr-surface-hover); }
+}
+
+.profile-menu-item-arrow {
+  margin-left: auto;
+  color: var(--clr-text-muted);
+  opacity: 0.5;
+}
+
+.profile-menu-item--danger {
+  color: var(--clr-danger);
+
+  &:hover { background: var(--clr-danger-bg); }
+}
+
+/* ─── Pharmacy sidebar brand / section label ─────────────────────────────── */
+/* ─── Sidebar role strip ─────────────────────────────────────────────── */
+.sidebar-role-strip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.sidebar-role-strip svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.sidebar-role-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-role-strip--doctor {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--clr-primary) 7%, var(--clr-surface)) 0%,
+    var(--clr-surface) 100%
+  );
+}
+
+.sidebar-role-strip--doctor svg { color: var(--clr-primary); }
+.sidebar-role-strip--doctor .sidebar-role-label { color: var(--clr-primary); opacity: 0.7; }
+
+.sidebar-role-strip--pharmacy { background: transparent; }
+.sidebar-role-strip--pharmacy svg { color: var(--clr-primary); }
+.sidebar-role-strip--pharmacy .sidebar-role-label { color: var(--clr-text-muted); }
+
+.sidebar-role-strip--collapsed {
+  justify-content: center;
+  padding: 10px 0 8px;
+}
+
+.sidebar-role-strip--collapsed .sidebar-role-label { display: none; }
+
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-role-strip {
+    justify-content: center;
+    padding: 10px 0 8px;
+  }
+  .shell-sidebar.collapsed .sidebar-role-label { display: none; }
+}
+
+/* ─── Sidebar greeting block ─────────────────────────────────────────────── */
+.sidebar-greet {
+  padding: 14px 16px 13px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.sidebar-greet--doctor {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, #2563eb 5%, var(--clr-surface)) 0%,
+    var(--clr-surface) 80%
+  );
+}
+
+.sidebar-greet--pharmacy {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, #0d9488 5%, var(--clr-surface)) 0%,
+    var(--clr-surface) 80%
+  );
+}
+
+html[data-theme="dark"] .sidebar-greet--doctor,
+html[data-theme="dark"] .sidebar-greet--pharmacy {
+  background: var(--clr-surface);
+}
+
+.sidebar-greet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.sidebar-greet-role {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.sidebar-greet--doctor .sidebar-greet-role {
+  background: rgba(37,99,235,0.1);
+  color: #2563eb;
+}
+
+html[data-theme="dark"] .sidebar-greet--doctor .sidebar-greet-role {
+  background: rgba(96,165,250,0.15);
+  color: #93c5fd;
+}
+
+.sidebar-greet--pharmacy .sidebar-greet-role {
+  background: rgba(13,148,136,0.12);
+  color: #0d9488;
+}
+
+html[data-theme="dark"] .sidebar-greet--pharmacy .sidebar-greet-role {
+  background: rgba(45,212,191,0.15);
+  color: #2dd4bf;
+}
+
+.sidebar-greet-time {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.sidebar-greet-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-greet-day {
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-greet { display: none; }
+}
+
+/* ─── Doctor role — blue avatar & nav accents ────────────────────────── */
+html[data-role="doctor"] .shell-avatar,
+html[data-role="doctor"] .profile-menu-avatar {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+html[data-role="doctor"] .nav-link:hover .nav-icon-wrap {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+html[data-role="doctor"][data-theme="dark"] .nav-link:hover .nav-icon-wrap {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+html[data-role="doctor"] .nav-link-active .nav-icon-wrap {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35), 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+html[data-role="doctor"][data-theme="dark"] .nav-link-active .nav-icon-wrap {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  box-shadow: 0 2px 14px rgba(96, 165, 250, 0.28), 0 0 0 3px rgba(96, 165, 250, 0.10);
+}
+
+/* ─── Pharmacy role — teal avatar & nav accents ──────────────────────── */
+html[data-role="pharmacy"] .shell-avatar,
+html[data-role="pharmacy"] .profile-menu-avatar {
+  background: linear-gradient(135deg, #0f766e 0%, #0891b2 100%);
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
+}
+
+html[data-role="pharmacy"] .nav-link:hover .nav-icon-wrap {
+  background: rgba(13, 148, 136, 0.1);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .nav-link:hover .nav-icon-wrap {
+  background: rgba(45, 212, 191, 0.12);
+}
+
+html[data-role="pharmacy"] .nav-link-active .nav-icon-wrap {
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.35), 0 0 0 3px rgba(13,148,136,0.10);
+}
+
+html[data-role="pharmacy"][data-theme="dark"] .nav-link-active .nav-icon-wrap {
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  box-shadow: 0 2px 14px rgba(45, 212, 191, 0.28), 0 0 0 3px rgba(45,212,191,0.10);
+}
+
+html[data-role="pharmacy"] .nav-link-active::after {
+  background: #0d9488;
+}
+
+/* ── Top navigation progress bar + circular ring ─────────────────────── */
+
+.nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2.5px;
+  width: 0;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: 0 2px 2px 0;
+}
+
+.nav-progress--on {
+  animation: nav-progress-run 0.55s ease-out forwards;
+}
+
+@keyframes nav-progress-run {
+  0%   { width: 0%;    opacity: 1; background: linear-gradient(90deg, var(--clr-primary, #3b82f6), color-mix(in srgb, var(--clr-primary, #3b82f6) 70%, #a78bfa)); box-shadow: 0 0 8px color-mix(in srgb, var(--clr-primary, #3b82f6) 60%, transparent); }
+  65%  { width: 82%;   opacity: 1; background: linear-gradient(90deg, var(--clr-primary, #3b82f6), color-mix(in srgb, var(--clr-primary, #3b82f6) 70%, #a78bfa)); box-shadow: 0 0 8px color-mix(in srgb, var(--clr-primary, #3b82f6) 60%, transparent); }
+  90%  { width: 100%;  opacity: 1; background: linear-gradient(90deg, var(--clr-primary, #3b82f6), color-mix(in srgb, var(--clr-primary, #3b82f6) 70%, #a78bfa)); box-shadow: 0 0 8px color-mix(in srgb, var(--clr-primary, #3b82f6) 60%, transparent); }
+  100% { width: 100%;  opacity: 0; background: linear-gradient(90deg, var(--clr-primary, #3b82f6), color-mix(in srgb, var(--clr-primary, #3b82f6) 70%, #a78bfa)); }
+}
+
+
+/* ── Page content fade-in on route change ────────────────────────────── */
+
+.page-enter {
+  animation: page-enter-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+@keyframes page-enter-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter { animation: none; }
+}
+
+/* ── Offline banner ──────────────────────────────────────────────────── */
+
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  animation: offline-slide-in 0.25s ease;
+}
+
+[data-theme="light"] .offline-banner {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+@keyframes offline-slide-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ROLE VISUAL IDENTITY
+   All pure CSS — no JSX changes needed.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Sidebar brand area — colored bottom accent strip ───────────────── */
+.sidebar-brand { position: relative; }
+
+html[data-role="doctor"] .sidebar-brand {
+  background: linear-gradient(to bottom, var(--clr-surface) 0%, rgba(37,99,235,0.04) 100%);
+}
+
+html[data-role="doctor"] .sidebar-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #2563eb 0%, #818cf8 100%);
+  z-index: 1;
+}
+
+html[data-role="pharmacy"] .sidebar-brand {
+  background: linear-gradient(to bottom, var(--clr-surface) 0%, rgba(13,148,136,0.04) 100%);
+}
+
+html[data-role="pharmacy"] .sidebar-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #0d9488 0%, #0891b2 100%);
+  z-index: 1;
+}
+
+/* Dark mode — keep brand neutral, strip stays visible */
+html[data-theme="dark"][data-role="doctor"] .sidebar-brand,
+html[data-theme="dark"][data-role="pharmacy"] .sidebar-brand {
+  background: var(--clr-surface);
+}
+
+/* ─── Nav section role label (CSS-injected, no JSX needed) ───────────── */
+html[data-role="doctor"] .sidebar-nav::before {
+  content: 'Doctor Portal';
+  display: block;
+  padding: 10px 14px 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(37,99,235,0.55);
+}
+
+html[data-role="pharmacy"] .sidebar-nav::before {
+  content: 'Pharmacy';
+  display: block;
+  padding: 10px 14px 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(13,148,136,0.65);
+}
+
+@media (min-width: 768px) {
+  .shell-sidebar.collapsed .sidebar-nav::before {
+    display: none;
+  }
+}
+
+/* ─── Header — role-tinted bottom border ─────────────────────────────── */
+html[data-role="doctor"] .shell-header {
+  border-bottom-color: rgba(37,99,235,0.15);
+}
+
+html[data-role="pharmacy"] .shell-header {
+  border-bottom-color: rgba(13,148,136,0.15);
+}
+
+/* ─── Doctor — active nav link subtle blue fill ──────────────────────── */
+html[data-role="doctor"] .nav-link-active {
+  background-color: rgba(37,99,235,0.07);
+}
+
+/* ─── Global Search Palette ─────────────────────────────────────────────── */
+.theme-toggle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  color: var(--clr-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.theme-toggle-btn:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  background: var(--clr-surface);
+}
+
+.gs-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid var(--clr-border);
+  border-radius: 20px;
+  background: var(--clr-bg);
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.gs-trigger-btn:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-text);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+}
+.gs-trigger-label {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+}
+.gs-trigger-kbd {
+  font-size: 10px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 5px;
+  padding: 2px 6px;
+  color: var(--clr-text-muted);
+  font-family: inherit;
+  letter-spacing: .3px;
+  flex-shrink: 0;
+}
+
+.gs-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  backdrop-filter: blur(3px);
+}
+
+.gs-palette {
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  animation: gs-in 0.15s ease;
+}
+@keyframes gs-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.gs-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--clr-border);
+}
+.gs-search-icon {
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+.gs-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  background: transparent;
+  color: var(--clr-text);
+  font-family: inherit;
+}
+.gs-input::placeholder { color: var(--clr-text-muted); }
+.gs-input::-webkit-search-cancel-button { display: none; }
+
+.gs-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--clr-border);
+  border-top-color: var(--clr-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.gs-esc-hint {
+  font-size: 10px;
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.gs-esc-hint:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+
+.gs-results {
+  padding: 6px 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.gs-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--clr-text-muted);
+  padding: 8px 16px 4px;
+}
+
+.gs-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--clr-text);
+  transition: background 0.1s;
+}
+.gs-item:hover,
+.gs-item--on {
+  background: var(--clr-bg);
+}
+.gs-item-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.gs-item-label {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gs-item-sub {
+  font-size: 11.5px;
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+.gs-item-arrow {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.gs-item:hover .gs-item-arrow,
+.gs-item--on .gs-item-arrow { opacity: 1; }
+
+.gs-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--clr-text-muted);
+}
+
+.gs-hint-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 11px;
+  color: var(--clr-text-muted);
+  border-top: 1px solid var(--clr-border);
+}
+
+html[data-theme="dark"] .gs-backdrop { background: rgba(0, 0, 0, 0.6); }
+html[data-theme="dark"] .gs-palette  { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5); }
+
+@media (max-width: 640px) {
+  .gs-trigger-label, .gs-trigger-kbd { display: none; }
+  .gs-trigger-btn { padding: 6px; }
+  .gs-backdrop { padding-top: 16px; }
+}

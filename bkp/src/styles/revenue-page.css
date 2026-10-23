@@ -1,0 +1,506 @@
+/* ─── Revenue pages — Doctor & Pharmacy (rv-*) ─────────────────────────── */
+.rv-page { width: 100%; }
+.rv-period-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.rv-period-tab {
+  padding: 7px 18px; border-radius: 20px;
+  border: 1.5px solid var(--clr-border);
+  background: var(--clr-surface);
+  font-size: 13px; font-weight: 500;
+  color: var(--clr-text-muted); cursor: pointer;
+  transition: border-color 0.14s, color 0.14s, background 0.14s, box-shadow 0.14s, transform 0.14s;
+}
+.rv-period-tab:hover {
+  border-color: var(--clr-primary); color: var(--clr-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clr-primary) 10%, transparent);
+  transform: translateY(-1px);
+}
+.rv-period-tab--on {
+  border-color: var(--clr-primary); background: var(--clr-primary);
+  color: #fff; font-weight: 600;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--clr-primary) 30%, transparent);
+}
+[data-role="pharmacy"] .rv-period-tab--on { background: #0d9488; border-color: #0d9488; }
+
+.rv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 4px; }
+.rv-card {
+  background: var(--clr-surface);
+  border: 1.5px solid var(--clr-border);
+  border-radius: 12px; padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.rv-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+.rv-card--blue  { border-top: 3px solid var(--clr-primary); }
+.rv-card--green { border-top: 3px solid #10b981; }
+.rv-card--amber { border-top: 3px solid #f59e0b; }
+.rv-card--clickable { cursor: pointer; user-select: none; }
+.rv-card--clickable:focus-visible { outline: 2px solid var(--clr-primary); outline-offset: 2px; }
+.rv-card--active-blue  { box-shadow: 0 0 0 2px var(--clr-primary); background: color-mix(in srgb, var(--clr-primary) 5%, var(--clr-surface)); transform: translateY(-1px); }
+.rv-card--active-green { box-shadow: 0 0 0 2px #10b981; background: color-mix(in srgb, #10b981 5%, var(--clr-surface)); transform: translateY(-1px); }
+.rv-card--active-amber { box-shadow: 0 0 0 2px #f59e0b; background: color-mix(in srgb, #f59e0b 5%, var(--clr-surface)); transform: translateY(-1px); }
+.rv-card-label {
+  font-size: 11.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+}
+.rv-card-value { font-size: 24px; font-weight: 700; color: var(--clr-text); line-height: 1.2; }
+.rv-card--blue  .rv-card-value { color: var(--clr-primary); }
+.rv-card--green .rv-card-value { color: #059669; }
+.rv-card--amber .rv-card-value { color: #d97706; }
+.rv-card-sub  { font-size: 12px; color: var(--clr-text-muted); }
+.rv-card-hint { font-size: 11px; color: var(--clr-text-muted); margin-top: 2px; transition: opacity 0.15s; }
+.rv-card--active-blue  .rv-card-hint { color: var(--clr-primary); }
+.rv-card--active-green .rv-card-hint { color: #059669; }
+.rv-card--active-amber .rv-card-hint { color: #d97706; }
+
+.rv-debt-card { padding: 0; overflow: hidden; }
+.rv-debt-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 20px; border-bottom: 1px solid var(--clr-border);
+}
+.rv-debt-title { font-size: 14px; font-weight: 600; color: var(--clr-text); flex: 1; }
+.rv-debt-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; border-radius: 11px;
+  background: #fef2f2; color: #dc2626;
+  font-size: 11px; font-weight: 700; padding: 0 6px;
+}
+.rv-debt-count--neutral { background: var(--clr-surface-raised); color: var(--clr-text-muted); }
+[data-theme="dark"] .rv-debt-count { background: rgba(239,68,68,.18); }
+[data-theme="dark"] .rv-debt-count--neutral { background: rgba(255,255,255,.08); }
+.rv-debt-table-wrap { overflow-x: auto; }
+.rv-debt-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rv-debt-table thead th {
+  padding: 11px 20px; text-align: left;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+  background: color-mix(in srgb, var(--clr-primary) 5%, #f8fafc);
+  border-bottom: 1.5px solid var(--clr-border);
+  white-space: nowrap;
+}
+[data-theme="dark"] .rv-debt-table thead th {
+  background: color-mix(in srgb, var(--clr-primary) 10%, rgba(255,255,255,0.02));
+}
+.rv-debt-row td { padding: 14px 20px; border-bottom: 1px solid var(--clr-border); vertical-align: middle; }
+.rv-debt-row:last-child td { border-bottom: none; }
+.rv-debt-row:hover { background: var(--clr-surface-raised); }
+.rv-debt-patient { font-weight: 500; color: var(--clr-primary); font-size: 13px; text-decoration: none; }
+.rv-debt-patient:hover { text-decoration: underline; }
+.rv-debt-muted { color: var(--clr-text-muted); }
+.rv-debt-due { color: #dc2626; font-weight: 600; }
+[data-theme="dark"] .rv-debt-due { color: #f87171; }
+
+.rv-empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--clr-text-muted);
+}
+
+.rv-status-pill {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.rv-status-pill--unpaid  { background: #fef2f2; color: #dc2626; }
+.rv-status-pill--partial { background: #fffbeb; color: #d97706; }
+.rv-status-pill--paid    { background: #ecfdf5; color: #059669; }
+[data-theme="dark"] .rv-status-pill--unpaid  { background: rgba(239,68,68,.15); color: #f87171; }
+[data-theme="dark"] .rv-status-pill--partial { background: rgba(245,158,11,.15); color: #fbbf24; }
+[data-theme="dark"] .rv-status-pill--paid    { background: rgba(16,185,129,.15); color: #34d399; }
+
+.rv-view-btn {
+  display: inline-flex; align-items: center;
+  padding: 5px 10px; border-radius: 6px;
+  border: 1.5px solid var(--clr-border);
+  background: none; color: var(--clr-text-muted);
+  font-size: 12px; cursor: pointer; transition: all 0.13s; white-space: nowrap;
+  text-decoration: none;
+}
+.rv-view-btn:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+
+.rv-mark-paid-btn {
+  padding: 5px 12px; border-radius: 6px;
+  border: 1.5px solid #10b981; background: #ecfdf5;
+  color: #059669; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.13s;
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+.rv-mark-paid-btn:hover { background: #10b981; color: #fff; }
+.rv-mark-paid-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+[data-theme="dark"] .rv-mark-paid-btn { background: rgba(16,185,129,.15); color: #34d399; border-color: #10b981; }
+[data-theme="dark"] .rv-mark-paid-btn:hover { background: #10b981; color: #fff; }
+
+.rv-debt-hint {
+  padding: 10px 20px; font-size: 12px;
+  color: var(--clr-text-muted); text-align: center;
+  border-top: 1px solid var(--clr-border);
+}
+
+.rv-export-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 6px;
+  border: 1.5px solid var(--clr-border);
+  background: none; color: var(--clr-text-muted);
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: all 0.13s; white-space: nowrap;
+  margin-left: auto;
+}
+.rv-export-btn:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+
+.rv-totals-row td {
+  padding: 13px 20px;
+  background: var(--clr-surface-raised);
+  border-top: 2px solid var(--clr-border);
+  font-size: 14px;
+}
+
+/* ─── Revenue v2 (rv2-*) — used by Doctor & Pharmacy revenue pages ─────── */
+.rv2-page { width: 100%; }
+
+.rv2-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+}
+.rv2-hdr-left { display: flex; flex-direction: column; gap: 3px; }
+.rv2-hdr-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--clr-text);
+  letter-spacing: -.025em;
+  line-height: 1.2;
+}
+.rv2-hdr-sub { font-size: 13px; color: var(--clr-text-muted); }
+
+/* Period tabs — pill segment */
+.rv2-period-seg {
+  display: inline-flex;
+  background: var(--clr-surface-raised);
+  border: 1px solid var(--clr-border);
+  border-radius: 28px;
+  padding: 4px;
+  gap: 2px;
+}
+.rv2-period-btn {
+  padding: 9px 20px;
+  border: none;
+  background: none;
+  border-radius: 24px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: background .13s, color .13s, box-shadow .13s;
+  white-space: nowrap;
+}
+.rv2-period-btn:hover { color: var(--clr-text); }
+.rv2-period-btn--on {
+  background: var(--clr-primary);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(13,148,136,.4);
+}
+
+/* Hero metric cards */
+.rv2-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.rv2-metric {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 16px;
+  padding: 24px 26px;
+  cursor: pointer;
+  transition: box-shadow .14s, transform .14s;
+  position: relative;
+  overflow: hidden;
+}
+.rv2-metric::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+}
+.rv2-metric:hover { box-shadow: 0 6px 22px rgba(0,0,0,.08); transform: translateY(-1px); }
+.rv2-metric--active { box-shadow: 0 0 0 2px var(--rv2-accent, var(--clr-primary)); }
+
+.rv2-metric--teal   { --rv2-accent: #0d9488; }
+.rv2-metric--teal::before   { background: #0d9488; }
+.rv2-metric--green  { --rv2-accent: #10b981; }
+.rv2-metric--green::before  { background: #10b981; }
+.rv2-metric--amber  { --rv2-accent: #f59e0b; }
+.rv2-metric--amber::before  { background: #f59e0b; }
+
+.rv2-metric-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.rv2-metric-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--clr-text-muted);
+}
+.rv2-metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.rv2-metric--teal  .rv2-metric-icon { background: rgba(13,148,136,.12); color: #0d9488; }
+.rv2-metric--green .rv2-metric-icon { background: rgba(16,185,129,.12); color: #10b981; }
+.rv2-metric--amber .rv2-metric-icon { background: rgba(245,158,11,.12); color: #d97706; }
+
+.rv2-metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1;
+  margin-bottom: 10px;
+  color: var(--clr-text);
+}
+.rv2-metric--teal  .rv2-metric-value { color: #0d9488; }
+.rv2-metric--green .rv2-metric-value { color: #059669; }
+.rv2-metric--amber .rv2-metric-value { color: #d97706; }
+html[data-theme="dark"] .rv2-metric--amber .rv2-metric-value { color: #fbbf24; }
+
+.rv2-metric-foot {
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  line-height: 1.6;
+}
+
+/* Progress bar inside metric */
+.rv2-bar-track {
+  height: 6px;
+  background: var(--clr-border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.rv2-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+.rv2-bar-fill--teal  { background: #0d9488; }
+.rv2-bar-fill--green { background: #10b981; }
+.rv2-bar-fill--amber { background: #f59e0b; }
+
+/* Report / analytics row — 3 equal columns */
+.rv2-report {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 760px) {
+  .rv2-report { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .rv2-report { grid-template-columns: 1fr; }
+}
+
+.rv2-panel {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.rv2-panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--clr-text-muted);
+  margin-bottom: 14px;
+}
+.rv2-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+/* Ring chart legend items */
+.rv2-legend { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.rv2-legend-item { display: flex; align-items: center; gap: 8px; }
+.rv2-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rv2-legend-label { font-size: 11.5px; color: var(--clr-text-muted); flex: 1; }
+.rv2-legend-value { font-size: 12.5px; font-weight: 700; color: var(--clr-text); }
+
+/* No longer used — was right column wrapper */
+.rv2-report-right { display: contents; }
+
+.rv2-dot-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
+.rv2-dot-legend-item { display: flex; align-items: center; gap: 5px; }
+.rv2-dot-legend-swatch { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.rv2-dot-legend-lbl { font-size: 11.5px; color: var(--clr-text-muted); }
+.rv2-dot-legend-cnt { font-size: 12px; font-weight: 700; color: var(--clr-text); margin-left: 2px; }
+
+/* Transaction section */
+.rv2-txn {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.rv2-txn-hdr {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-wrap: wrap;
+}
+.rv2-txn-seg {
+  display: inline-flex;
+  background: var(--clr-surface-raised);
+  border: 1px solid var(--clr-border);
+  border-radius: 22px;
+  padding: 4px;
+  gap: 2px;
+}
+.rv2-txn-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 18px;
+  border: none;
+  background: none;
+  border-radius: 18px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: background .13s, color .13s;
+  white-space: nowrap;
+}
+.rv2-txn-tab:hover { color: var(--clr-text); }
+.rv2-txn-tab--on {
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  font-weight: 600;
+  box-shadow: 0 1px 5px rgba(0,0,0,.12);
+}
+.rv2-txn-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgba(13,148,136,.15);
+  color: var(--clr-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+.rv2-txn-tab--on .rv2-txn-tab-badge { background: rgba(13,148,136,.18); }
+
+.rv2-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 22px;
+  border: 1.5px solid var(--clr-border);
+  background: none;
+  color: var(--clr-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .13s;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.rv2-export:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+
+.rv2-loading {
+  display: flex;
+  justify-content: center;
+  padding: 56px;
+}
+.rv2-empty {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--clr-text-muted);
+}
+
+/* ── Revenue chart ──────────────────────────────────────────────────── */
+.rv-chart-card {
+  margin-top: var(--space-md);
+  padding: 14px 16px 8px;
+}
+
+.rv-chart-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.rv-chart-canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+}
+
+/* ─── Doctor stats panel ─────────────────────────────────────────────── */
+.rv-doctor-card {
+  padding: 0;
+  overflow: hidden;
+  margin-top: var(--space-md);
+}
+.rv-doctor-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--clr-text);
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--clr-border);
+}
+.rv-doctor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.rv-doctor-table thead tr {
+  background: var(--clr-surface);
+}
+.rv-doctor-table th {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--clr-text-muted);
+  border-bottom: 1px solid var(--clr-border);
+}
+.rv-doctor-row {
+  border-bottom: 1px solid var(--clr-border);
+  transition: background 0.1s;
+}
+.rv-doctor-row:last-child { border-bottom: none; }
+.rv-doctor-row:hover { background: var(--clr-bg); }
+.rv-doctor-table td { padding: 10px 14px; }
+.rv-doctor-name { font-weight: 500; }

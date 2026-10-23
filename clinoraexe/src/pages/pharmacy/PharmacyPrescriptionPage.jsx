@@ -53,6 +53,41 @@ function parseDosageStructured(str) {
 
 /* ── Icons ───────────────────────────────────────────────────────────── */
 
+/* Resolves expiry_date string to a local-midnight Date (avoids UTC shift in IST) */
+function parseLocalDate(str) {
+  if (!str) return null
+  const [y, m, d] = str.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+/* Shows stock warnings for a dispensing row — expired / expiring / short stock */
+function StockChips({ item, neededQty, stockInfoMap }) {
+  const info = stockInfoMap[(item.medicine_name ?? '').toLowerCase().trim()]
+  if (!info) return null
+
+  const today     = new Date(); today.setHours(0, 0, 0, 0)
+  const exp       = parseLocalDate(info.expiry_date)
+  const isExpired = exp && exp < today
+  const expSoon   = exp && !isExpired && (exp - today) / 86400000 <= 30
+  const outOfStock = !isExpired && info.qty === 0
+  const stockShort = !isExpired && !outOfStock && neededQty > 0 && info.qty < neededQty
+
+  if (!isExpired && !expSoon && !outOfStock && !stockShort) return null
+
+  const expLabel = exp
+    ? exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+    : ''
+
+  return (
+    <div className="rx-stock-flags">
+      {isExpired   && <span className="rx-stock-chip rx-stock-chip--danger">⚠ Expired</span>}
+      {expSoon     && <span className="rx-stock-chip rx-stock-chip--warn">Exp: {expLabel}</span>}
+      {outOfStock  && <span className="rx-stock-chip rx-stock-chip--danger">Out of stock</span>}
+      {stockShort  && <span className="rx-stock-chip rx-stock-chip--warn">Stock: {info.qty} left</span>}
+    </div>
+  )
+}
+
 function IconCheck({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -646,28 +681,13 @@ export default function PharmacyPrescriptionPage() {
                       {item.instructions && (
                         <div className="rx-medicine-instructions">{item.instructions}</div>
                       )}
-                      {isDispensing && (() => {
-                        const key  = item.medicine_name?.toLowerCase()?.trim()
-                        const info = key ? stockInfoMap[key] : null
-                        if (!info) return null
-                        const today      = new Date(); today.setHours(0,0,0,0)
-                        const exp        = info.expiry_date ? new Date(info.expiry_date) : null
-                        if (exp) exp.setHours(0,0,0,0)
-                        const isExpired  = exp && exp < today
-                        const expSoon    = exp && !isExpired && (exp - today) / 86400000 <= 30
-                        const neededQty  = parseInt(ds.qty) || 0
-                        const stockShort = !isExpired && neededQty > 0 && info.qty < neededQty
-                        if (!isExpired && !expSoon && !stockShort && info.qty > 0) return null
-                        const expLabel   = exp ? exp.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'2-digit' }) : ''
-                        return (
-                          <div className="rx-stock-flags">
-                            {isExpired  && <span className="rx-stock-chip rx-stock-chip--danger">⚠ Expired</span>}
-                            {expSoon    && <span className="rx-stock-chip rx-stock-chip--warn">Exp: {expLabel}</span>}
-                            {info.qty === 0 && !isExpired && <span className="rx-stock-chip rx-stock-chip--danger">Out of stock</span>}
-                            {stockShort && info.qty > 0  && <span className="rx-stock-chip rx-stock-chip--warn">Stock: {info.qty} left</span>}
-                          </div>
-                        )
-                      })()}
+                      {isDispensing && (
+                        <StockChips
+                          item={item}
+                          neededQty={parseInt(ds.qty) || 0}
+                          stockInfoMap={stockInfoMap}
+                        />
+                      )}
                     </div>
 
                     {/* Timing */}

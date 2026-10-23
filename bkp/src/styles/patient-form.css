@@ -1,0 +1,109 @@
+/* ─── Patient Form Modal (pfm-*) ─────────────────────────────────── */
+
+.pfm-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  margin: -20px -20px 20px;
+  background: color-mix(in srgb, var(--pfm-color, #6366f1) 8%, var(--clr-bg));
+  border-bottom: 1px solid var(--clr-border);
+  transition: background 0.3s;
+}
+
+html[data-theme="dark"] .pfm-preview {
+  background: color-mix(in srgb, var(--pfm-color, #6366f1) 12%, var(--clr-bg));
+}
+
+.pfm-preview-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--pfm-color, #6366f1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 3px 14px color-mix(in srgb, var(--pfm-color, #6366f1) 38%, transparent);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+
+.pfm-preview-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1.3;
+}
+
+.pfm-preview-sub {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+  margin-top: 2px;
+}
+
+.pfm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pfm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.pfm-field-label {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+}
+
+.pfm-label-icon {
+  display: flex;
+  align-items: center;
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+
+.pfm-required {
+  color: var(--clr-danger);
+  margin-left: 1px;
+}
+
+.pfm-gender-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.pfm-gender-pill {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s, transform 0.1s;
+  text-align: center;
+}
+
+.pfm-gender-pill:hover {
+  background: var(--clr-surface-hover);
+  color: var(--clr-text);
+  transform: translateY(-1px);
+}
+
+.pfm-gender-pill--on {
+  background: var(--clr-primary-subtle);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  font-weight: 600;
+  transform: none;
+}

@@ -1,0 +1,7 @@
+ALTER TABLE `visits`
+  ADD COLUMN `followup_date`   DATE NULL DEFAULT NULL,
+  ADD COLUMN `followup_notes`  TEXT NULL DEFAULT NULL,
+  ADD COLUMN `soap_subjective` TEXT NULL DEFAULT NULL,
+  ADD COLUMN `soap_objective`  TEXT NULL DEFAULT NULL,
+  ADD COLUMN `soap_assessment` TEXT NULL DEFAULT NULL,
+  ADD COLUMN `soap_plan`       TEXT NULL DEFAULT NULL;
