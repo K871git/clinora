@@ -326,12 +326,13 @@
   border-radius: 50%;
   background: #10b981;
   flex-shrink: 0;
-  animation: qrx-dot-pulse 2.5s ease-in-out infinite;
+  animation: qrx-dot-pulse 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: opacity, transform;
 }
 
 @keyframes qrx-dot-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.25; }
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%       { opacity: 0.2; transform: scale(0.75); }
 }
 
 /* Language toggle */
@@ -922,6 +923,16 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
 }
 
 /* ── Post-save Pharmacy Prompt ──────────────────────────────── */
+@keyframes rxp-fade-in {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(2px); }
+}
+
+@keyframes rxp-slide-up {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
 .qrx-pharmacy-overlay {
   position: fixed;
   inset: 0;
@@ -932,7 +943,8 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   justify-content: center;
   padding: 24px;
   backdrop-filter: blur(2px);
-  animation: rxp-fade-in 0.15s ease;
+  animation: rxp-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
 }
 
 .qrx-pharmacy-card {
@@ -943,7 +955,9 @@ html[data-theme="dark"] .qrx-existing-badge { color: #34d399; }
   width: 100%;
   text-align: center;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
-  animation: rxp-slide-up 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: rxp-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
 }
 
 .qrx-pharmacy-check {

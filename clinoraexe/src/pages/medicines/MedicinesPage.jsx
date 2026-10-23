@@ -27,6 +27,7 @@ const CATEGORY_OPTIONS = [
 
 const BLANK_FORM = {
   name: '', generic_name: '', category: '', unit: '', quantity: '', price: '',
+  batch_number: '', expiry_date: '',
 }
 
 const MED_AVATAR_COLORS = ['#6366f1','#0891b2','#059669','#7c3aed','#0284c7','#0d9488','#d97706','#db2777']
@@ -595,6 +596,27 @@ function MedicineModal({ title, form, setForm, onClose, onSubmit, saving, catego
                 />
               </div>
             </div>
+
+            <div className="med-row">
+              <div className="field-group">
+                <label className="field-label">Batch No.</label>
+                <input
+                  className="field"
+                  placeholder="e.g. BN2024-01"
+                  value={form.batch_number}
+                  onChange={e => setForm(f => ({ ...f, batch_number: e.target.value }))}
+                />
+              </div>
+              <div className="field-group">
+                <label className="field-label">Expiry Date</label>
+                <input
+                  className="field"
+                  type="date"
+                  value={form.expiry_date}
+                  onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="ml-modal-foot">
@@ -788,6 +810,8 @@ export default function MedicinesPage() {
       unit:         med.unit ?? '',
       quantity:     med.quantity != null ? String(med.quantity) : '',
       price:        med.price != null ? String(med.price) : '',
+      batch_number: med.batch_number ?? '',
+      expiry_date:  med.expiry_date ? med.expiry_date.slice(0, 10) : '',
     })
     setEditing(med)
     setModal('edit')
@@ -810,6 +834,8 @@ export default function MedicinesPage() {
       unit:         form.unit.trim()         || null,
       quantity:     form.quantity !== '' ? parseInt(form.quantity, 10) : 0,
       price:        form.price    !== '' ? parseFloat(form.price)     : null,
+      batch_number: form.batch_number.trim() || null,
+      expiry_date:  form.expiry_date.trim()  || null,
     }
     try {
       const { data } = await updateMedicine(editing.id, payload)
@@ -839,6 +865,17 @@ export default function MedicinesPage() {
   function fmtPrice(p) {
     if (p == null) return '—'
     return '₹' + parseFloat(p).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
+  function expiryStatus(dateStr) {
+    if (!dateStr) return null
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const exp   = new Date(dateStr); exp.setHours(0, 0, 0, 0)
+    const daysLeft = Math.floor((exp - today) / 86400000)
+    const label = exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+    if (daysLeft < 0)  return { mod: 'expired', label: 'Expired' }
+    if (daysLeft <= 30) return { mod: 'soon',    label }
+    return { mod: 'ok', label }
   }
 
   if (status === 'error') {
@@ -987,6 +1024,7 @@ export default function MedicinesPage() {
                     <th>Unit</th>
                     <th className="mlib-th-num">Qty</th>
                     <th className="mlib-th-num">Price</th>
+                    <th className="mlib-th-expiry">Expiry</th>
                     <th className="mlib-th-act"></th>
                   </tr>
                 </thead>
@@ -996,8 +1034,10 @@ export default function MedicinesPage() {
                     const isOut  = qty === 0
                     const isLow  = qty > 0 && qty < 10
                     const qtyMod = isOut ? 'out' : isLow ? 'low' : 'ok'
+                    const exp    = expiryStatus(med.expiry_date)
+                    const isExpiredRow = exp?.mod === 'expired'
                     return (
-                      <tr key={med.id} className={isOut ? 'ml-row--out-stock' : isLow ? 'ml-row--low-stock' : ''}>
+                      <tr key={med.id} className={isExpiredRow ? 'ml-row--expired' : isOut ? 'ml-row--out-stock' : isLow ? 'ml-row--low-stock' : ''}>
                         <td className="mlib-td-name">
                           <span className="mlib-med-avatar" style={{ background: medAvatarColor(med.name) }}>
                             {(med.name?.[0] ?? '?').toUpperCase()}
@@ -1020,6 +1060,12 @@ export default function MedicinesPage() {
                           <span className={`mlib-qty-badge mlib-qty-badge--${qtyMod}`}>{qty}</span>
                         </td>
                         <td className="mlib-td-num">{fmtPrice(med.price)}</td>
+                        <td className="mlib-td-expiry">
+                          {exp
+                            ? <span className={`mlib-expiry-chip mlib-expiry-chip--${exp.mod}`}>{exp.label}</span>
+                            : <span className="ml-td-muted">—</span>
+                          }
+                        </td>
                         <td className="mlib-td-act">
                           <div className="ml-row-actions">
                             <button className="mlib-row-btn mlib-row-btn--edit" title="Edit" onClick={() => openEdit(med)}>
