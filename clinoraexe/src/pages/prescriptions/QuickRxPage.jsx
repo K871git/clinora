@@ -122,6 +122,7 @@ export default function QuickRxPage() {
   const [tplPath, setTplPath]       = useState(null)
   const [tplLayout, setTplLayout]   = useState(null)
   const [clinicSettings, setClinicSettings] = useState(null)
+  const [tplError, setTplError]     = useState(false)
 
   /* UI */
   const [errors, setErrors]       = useState({})
@@ -148,6 +149,15 @@ export default function QuickRxPage() {
       if (defaultFee) setFee(String(defaultFee))
     }).catch(() => {})
   }, [])
+
+  /* ── Detect broken/missing template URL ── */
+  useEffect(() => {
+    if (!tplUrl) { setTplError(false); return }
+    setTplError(false)
+    fetch(tplUrl, { method: 'HEAD' })
+      .then(r => { if (!r.ok) setTplError(true) })
+      .catch(() => setTplError(true))
+  }, [tplUrl])
 
   /* ── Scan PDF template layout for live preview ── */
   useEffect(() => {
@@ -745,7 +755,7 @@ export default function QuickRxPage() {
           doctorNotes={doctorNotes}
           vitals={visitObj}
           langLabels={LANG[lang] || LANG.en}
-          templateUrl={tplUrl}
+          templateUrl={tplError ? null : tplUrl}
           templatePath={tplPath}
           layout={tplLayout}
           clinicSettings={clinicSettings}
@@ -757,6 +767,16 @@ export default function QuickRxPage() {
 
       {/* ── Actions ── */}
       <div className="qrx-footer">
+        {(!tplUrl || tplError) && (
+          <div className="qrx-tpl-note">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {tplError
+              ? 'Template file not found — please re-upload in Settings. Showing default template.'
+              : 'Upload your prescription template in Settings to view it in your own format. Currently using the default template.'}
+          </div>
+        )}
         <div className="qrx-footer-actions">
           <button type="button" className="btn-secondary" onClick={() => navigate(-1)} disabled={submitting}>Cancel</button>
           <button type="button" className="btn-primary" onClick={handleSave} disabled={submitting}>
@@ -802,7 +822,7 @@ export default function QuickRxPage() {
           doctorName={user?.name || 'Doctor'}
           clinicName={user?.clinic?.name || 'Clinic'}
           vitals={visitObj}
-          templateUrl={tplUrl}
+          templateUrl={tplError ? null : tplUrl}
           templatePath={tplPath}
           clinicSettings={clinicSettings}
         />
@@ -849,7 +869,14 @@ function RxMedList({ filled, medLine }) {
 }
 
 /* ── Live prescription preview panel ────────────────────────── */
+const PREVIEW_SAMPLE_ITEMS = [
+  { id: 's1', medicine_name: 'TAB. Paracetamol 500mg',  dosage: '1-0-1 After meal',  duration: '5 days',  instructions: 'Acetaminophen 500mg' },
+  { id: 's2', medicine_name: 'TAB. Cetirizine 10mg',    dosage: '0-0-1 Before meal', duration: '3 days',  instructions: '' },
+  { id: 's3', medicine_name: 'CAP. Amoxicillin 500mg',  dosage: '1-1-1 After meal',  duration: '7 days',  instructions: '' },
+]
+
 function RxLivePanel({ patient, medicines, doctorNotes, vitals, langLabels: L, templateUrl, templatePath, layout, clinicSettings, lang, onClick }) {
+  const { user } = useContext(AuthContext)
   const filled = medicines.filter(m => m.name.trim())
   const now = new Date()
   const dd   = String(now.getDate()).padStart(2,'0')
@@ -869,37 +896,40 @@ function RxLivePanel({ patient, medicines, doctorNotes, vitals, langLabels: L, t
   /* Build a prescription-shaped object for DefaultPrescriptionTemplate from live form state */
   const livePrescription = {
     patient: {
-      name:   patient?.name   || '',
-      age:    patient?.age    || null,
-      gender: patient?.gender || null,
-      mobile: patient?.mobile || null,
-      address:patient?.address|| null,
+      name:    patient?.name    || '',
+      age:     patient?.age     || null,
+      gender:  patient?.gender  || null,
+      mobile:  patient?.mobile  || null,
+      address: patient?.address || null,
     },
     prescribed_at: now.toISOString(),
     visit: vitals || null,
-    items: filled.map((m, i) => ({
-      id:           i,
-      medicine_name: m.name,
-      dosage: [
-        m.morning ? '1' : '0', m.afternoon ? '1' : '0', m.evening ? '1' : '0',
-      ].join('-') + (m.afterMeal ? ' After meal' : m.beforeMeal ? ' Before meal' : ''),
-      duration: m.days ? `${m.days} days` : '',
-      instructions: m.notes || '',
-    })),
+    /* Show sample medicines only on a completely blank form (no patient yet) */
+    items: filled.length > 0
+      ? filled.map((m, i) => ({
+          id:            i,
+          medicine_name: m.name,
+          dosage: [
+            m.morning ? '1' : '0', m.afternoon ? '1' : '0', m.evening ? '1' : '0',
+          ].join('-') + (m.afterMeal ? ' After meal' : m.beforeMeal ? ' Before meal' : ''),
+          duration:     m.days ? `${m.days} days` : '',
+          instructions: m.notes || '',
+        }))
+      : patient?.name?.trim() ? [] : PREVIEW_SAMPLE_ITEMS,
     doctor_notes: doctorNotes || '',
   }
 
   const cl = clinicSettings?.clinic ?? {}
   const previewClinic = {
-    name:          cl.name,
-    doctorName:    cl.doctor_name,
-    qualification: cl.qualification,
-    regNo:         cl.registration_number,
-    address:       cl.address,
-    contact:       cl.contact,
-    timing:        cl.clinic_timing,
-    days:          cl.clinic_days,
-    logoUrl:       cl.logo_url,
+    name:          cl.name              || '',
+    doctorName:    cl.doctor_name       || user?.name  || '',
+    qualification: cl.qualification     || '',
+    regNo:         cl.registration_number || '',
+    address:       cl.address           || '',
+    contact:       cl.contact           || '',
+    timing:        cl.clinic_timing     || '',
+    days:          cl.clinic_days       || '',
+    logoUrl:       cl.logo_url          || null,
   }
 
   return (

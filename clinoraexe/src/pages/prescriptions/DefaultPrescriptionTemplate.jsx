@@ -300,6 +300,9 @@ export default function DefaultPrescriptionTemplate({
         </div>
       )}
 
+      {/* ── Spacer pushes sig+footer to bottom ── */}
+      <div className="dpt-spacer" />
+
       {/* ── Signature ── */}
       <div className="dpt-sig-block">
         <div className="dpt-sig-line" />

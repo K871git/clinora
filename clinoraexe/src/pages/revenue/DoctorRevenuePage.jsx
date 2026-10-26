@@ -1,6 +1,5 @@
-import '../../styles/revenue-page.css'
 import '../../styles/dr-revenue.css'
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSessionState } from '../../hooks/useSessionState'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -111,41 +110,69 @@ export default function DoctorRevenuePage() {
   const [period,      setPeriod]      = useSessionState('revenue:period', 'this_month')
   const [filter,      setFilter]      = useSessionState('revenue:filter', 'all')
   const [txs,         setTxs]         = useState([])
-  const [txLoading,   setTxLoading]   = useState(false)
+  const [txLoading,   setTxLoading]   = useState(true)
   const [savingId,    setSavingId]    = useState(null)
   const [doctorStats, setDoctorStats] = useState([])
+  const initialized = useRef(false)
 
-  const loadStats = useCallback(() => {
-    getRevenueDetails()
-      .then(({ data: r }) => { setData(r.data); setStatus('done') })
-      .catch(() => setStatus('error'))
-  }, [])
-
-  useEffect(() => { loadStats() }, [loadStats])
-
-  const loadTxs = useCallback((p, f) => {
+  /* Parallel initial load — all 3 requests fire at once */
+  useEffect(() => {
     setTxLoading(true)
-    getRevenueTransactions(p, f)
+    Promise.all([
+      getRevenueDetails(),
+      getRevenueTransactions(period, filter),
+      getVisitStatsByDoctor(period),
+    ])
+      .then(([statsRes, txsRes, drRes]) => {
+        setData(statsRes.data.data)
+        setTxs(txsRes.data.data ?? [])
+        setDoctorStats(drRes.data.data ?? [])
+        setStatus('done')
+        initialized.current = true
+      })
+      .catch(() => setStatus('error'))
+      .finally(() => setTxLoading(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Period change → reload txs + doctor stats in parallel */
+  useEffect(() => {
+    if (!initialized.current) return
+    setTxLoading(true)
+    Promise.all([
+      getRevenueTransactions(period, filter),
+      getVisitStatsByDoctor(period),
+    ])
+      .then(([txsRes, drRes]) => {
+        setTxs(txsRes.data.data ?? [])
+        setDoctorStats(drRes.data.data ?? [])
+      })
+      .catch(() => toast.error('Could not reload data.'))
+      .finally(() => setTxLoading(false))
+  }, [period]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Filter change → txs only */
+  useEffect(() => {
+    if (!initialized.current) return
+    setTxLoading(true)
+    getRevenueTransactions(period, filter)
       .then(({ data: r }) => setTxs(r.data ?? []))
       .catch(() => toast.error('Could not load transactions.'))
       .finally(() => setTxLoading(false))
-  }, [])
-
-  useEffect(() => { if (status === 'done') loadTxs(period, filter) }, [period, filter, status, loadTxs])
-
-  useEffect(() => {
-    if (status !== 'done') return
-    getVisitStatsByDoctor(period)
-      .then(({ data: r }) => setDoctorStats(r.data ?? []))
-      .catch(() => {})
-  }, [period, status])
+  }, [filter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function markPaid(tx) {
     setSavingId(tx.id)
     try {
       await recordVisitPayment(tx.id, { payment_status: 'paid', amount_paid: tx.consultation_fee })
       toast.success(`Marked paid — ${tx.patient?.name}`)
-      loadStats(); loadTxs(period, filter)
+      const [statsRes, txsRes, drRes] = await Promise.all([
+        getRevenueDetails(),
+        getRevenueTransactions(period, filter),
+        getVisitStatsByDoctor(period),
+      ])
+      setData(statsRes.data.data)
+      setTxs(txsRes.data.data ?? [])
+      setDoctorStats(drRes.data.data ?? [])
     } catch { toast.error('Could not update payment.') }
     finally { setSavingId(null) }
   }
@@ -166,6 +193,10 @@ export default function DoctorRevenuePage() {
   const totalFee  = txs.reduce((s, t) => s + t.consultation_fee, 0)
   const totalPaid = txs.reduce((s, t) => s + t.amount_paid, 0)
   const totalDue  = txs.reduce((s, t) => s + Math.max(0, t.consultation_fee - t.amount_paid), 0)
+
+  function handleStatKeyDown(e, filterKey) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFilter(filterKey) }
+  }
 
   return (
     <div className="rv2-page drv-page">
@@ -191,19 +222,37 @@ export default function DoctorRevenuePage() {
 
       {/* ── Stat strip ── */}
       <div className="drv-strip">
-        <div className="drv-stat drv-stat--blue" onClick={() => setFilter('all')} role="button" tabIndex={0}>
+        <div
+          className="drv-stat drv-stat--blue"
+          onClick={() => setFilter('all')}
+          onKeyDown={e => handleStatKeyDown(e, 'all')}
+          role="button"
+          tabIndex={0}
+        >
           <div className="drv-stat-val">{fmt(p.revenue)}</div>
           <div className="drv-stat-lbl">Total Billed</div>
           <div className="drv-stat-sub">{p.total_visits ?? 0} visits</div>
         </div>
         <div className="drv-stat-divider" />
-        <div className="drv-stat drv-stat--green" onClick={() => setFilter('collected')} role="button" tabIndex={0}>
+        <div
+          className="drv-stat drv-stat--green"
+          onClick={() => setFilter('collected')}
+          onKeyDown={e => handleStatKeyDown(e, 'collected')}
+          role="button"
+          tabIndex={0}
+        >
           <div className="drv-stat-val">{fmt(p.amount_collected)}</div>
           <div className="drv-stat-lbl">Collected</div>
           <div className="drv-stat-sub">{collRate}% collection rate</div>
         </div>
         <div className="drv-stat-divider" />
-        <div className={`drv-stat drv-stat--amber${(p.unpaid_count ?? 0) > 0 ? ' drv-stat--alert' : ''}`} onClick={() => setFilter('outstanding')} role="button" tabIndex={0}>
+        <div
+          className={`drv-stat drv-stat--amber${(p.unpaid_count ?? 0) > 0 ? ' drv-stat--alert' : ''}`}
+          onClick={() => setFilter('outstanding')}
+          onKeyDown={e => handleStatKeyDown(e, 'outstanding')}
+          role="button"
+          tabIndex={0}
+        >
           <div className="drv-stat-val">{fmt(p.debt_amount)}</div>
           <div className="drv-stat-lbl">Outstanding</div>
           <div className="drv-stat-sub">{p.unpaid_count ?? 0} unpaid</div>
