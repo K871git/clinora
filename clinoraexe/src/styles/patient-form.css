@@ -1,5 +1,20 @@
 /* ─── Patient Form Modal (pfm-*) ─────────────────────────────────── */
 
+@keyframes pfm-banner-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pfm-field-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pfm-consent-date-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .pfm-preview {
   display: flex;
   align-items: center;
@@ -8,7 +23,8 @@
   margin: -20px -20px 20px;
   background: color-mix(in srgb, var(--pfm-color, #6366f1) 8%, var(--clr-bg));
   border-bottom: 1px solid var(--clr-border);
-  transition: background 0.3s;
+  transition: background 0.42s cubic-bezier(0.16,1,0.3,1);
+  animation: pfm-banner-in 0.44s cubic-bezier(0.16,1,0.3,1) both;
 }
 
 html[data-theme="dark"] .pfm-preview {
@@ -28,7 +44,10 @@ html[data-theme="dark"] .pfm-preview {
   font-weight: 700;
   flex-shrink: 0;
   box-shadow: 0 3px 14px color-mix(in srgb, var(--pfm-color, #6366f1) 38%, transparent);
-  transition: background 0.25s, box-shadow 0.25s;
+  transition:
+    background 0.38s ease,
+    box-shadow 0.38s ease,
+    transform 0.32s cubic-bezier(0.34,1.15,0.64,1);
 }
 
 .pfm-preview-name {
@@ -49,6 +68,18 @@ html[data-theme="dark"] .pfm-preview {
   flex-direction: column;
   gap: 14px;
 }
+
+/* Staggered field entrance — each child slides in sequentially */
+.pfm-form > * {
+  animation: pfm-field-in 0.40s cubic-bezier(0.16,1,0.3,1) both;
+}
+.pfm-form > *:nth-child(1) { animation-delay: 0.07s; }
+.pfm-form > *:nth-child(2) { animation-delay: 0.13s; }
+.pfm-form > *:nth-child(3) { animation-delay: 0.18s; }
+.pfm-form > *:nth-child(4) { animation-delay: 0.23s; }
+.pfm-form > *:nth-child(5) { animation-delay: 0.28s; }
+.pfm-form > *:nth-child(6) { animation-delay: 0.33s; }
+.pfm-form > *:nth-child(7) { animation-delay: 0.38s; }
 
 .pfm-row {
   display: grid;
@@ -90,14 +121,21 @@ html[data-theme="dark"] .pfm-preview {
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.15s, transform 0.1s;
   text-align: center;
+  /* Specific properties only — no 'all' */
+  transition:
+    background 0.24s ease,
+    border-color 0.24s ease,
+    color 0.24s ease,
+    transform 0.32s cubic-bezier(0.34,1.12,0.64,1),
+    box-shadow 0.24s ease;
 }
 
 .pfm-gender-pill:hover {
   background: var(--clr-surface-hover);
   color: var(--clr-text);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .pfm-gender-pill--on {
@@ -105,5 +143,13 @@ html[data-theme="dark"] .pfm-preview {
   border-color: var(--clr-primary);
   color: var(--clr-primary);
   font-weight: 600;
-  transform: none;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(59,130,246,0.20),
+              inset 0 1px 0 rgba(255,255,255,0.40);
+}
+
+/* Consent date row — animates in when checkbox is checked */
+.pfm-consent-date {
+  overflow: hidden;
+  animation: pfm-consent-date-in 0.30s cubic-bezier(0.16,1,0.3,1) both;
 }

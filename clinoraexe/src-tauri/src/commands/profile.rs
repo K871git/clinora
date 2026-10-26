@@ -72,9 +72,10 @@ pub async fn update_profile(data: ProfilePayload, state: State<'_, AppState>) ->
     let row = sqlx::query("SELECT * FROM users WHERE id=?").bind(session.id).fetch_one(&state.db).await?;
     let updated = user_to_json(&row);
 
-    let mut lock = state.session.lock().unwrap();
-    if let Some(ref mut u) = *lock {
-        u.name = updated["name"].as_str().unwrap_or(&u.name).to_string();
+    if let Ok(mut lock) = state.session.lock() {
+        if let Some(ref mut u) = *lock {
+            u.name = updated["name"].as_str().unwrap_or(&u.name).to_string();
+        }
     }
 
     Ok(json!({ "user": updated }))
@@ -131,8 +132,7 @@ pub async fn upload_avatar(data: AvatarPayload, state: State<'_, AppState>) -> A
     sqlx::query("UPDATE users SET avatar=?, updated_at=NOW() WHERE id=?")
         .bind(&avatar_path).bind(session.id).execute(&state.db).await?;
 
-    {
-        let mut lock = state.session.lock().unwrap();
+    if let Ok(mut lock) = state.session.lock() {
         if let Some(ref mut u) = *lock { u.avatar = Some(avatar_path.clone()); }
     }
 
@@ -145,8 +145,7 @@ pub async fn remove_avatar(state: State<'_, AppState>) -> AppResult<Value> {
     let session = get_session(&state)?;
     sqlx::query("UPDATE users SET avatar=NULL, updated_at=NOW() WHERE id=?")
         .bind(session.id).execute(&state.db).await?;
-    {
-        let mut lock = state.session.lock().unwrap();
+    if let Ok(mut lock) = state.session.lock() {
         if let Some(ref mut u) = *lock { u.avatar = None; }
     }
     let row = sqlx::query("SELECT * FROM users WHERE id=?").bind(session.id).fetch_one(&state.db).await?;

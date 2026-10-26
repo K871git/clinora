@@ -5,12 +5,15 @@
   width: 210mm;
   min-height: 297mm;
   background: #fff;
-  padding: 8mm 12mm 10mm;
+  padding: 0 12mm 10mm;
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 10.5pt;
   color: #111;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-top: 6px solid #0d9488;
 }
 .dpt-paper--preview {
   box-shadow: 0 4px 28px rgba(0,0,0,.18);
@@ -45,6 +48,7 @@
   position: relative;
   z-index: 1;
   min-height: 76px;
+  padding-top: 8mm;
 }
 
 /* LEFT — clinic */
@@ -123,7 +127,7 @@
 /* ── Teal divider ── */
 .dpt-divider {
   border: none;
-  border-top: 2px solid #0d9488;
+  border-top: 2.5px solid #0d9488;
   margin: 5px 0 5px;
   position: relative;
   z-index: 1;
@@ -134,13 +138,14 @@
    ══════════════════════════════════════════ */
 .dpt-patient-block {
   position: relative;
-  border: 1px solid #bbb;
-  border-left: 3.5px solid #0d9488;
-  padding: 6px 64px 6px 10px;   /* right padding reserves space for date badge */
+  border: 1px solid #b8e2df;
+  border-left: 4px solid #0d9488;
+  padding: 6px 72px 6px 10px;
   margin-bottom: 5px;
   z-index: 1;
-  background: #fafffe;
+  background: linear-gradient(90deg, #f0fbfa 0%, #fafffe 60%);
   min-height: 42px;
+  border-radius: 0 4px 4px 0;
 }
 .dpt-pt-main-line {
   font-size: 10.5pt;
@@ -168,11 +173,15 @@
 .dpt-pt-date-badge {
   position: absolute;
   top: 6px;
-  right: 10px;
-  font-size: 9.5pt;
+  right: 8px;
+  font-size: 8.5pt;
   font-weight: 600;
-  color: #222;
+  color: #0d3d3a;
   white-space: nowrap;
+  background: #e2f4f2;
+  border: 1px solid #0d9488;
+  border-radius: 3px;
+  padding: 1px 8px;
 }
 
 /* ══════════════════════════════════════════
@@ -204,14 +213,16 @@
 .dpt-cc-cf-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border: 1px solid #bbb;
+  border: 1px solid #b8e2df;
   margin-bottom: 4px;
   position: relative;
   z-index: 1;
+  border-radius: 4px;
+  overflow: hidden;
 }
 .dpt-cc-col {
   padding: 5px 8px;
-  border-right: 1px solid #bbb;
+  border-right: 1px solid #b8e2df;
 }
 .dpt-cf-col {
   padding: 5px 8px;
@@ -235,13 +246,17 @@
 /* ── Diagnosis ── */
 .dpt-diagnosis-block {
   margin: 4px 0 3px;
+  padding: 5px 8px;
+  border-left: 3.5px solid #0d9488;
+  background: #f5fffe;
+  border-radius: 0 4px 4px 0;
   position: relative;
   z-index: 1;
 }
 .dpt-diag-label {
   font-size: 10pt;
   font-weight: 700;
-  color: #222;
+  color: #0d3d3a;
   margin-bottom: 1px;
 }
 .dpt-diag-val {
@@ -267,9 +282,6 @@
 
 /* ══════════════════════════════════════════
    MEDICINE TABLE
-   Header: solid teal background
-   Rows: borderless, subtle separators
-   Generic name sub-line, split duration
    ══════════════════════════════════════════ */
 
 /* Column header row — teal bg, white text */
@@ -316,13 +328,16 @@
   margin-bottom: 8px;
 }
 
-/* Per-medicine entry (wraps main row + generic sub-line) */
+/* Per-medicine entry */
 .dpt-med-entry {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #ddf0ee;
   padding: 6px 6px 5px;
 }
+.dpt-med-entry:nth-child(even) {
+  background: #f0fbfa;
+}
 .dpt-med-entry:last-child {
-  border-bottom: 1.5px solid #999;
+  border-bottom: 2px solid #0d9488;
 }
 
 /* Main row: name | timing | duration */
@@ -341,9 +356,9 @@
   min-width: 0;
 }
 .dpt-med-num {
-  font-size: 10pt;
+  font-size: 9.5pt;
   font-weight: 700;
-  color: #555;
+  color: #0d9488;
   flex-shrink: 0;
   min-width: 22px;
 }
@@ -370,7 +385,7 @@
 .dpt-med-days {
   font-size: 9.5pt;
   font-weight: 700;
-  color: #111;
+  color: #0d3d3a;
 }
 .dpt-med-tot {
   font-size: 8.5pt;
@@ -401,13 +416,17 @@
 /* ── Advice ── */
 .dpt-advice-block {
   margin: 6px 0;
+  padding: 6px 10px;
+  border-left: 3.5px solid #f59e0b;
+  background: #fffcf0;
+  border-radius: 0 4px 4px 0;
   position: relative;
   z-index: 1;
 }
 .dpt-advice-label {
   font-size: 10.5pt;
   font-weight: 700;
-  color: #0d3d3a;
+  color: #92400e;
   margin-bottom: 3px;
 }
 .dpt-advice-line {
@@ -421,25 +440,36 @@
 .dpt-followup-row {
   font-size: 10.5pt;
   font-weight: 700;
-  color: #0d4a47;
-  margin: 5px 0 10px;
+  color: #fff;
+  background: #0d9488;
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 3px;
+  margin: 5px 0 8px;
   position: relative;
   z-index: 1;
 }
-.dpt-followup-val { font-weight: 600; color: #333; }
+.dpt-followup-val { font-weight: 600; color: #e2f4f2; margin-left: 4px; }
+
+/* ── Spacer — pushes sig+footer to bottom ── */
+.dpt-spacer {
+  flex: 1;
+  min-height: 16mm;
+}
 
 /* ── Signature ── */
 .dpt-sig-block {
-  margin-top: 14mm;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  margin-top: 0;
   position: relative;
   z-index: 1;
+  padding-bottom: 6px;
 }
 .dpt-sig-line {
   width: 130px;
-  border-top: 1.5px solid #444;
+  border-top: 1.5px solid #0d9488;
   margin-bottom: 4px;
 }
 .dpt-sig-name { font-size: 11pt; font-weight: 700; color: #0d3d3a; }
@@ -447,11 +477,11 @@
 
 /* ── Footer ── */
 .dpt-footer {
-  margin-top: 8px;
-  border-top: 2px solid #0d9488;
+  border-top: 3px solid #0d9488;
   padding-top: 5px;
   position: relative;
   z-index: 1;
+  background: linear-gradient(180deg, #f0fbfa 0%, #fff 100%);
 }
 .dpt-footer-line {
   font-size: 8.5pt;
@@ -471,7 +501,7 @@
     min-height: 297mm;
     box-shadow: none;
     margin: 0;
-    padding: 8mm 12mm 10mm;
+    padding: 0 12mm 10mm;
   }
 
   .dpt-paper,
@@ -481,9 +511,13 @@
   .dpt-vitals-bar,
   .dpt-vital-item,
   .dpt-med-header,
+  .dpt-med-entry:nth-child(even),
   .dpt-cc-title,
   .dpt-cf-title,
   .dpt-cc-cf-grid,
+  .dpt-diagnosis-block,
+  .dpt-advice-block,
+  .dpt-followup-row,
   .dpt-clinic-name,
   .dpt-dr-name,
   .dpt-rx-symbol,

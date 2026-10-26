@@ -108,6 +108,15 @@
   white-space: nowrap;
 }
 
+.prf-avatar-error {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--clr-danger);
+  max-width: 140px;
+  text-align: center;
+  line-height: 1.4;
+}
+
 /* Hero identity */
 .prf-hero-info {
   flex: 1;

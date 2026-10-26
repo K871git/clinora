@@ -5,6 +5,9 @@ import profileService from '../../services/profileService'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { sanitizeMobile, validateMobile, validateDob, validateEmail } from '../../lib/inputValidators'
 
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_SIZE_BYTES = 7 * 1024 * 1024
+
 function getAvatarUrl(path) {
   if (!path) return null
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path
@@ -24,7 +27,7 @@ export default function ProfilePage() {
   const [infoErrors, setInfoErrors] = useState({})
 
   /* ── Personal details ───────────────────────────────────────────────── */
-  const [personal, setPersonal]           = useState({
+  const [personal, setPersonal] = useState({
     username: user?.username ?? '',
     phone:    user?.phone    ?? '',
     gender:   user?.gender   ?? '',
@@ -45,6 +48,7 @@ export default function ProfilePage() {
 
   /* ── Avatar ─────────────────────────────────────────────────────────── */
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError,     setAvatarError]     = useState('')
   const fileRef = useRef(null)
 
   /* ── Handlers ───────────────────────────────────────────────────────── */
@@ -79,7 +83,7 @@ export default function ProfilePage() {
       await doInfoSave()
       await doPersonalSave()
       setAllSaved(true)
-      setTimeout(() => setAllSaved(false), 3000)
+      setTimeout(() => setAllSaved(false), 5000)
     } catch (err) {
       if (err.response?.status === 422) {
         const errs = err.response.data.errors ?? {}
@@ -106,9 +110,10 @@ export default function ProfilePage() {
       await profileService.changePassword(pwd)
       setPwdSaved(true)
       setPwd({ current_password: '', password: '', password_confirmation: '' })
-      setTimeout(() => setPwdSaved(false), 3000)
+      setTimeout(() => setPwdSaved(false), 5000)
     } catch (err) {
       if (err.response?.status === 422) setPwdErrors(err.response.data.errors ?? {})
+      else setPwdErrors({ current_password: [typeof err === 'string' ? err : 'Password update failed. Please try again.'] })
     } finally {
       setPwdSaving(false)
     }
@@ -117,27 +122,44 @@ export default function ProfilePage() {
   async function handleAvatarChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    setAvatarError('')
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setAvatarError('Only JPG, PNG, or WebP photos are allowed.')
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      setAvatarError('Photo must be under 7 MB.')
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
     setAvatarUploading(true)
     try {
       const { data } = await profileService.uploadAvatar(file)
       updateUser(data.user)
-    } catch { /* silent */ } finally {
+    } catch (err) {
+      setAvatarError(typeof err === 'string' ? err : 'Photo upload failed. Please try again.')
+    } finally {
       setAvatarUploading(false)
       if (fileRef.current) fileRef.current.value = ''
     }
   }
 
   async function handleAvatarRemove() {
+    setAvatarError('')
     setAvatarUploading(true)
     try {
       const { data } = await profileService.removeAvatar()
       updateUser(data.user)
-    } catch { /* silent */ } finally {
+    } catch (err) {
+      setAvatarError(typeof err === 'string' ? err : 'Could not remove photo. Please try again.')
+    } finally {
       setAvatarUploading(false)
     }
   }
 
   const imgSrc = getAvatarUrl(user?.avatar)
+  const pwdMismatch = pwd.password_confirmation.length > 0 && pwd.password !== pwd.password_confirmation
 
   return (
     <div className="prf-page">
@@ -163,7 +185,7 @@ export default function ProfilePage() {
             <input
               ref={fileRef}
               type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
+              accept="image/jpeg,image/png,image/webp"
               style={{ display: 'none' }}
               onChange={handleAvatarChange}
             />
@@ -171,6 +193,8 @@ export default function ProfilePage() {
             {user?.avatar && !avatarUploading && (
               <button className="prf-remove-avatar" onClick={handleAvatarRemove}>Remove photo</button>
             )}
+
+            {avatarError && <p className="prf-avatar-error">{avatarError}</p>}
           </div>
 
           <div className="prf-hero-info">
@@ -193,28 +217,31 @@ export default function ProfilePage() {
         <form className="prf-card-body" id="prf-form-info" onSubmit={handleSaveAll}>
           <div className="prf-grid-2">
             <div className="prf-field">
-              <label className="prf-label">Full Name <span className="prf-required">*</span></label>
+              <label className="prf-label" htmlFor="prf-name">Full Name <span className="prf-required">*</span></label>
               <input
+                id="prf-name"
                 className={`stg-input${infoErrors.name ? ' prf-input--error' : ''}`}
                 value={info.name}
                 onChange={e => setInfo(p => ({ ...p, name: e.target.value }))}
                 placeholder="Full name"
+                disabled={allSaving}
               />
               {infoErrors.name && <span className="prf-error">{infoErrors.name[0]}</span>}
             </div>
             <div className="prf-field">
-              <label className="prf-label">Email Address <span className="prf-required">*</span></label>
+              <label className="prf-label" htmlFor="prf-email">Email Address <span className="prf-required">*</span></label>
               <input
+                id="prf-email"
                 type="email"
                 className={`stg-input${infoErrors.email ? ' prf-input--error' : ''}`}
                 value={info.email}
                 onChange={e => setInfo(p => ({ ...p, email: e.target.value }))}
                 placeholder="you@clinic.com"
+                disabled={allSaving}
               />
               {infoErrors.email && <span className="prf-error">{infoErrors.email[0]}</span>}
             </div>
           </div>
-
         </form>
       </div>
 
@@ -225,23 +252,26 @@ export default function ProfilePage() {
 
           <div className="prf-grid-2">
             <div className="prf-field">
-              <label className="prf-label">Username</label>
+              <label className="prf-label" htmlFor="prf-username">Username</label>
               <div className="prf-input-prefix-wrap">
                 <span className="prf-input-prefix">@</span>
                 <input
+                  id="prf-username"
                   className={`stg-input prf-input-prefixed${persErrors.username ? ' prf-input--error' : ''}`}
                   value={personal.username}
                   onChange={e => setPersonal(p => ({ ...p, username: e.target.value }))}
                   placeholder="e.g. sonali.ph"
                   autoComplete="off"
+                  disabled={allSaving}
                 />
               </div>
               {persErrors.username && <span className="prf-error">{persErrors.username[0]}</span>}
             </div>
 
             <div className="prf-field">
-              <label className="prf-label">Phone / Mobile</label>
+              <label className="prf-label" htmlFor="prf-phone">Phone / Mobile</label>
               <input
+                id="prf-phone"
                 type="tel"
                 className={`stg-input${persErrors.phone ? ' prf-input--error' : ''}`}
                 value={personal.phone}
@@ -249,6 +279,7 @@ export default function ProfilePage() {
                 placeholder="10-digit mobile number"
                 inputMode="numeric"
                 maxLength={10}
+                disabled={allSaving}
               />
               {persErrors.phone && <span className="prf-error">{persErrors.phone[0]}</span>}
             </div>
@@ -256,11 +287,13 @@ export default function ProfilePage() {
 
           <div className="prf-grid-2">
             <div className="prf-field">
-              <label className="prf-label">Gender</label>
+              <label className="prf-label" htmlFor="prf-gender">Gender</label>
               <select
+                id="prf-gender"
                 className={`stg-input prf-select${persErrors.gender ? ' prf-input--error' : ''}`}
                 value={personal.gender}
                 onChange={e => setPersonal(p => ({ ...p, gender: e.target.value }))}
+                disabled={allSaving}
               >
                 <option value="">— Select gender —</option>
                 <option value="male">Male</option>
@@ -271,26 +304,30 @@ export default function ProfilePage() {
             </div>
 
             <div className="prf-field">
-              <label className="prf-label">Date of Birth</label>
+              <label className="prf-label" htmlFor="prf-dob">Date of Birth</label>
               <input
+                id="prf-dob"
                 type="date"
                 className={`stg-input${persErrors.dob ? ' prf-input--error' : ''}`}
                 value={personal.dob}
                 onChange={e => setPersonal(p => ({ ...p, dob: e.target.value }))}
                 max={new Date().toISOString().split('T')[0]}
+                disabled={allSaving}
               />
               {persErrors.dob && <span className="prf-error">{persErrors.dob[0]}</span>}
             </div>
           </div>
 
           <div className="prf-field">
-            <label className="prf-label">Address</label>
+            <label className="prf-label" htmlFor="prf-address">Address</label>
             <textarea
+              id="prf-address"
               className={`stg-input prf-textarea${persErrors.address ? ' prf-input--error' : ''}`}
               value={personal.address}
               onChange={e => setPersonal(p => ({ ...p, address: e.target.value }))}
               placeholder="Street, City, Province"
               rows={2}
+              disabled={allSaving}
             />
             {persErrors.address && <span className="prf-error">{persErrors.address[0]}</span>}
           </div>
@@ -323,8 +360,9 @@ export default function ProfilePage() {
         <div className="prf-card-head"><IconLock /> Change Password</div>
         <form className="prf-card-body" onSubmit={handlePwdSave}>
           <div className="prf-field">
-            <label className="prf-label">Current Password</label>
+            <label className="prf-label" htmlFor="prf-cur-pwd">Current Password</label>
             <input
+              id="prf-cur-pwd"
               type="password"
               className={`stg-input${pwdErrors.current_password ? ' prf-input--error' : ''}`}
               value={pwd.current_password}
@@ -339,8 +377,9 @@ export default function ProfilePage() {
 
           <div className="prf-grid-2">
             <div className="prf-field">
-              <label className="prf-label">New Password</label>
+              <label className="prf-label" htmlFor="prf-new-pwd">New Password</label>
               <input
+                id="prf-new-pwd"
                 type="password"
                 className={`stg-input${pwdErrors.password ? ' prf-input--error' : ''}`}
                 value={pwd.password}
@@ -351,24 +390,27 @@ export default function ProfilePage() {
               {pwdErrors.password && <span className="prf-error">{pwdErrors.password[0]}</span>}
             </div>
             <div className="prf-field">
-              <label className="prf-label">Confirm New Password</label>
+              <label className="prf-label" htmlFor="prf-conf-pwd">Confirm New Password</label>
               <input
+                id="prf-conf-pwd"
                 type="password"
-                className={`stg-input${pwdErrors.password_confirmation ? ' prf-input--error' : ''}`}
+                className={`stg-input${pwdErrors.password_confirmation || pwdMismatch ? ' prf-input--error' : ''}`}
                 value={pwd.password_confirmation}
                 onChange={e => setPwd(p => ({ ...p, password_confirmation: e.target.value }))}
                 placeholder="Repeat new password"
                 autoComplete="new-password"
               />
-              {pwdErrors.password_confirmation && (
-                <span className="prf-error">{pwdErrors.password_confirmation[0]}</span>
-              )}
+              {pwdErrors.password_confirmation
+                ? <span className="prf-error">{pwdErrors.password_confirmation[0]}</span>
+                : pwdMismatch
+                  ? <span className="prf-error">Passwords do not match.</span>
+                  : null}
             </div>
           </div>
 
           <div className="prf-card-foot">
             {pwdSaved && <span className="stg-saved-msg">✓ Password updated</span>}
-            <button className="stg-save-btn" disabled={pwdSaving}>
+            <button className="stg-save-btn" disabled={pwdSaving || pwdMismatch}>
               {pwdSaving ? 'Updating…' : 'Update Password'}
             </button>
           </div>
