@@ -404,7 +404,7 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
               </span>
             </label>
             {form.consent_obtained && (
-              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="pfm-consent-date" style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 12, color: '#64748b' }}>Consent date:</span>
                 <input
                   type="date"

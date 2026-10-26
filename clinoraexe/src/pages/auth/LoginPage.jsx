@@ -1230,14 +1230,14 @@ export default function LoginPage() {
     const rect = cardRef.current.getBoundingClientRect()
     const dx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
     const dy = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
+    cardRef.current.style.transition = 'transform 0s'
     cardRef.current.style.transform = `perspective(1200px) rotateX(${-dy * 3}deg) rotateY(${dx * 5}deg)`
-    cardRef.current.style.transition = 'transform 0.08s linear'
   }
 
   function handleCardMouseLeave() {
     if (!cardRef.current) return
+    cardRef.current.style.transition = 'transform 0.65s cubic-bezier(0.16,1,0.3,1)'
     cardRef.current.style.transform = 'perspective(1200px) rotateX(0deg) rotateY(0deg)'
-    cardRef.current.style.transition = 'transform 0.55s cubic-bezier(0.16,1,0.3,1)'
   }
 
   useEffect(() => {
