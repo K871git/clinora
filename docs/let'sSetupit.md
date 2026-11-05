@@ -320,7 +320,7 @@ Type `exit` to close the MySQL session.
 
 ---
 
----
+=======================
 
 ## License Key Generation (For Clinora Provider Only)
 
