@@ -504,3 +504,58 @@ html[data-theme="dark"] .rv2-metric--amber .rv2-metric-value { color: #fbbf24; }
 .rv-doctor-row:hover { background: var(--clr-bg); }
 .rv-doctor-table td { padding: 10px 14px; }
 .rv-doctor-name { font-weight: 500; }
+
+/* ── Pharmacy Revenue redesign additions ─────────────────────────────────── */
+
+/* Metric card subtle gradient backgrounds */
+.rv2-metric--teal  { background: linear-gradient(135deg, var(--clr-surface) 60%, color-mix(in srgb, #0d9488 7%, var(--clr-surface)) 100%); }
+.rv2-metric--green { background: linear-gradient(135deg, var(--clr-surface) 60%, color-mix(in srgb, #10b981 7%, var(--clr-surface)) 100%); }
+.rv2-metric--amber { background: linear-gradient(135deg, var(--clr-surface) 60%, color-mix(in srgb, #f59e0b 7%, var(--clr-surface)) 100%); }
+
+/* 2-column analytics layout */
+.rv2-report--2col { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+@media (max-width: 820px) { .rv2-report--2col { grid-template-columns: 1fr; } }
+
+/* Chart panel */
+.rv2-panel--chart { min-height: 190px; }
+.rv2-chart-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-top: 4px;
+}
+
+/* Summary panel */
+.rv2-panel--summary { gap: 0; justify-content: flex-start; }
+
+/* Collection rate block */
+.rv2-cr-row { display: flex; align-items: center; gap: 14px; padding: 6px 0 14px; }
+.rv2-cr-info { display: flex; flex-direction: column; gap: 2px; }
+.rv2-cr-pct { font-size: 30px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.rv2-cr-label { font-size: 11px; color: var(--clr-text-muted); font-weight: 500; margin-top: 1px; }
+.rv2-cr-amounts { font-size: 11.5px; color: var(--clr-text-muted); margin-top: 5px; line-height: 1.5; }
+
+/* Panel divider */
+.rv2-panel-sep { height: 1px; background: var(--clr-border); margin: 0 0 14px; }
+
+/* Payment breakdown bars */
+.rv2-pay-list { display: flex; flex-direction: column; gap: 10px; }
+.rv2-pay-row { display: flex; align-items: center; gap: 8px; }
+.rv2-pay-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rv2-pay-label { font-size: 12px; color: var(--clr-text-muted); min-width: 44px; }
+.rv2-pay-bar { flex: 1; height: 6px; background: var(--clr-border); border-radius: 4px; overflow: hidden; }
+.rv2-pay-fill { height: 100%; border-radius: 3px; transition: width .45s ease; }
+.rv2-pay-num { font-size: 12.5px; font-weight: 700; color: var(--clr-text); min-width: 20px; text-align: right; }
+
+/* Transaction row status tinting */
+.rv2-tx-row--paid    { background: rgba(16,185,129,.04); }
+.rv2-tx-row--unpaid  { background: rgba(239,68,68,.04); }
+.rv2-tx-row--partial { background: rgba(245,158,11,.04); }
+.rv2-tx-row--paid:hover    { background: rgba(16,185,129,.09) !important; }
+.rv2-tx-row--unpaid:hover  { background: rgba(239,68,68,.09) !important; }
+.rv2-tx-row--partial:hover { background: rgba(245,158,11,.09) !important; }
+.rv2-tx-row--paid    td:first-child { box-shadow: inset 3px 0 0 #10b981; }
+.rv2-tx-row--unpaid  td:first-child { box-shadow: inset 3px 0 0 #ef4444; }
+.rv2-tx-row--partial td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }

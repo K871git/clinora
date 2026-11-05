@@ -160,6 +160,22 @@ export default function DoctorRevenuePage() {
       .finally(() => setTxLoading(false))
   }, [filter]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function refresh() {
+    setTxLoading(true)
+    Promise.all([
+      getRevenueDetails(),
+      getRevenueTransactions(period, filter),
+      getVisitStatsByDoctor(period),
+    ])
+      .then(([statsRes, txsRes, drRes]) => {
+        setData(statsRes.data.data)
+        setTxs(txsRes.data.data ?? [])
+        setDoctorStats(drRes.data.data ?? [])
+      })
+      .catch(() => toast.error('Could not refresh data.'))
+      .finally(() => setTxLoading(false))
+  }
+
   async function markPaid(tx) {
     setSavingId(tx.id)
     try {
@@ -207,16 +223,31 @@ export default function DoctorRevenuePage() {
           <h1 className="drv-title">Revenue</h1>
           <p className="drv-sub">Consultation fees &amp; payment status</p>
         </div>
-        <div className="drv-period-seg">
-          {PERIODS.map(({ key, label }) => (
-            <button
-              key={key}
-              className={`drv-period-btn${period === key ? ' drv-period-btn--on' : ''}`}
-              onClick={() => setPeriod(key)}
-            >
-              {label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="drv-period-seg">
+            {PERIODS.map(({ key, label }) => (
+              <button
+                key={key}
+                className={`drv-period-btn${period === key ? ' drv-period-btn--on' : ''}`}
+                onClick={() => setPeriod(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={refresh}
+            disabled={txLoading}
+            title="Refresh revenue data"
+            style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:8,
+              border:'1px solid var(--clr-border)', background:'var(--clr-surface)', color:'var(--clr-text)',
+              cursor:'pointer', fontSize:13, opacity: txLoading ? 0.5 : 1 }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/>
+            </svg>
+            Refresh
+          </button>
         </div>
       </div>
 

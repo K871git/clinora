@@ -71,6 +71,7 @@ export default function PatientDetailPage() {
   const [rxMeta, setRxMeta]             = useState(null)
 
   const [pageStatus, setPageStatus]       = useState('loading')
+  const [retryCount, setRetryCount]       = useState(0)
   const [historyStatus, setHistoryStatus] = useState('loading')
   const [rxPage, setRxPage]               = useState(1)
   const [rxLoadingMore,  setRxLoadingMore]  = useState(false)
@@ -130,6 +131,7 @@ export default function PatientDetailPage() {
 
   useEffect(() => {
     let cancelled = false
+    setPageStatus('loading')
     getPatient(id)
       .then(({ data }) => {
         if (!cancelled) { setPatient(data); setPageStatus('done') }
@@ -138,7 +140,7 @@ export default function PatientDetailPage() {
         if (!cancelled) setPageStatus(String(err).toLowerCase().includes('not found') ? 'not-found' : 'error')
       })
     return () => { cancelled = true }
-  }, [id])
+  }, [id, retryCount])
 
   useEffect(() => {
     if (pageStatus !== 'done') return
@@ -213,7 +215,26 @@ export default function PatientDetailPage() {
     return (
       <div>
         <button className="pd-back" onClick={() => navigate('/patients')}>← Patients</button>
-        <div className="card state-panel">Could not load patient — check your connection.</div>
+        <div className="card state-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '32px 24px' }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--clr-text)', marginBottom: 4 }}>Could not load patient</div>
+            <div style={{ fontSize: 13, color: 'var(--clr-text-muted)' }}>The database may be temporarily unavailable. Try again.</div>
+          </div>
+          <button
+            onClick={() => setRetryCount(c => c + 1)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', borderRadius: 8,
+              border: '1.5px solid var(--clr-primary)', background: 'none', color: 'var(--clr-primary)',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/>
+            </svg>
+            Retry
+          </button>
+        </div>
       </div>
     )
   }

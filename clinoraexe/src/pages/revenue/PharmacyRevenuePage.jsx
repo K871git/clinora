@@ -206,14 +206,29 @@ export default function PharmacyRevenuePage() {
           <h2 className="rv2-hdr-title">Pharmacy Revenue</h2>
           <p className="rv2-hdr-sub">Dispensing revenue &amp; payment overview</p>
         </div>
-        <div className="rv2-period-seg">
-          {PERIODS.map(({ key, label }) => (
-            <button key={key}
-              className={`rv2-period-btn${period === key ? ' rv2-period-btn--on' : ''}`}
-              onClick={() => setPeriod(key)}>
-              {label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="rv2-period-seg">
+            {PERIODS.map(({ key, label }) => (
+              <button key={key}
+                className={`rv2-period-btn${period === key ? ' rv2-period-btn--on' : ''}`}
+                onClick={() => setPeriod(key)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => { loadStats(); loadTxs(period, filter) }}
+            disabled={txLoading}
+            title="Refresh revenue data"
+            style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:8,
+              border:'1px solid var(--clr-border)', background:'var(--clr-surface)', color:'var(--clr-text)',
+              cursor:'pointer', fontSize:13, opacity: txLoading ? 0.5 : 1 }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/>
+            </svg>
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -258,89 +273,81 @@ export default function PharmacyRevenuePage() {
         </div>
 
         {/* Outstanding */}
-        <div className={`rv2-metric rv2-metric--amber${filter === 'outstanding' ? ' rv2-metric--active' : ''}`}
+        <div className={`rv2-metric ${outstanding > 0 ? 'rv2-metric--amber' : 'rv2-metric--green'}${filter === 'outstanding' ? ' rv2-metric--active' : ''}`}
           onClick={() => setFilter('outstanding')} role="button" tabIndex={0}>
           <div className="rv2-metric-top">
             <span className="rv2-metric-label">Outstanding</span>
             <span className="rv2-metric-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
+              {outstanding > 0 ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+              )}
             </span>
           </div>
           <div className="rv2-metric-value">{fmtMoney(outstanding)}</div>
           <div className="rv2-metric-foot">
-            {p.unpaid_count ?? 0} unpaid bills pending payment
+            {outstanding > 0
+              ? `${p.unpaid_count ?? 0} unpaid bills pending`
+              : 'No outstanding bills'}
           </div>
         </div>
       </div>
 
-      {/* ── Revenue report — 3 columns ────────────────────────────────── */}
-      <div className="rv2-report">
+      {/* ── Analytics — 2-column ───────────────────────────────────────── */}
+      <div className="rv2-report rv2-report--2col">
 
-        {/* Collection rate donut */}
-        <div className="rv2-panel">
-          <div className="rv2-panel-title">Collection Rate</div>
-          <div className="rv2-panel-row">
-            <RingChart value={p.amount_collected ?? 0} total={p.revenue ?? 0} color="#10b981" size={96} sw={11} />
-            <div className="rv2-legend">
-              <div className="rv2-legend-item">
-                <span className="rv2-legend-dot" style={{ background: '#10b981' }} />
-                <span className="rv2-legend-label">Collected</span>
-                <span className="rv2-legend-value">{fmtMoney(p.amount_collected)}</span>
-              </div>
-              <div className="rv2-legend-item">
-                <span className="rv2-legend-dot" style={{ background: '#ef4444' }} />
-                <span className="rv2-legend-label">Outstanding</span>
-                <span className="rv2-legend-value">{fmtMoney(outstanding)}</span>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--clr-text-muted)', lineHeight: 1.5 }}>
-                {p.paid_count ?? 0} paid · {p.unpaid_count ?? 0} unpaid
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Revenue by period bar chart */}
-        <div className="rv2-panel">
+        {/* Revenue by period — wider left panel */}
+        <div className="rv2-panel rv2-panel--chart">
           <div className="rv2-panel-title">Revenue by Period</div>
-          <div style={{ overflowX: 'auto', flex: 1, display: 'flex', alignItems: 'flex-end' }}>
+          <div className="rv2-chart-wrap">
             <BarChart bars={[
               { l: 'Today',    v: data.today?.revenue      ?? 0, c: '#6366f1', dim: period !== 'today' },
               { l: 'Week',     v: data.this_week?.revenue  ?? 0, c: '#0d9488', dim: period !== 'this_week' },
               { l: 'Month',    v: data.this_month?.revenue ?? 0, c: '#10b981', dim: period !== 'this_month' },
               { l: 'All Time', v: data.all_time?.revenue   ?? 0, c: '#f59e0b', dim: period !== 'all_time' },
-            ]} h={80} />
+            ]} h={110} />
           </div>
         </div>
 
-        {/* Payment breakdown dot matrix */}
-        <div className="rv2-panel">
-          <div className="rv2-panel-title">Payment Breakdown · {txs.length} rx</div>
-          {txs.length > 0 ? (
-            <>
-              <div style={{ marginBottom: 10 }}>
-                <DotMatrix paid={paidCount} partial={partialCount} unpaid={unpaidCount} />
-              </div>
-              <div className="rv2-dot-legend">
-                {[
-                  { label: 'Paid',    count: paidCount,    color: '#10b981' },
-                  { label: 'Partial', count: partialCount, color: '#f59e0b' },
-                  { label: 'Unpaid',  count: unpaidCount,  color: '#ef4444' },
-                ].map(s => (
-                  <div key={s.label} className="rv2-dot-legend-item">
-                    <span className="rv2-dot-legend-swatch" style={{ background: s.color }} />
-                    <span className="rv2-dot-legend-lbl">{s.label}</span>
-                    <span className="rv2-dot-legend-cnt">{s.count}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--clr-text-muted)' }}>
-              No transactions this period
+        {/* Collection summary + payment breakdown — right panel */}
+        <div className="rv2-panel rv2-panel--summary">
+          <div className="rv2-panel-title">Collection Summary</div>
+
+          <div className="rv2-cr-row">
+            <RingChart value={p.amount_collected ?? 0} total={p.revenue ?? 0} color="#10b981" size={82} sw={9} />
+            <div className="rv2-cr-info">
+              <div className="rv2-cr-pct" style={{
+                color: collRate >= 80 ? '#059669' : collRate >= 50 ? '#d97706' : '#dc2626'
+              }}>{collRate}%</div>
+              <div className="rv2-cr-label">collection rate</div>
+              <div className="rv2-cr-amounts">{fmtMoney(p.amount_collected)} of {fmtMoney(p.revenue)}</div>
             </div>
-          )}
+          </div>
+
+          <div className="rv2-panel-sep" />
+
+          <div className="rv2-pay-list">
+            {[
+              { label: 'Paid',    count: paidCount,    color: '#10b981' },
+              { label: 'Partial', count: partialCount, color: '#f59e0b' },
+              { label: 'Unpaid',  count: unpaidCount,  color: '#ef4444' },
+            ].map(s => (
+              <div key={s.label} className="rv2-pay-row">
+                <span className="rv2-pay-dot" style={{ background: s.color }} />
+                <span className="rv2-pay-label">{s.label}</span>
+                <div className="rv2-pay-bar">
+                  <div className="rv2-pay-fill"
+                    style={{ width: `${txs.length > 0 ? (s.count / txs.length) * 100 : 0}%`, background: s.color }} />
+                </div>
+                <span className="rv2-pay-num">{s.count}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -402,7 +409,7 @@ export default function PharmacyRevenuePage() {
                   const due      = Math.max(0, tx.total_amount - tx.amount_paid)
                   const isSaving = savingId === tx.id
                   return (
-                    <tr key={tx.id} className="rv-debt-row">
+                    <tr key={tx.id} className={`rv-debt-row rv2-tx-row rv2-tx-row--${tx.payment_status}`}>
                       <td>
                         <Link className="rv-debt-patient" to={`/pharmacy/prescriptions/${tx.id}`}>
                           {tx.patient_name ?? '—'}

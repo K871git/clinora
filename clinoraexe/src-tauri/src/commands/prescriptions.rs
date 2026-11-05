@@ -186,7 +186,7 @@ pub async fn list_prescriptions(
         "SELECT COUNT(*) FROM prescriptions pr JOIN patients p ON p.id=pr.patient_id WHERE {}", where_clause
     );
     let list_sql = format!(
-        "SELECT pr.id, pr.visit_id, pr.status, pr.doctor_notes, pr.payment_status,
+        "SELECT pr.id, pr.visit_id, pr.patient_id, pr.status, pr.doctor_notes, pr.payment_status,
                 pr.amount_paid * 1e0 as amount_paid,
                 DATE_FORMAT(pr.prescribed_at, '%Y-%m-%dT%H:%i:%s') as prescribed_at,
                 DATE_FORMAT(pr.sent_to_pharmacy_at, '%Y-%m-%dT%H:%i:%s') as sent_to_pharmacy_at,
@@ -211,6 +211,7 @@ pub async fn list_prescriptions(
     let data: Vec<Value> = rows.iter().map(|r| json!({
         "id": r.get::<u64, _>("id"),
         "visit_id": r.get::<Option<u64>, _>("visit_id"),
+        "patient_id": r.get::<u64, _>("patient_id"),
         "status": r.get::<String, _>("status"),
         "prescribed_at": r.get::<Option<String>, _>("prescribed_at").unwrap_or_default(),
         "sent_to_pharmacy_at": r.get::<Option<String>, _>("sent_to_pharmacy_at"),
