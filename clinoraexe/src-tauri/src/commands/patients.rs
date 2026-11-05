@@ -136,7 +136,7 @@ pub async fn get_patient(id: u64, state: State<'_, AppState>) -> AppResult<Value
         "emergency_contact_phone":   row.get::<Option<String>, _>("emergency_contact_phone"),
         "date_of_birth":             row.get::<Option<String>, _>("date_of_birth"),
         "created_at":                row.get::<Option<String>, _>("created_at").unwrap_or_default(),
-        "consent_obtained":          row.get::<i8, _>("consent_obtained") == 1,
+        "consent_obtained":          row.get::<Option<i8>, _>("consent_obtained").unwrap_or(0) == 1,
         "consent_date":              row.get::<Option<String>, _>("consent_date"),
     }))
 }

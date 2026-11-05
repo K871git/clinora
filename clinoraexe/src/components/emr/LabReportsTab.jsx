@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { listLabReports, createLabReport, updateLabReport, deleteLabReport } from '../../services/labReportService'
 import EmptyState from '../ui/EmptyState'
+import { confirmDelete } from '../../lib/swal'
 
 const STATUSES = ['ordered', 'received', 'reviewed']
 const EMPTY_FORM = {
@@ -123,7 +124,7 @@ export default function LabReportsTab({ patientId, visitId }) {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this report?')) return
+    if (!await confirmDelete({ title: 'Delete this report?', text: 'This cannot be undone.' })) return
     try {
       await deleteLabReport(id)
       setItems(prev => prev.filter(i => i.id !== id))

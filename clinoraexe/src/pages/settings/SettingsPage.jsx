@@ -134,8 +134,7 @@ export default function SettingsPage() {
       })
       setClinicSaved(true)
     } catch (err) {
-      if (err.response?.status === 422) setClinicErrors(flattenErrors(err.response?.data?.errors))
-      else setClinicApiErr(err.response?.data?.message ?? 'Could not save — check your connection.')
+      setClinicApiErr(typeof err === 'string' ? err : 'Could not save — check your connection.')
       throw err
     } finally { setClinicSaving(false) }
   }

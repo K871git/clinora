@@ -46,10 +46,7 @@ export default function PharmacySettingsPage() {
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
       savedTimerRef.current = setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      const msg = err.response?.data?.errors?.name?.[0]
-        ?? err.response?.data?.message
-        ?? 'Could not save — try again.'
-      setError(msg)
+      setError(typeof err === 'string' ? err : 'Could not save — try again.')
     } finally {
       setSaving(false)
     }

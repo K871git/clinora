@@ -65,6 +65,8 @@ pub async fn create_pharmacy_return(
         .map(|i| i.unit_price * i.quantity as f64)
         .sum();
 
+    let mut tx = db.begin().await?;
+
     let result = sqlx::query(
         "INSERT INTO pharmacy_returns
            (clinic_id, prescription_id, patient_id, pharmacist_id,
@@ -79,7 +81,7 @@ pub async fn create_pharmacy_return(
     .bind(reason.as_deref().filter(|s| !s.trim().is_empty()))
     .bind(total_amount)
     .bind(notes.as_deref().filter(|s| !s.trim().is_empty()))
-    .execute(db)
+    .execute(&mut *tx)
     .await?;
 
     let return_id = result.last_insert_id();
@@ -95,16 +97,16 @@ pub async fn create_pharmacy_return(
         .bind(item.quantity)
         .bind(item.unit_price)
         .bind(item.unit_price * item.quantity as f64)
-        .execute(db)
+        .execute(&mut *tx)
         .await?;
 
         if let Ok(Some(med_row)) = sqlx::query(
             "SELECT id, quantity FROM medicines
-             WHERE clinic_id=? AND LOWER(name)=LOWER(?) LIMIT 1",
+             WHERE clinic_id=? AND LOWER(name)=LOWER(?) LIMIT 1 FOR UPDATE",
         )
         .bind(session.clinic_id)
         .bind(&item.medicine_name)
-        .fetch_optional(db)
+        .fetch_optional(&mut *tx)
         .await
         {
             let med_id: u64 = med_row.get("id");
@@ -114,7 +116,7 @@ pub async fn create_pharmacy_return(
             sqlx::query("UPDATE medicines SET quantity=?, updated_at=NOW() WHERE id=?")
                 .bind(new_qty)
                 .bind(med_id)
-                .execute(db)
+                .execute(&mut *tx)
                 .await?;
 
             let _ = sqlx::query(
@@ -130,10 +132,12 @@ pub async fn create_pharmacy_return(
             .bind(new_qty)
             .bind(item.quantity as i32)
             .bind(prescription_id)
-            .execute(db)
+            .execute(&mut *tx)
             .await;
         }
     }
+
+    tx.commit().await?;
 
     Ok(json!({
         "id":              return_id,

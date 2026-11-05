@@ -167,7 +167,7 @@ export default function VisitDetailPage() {
         }
       })
       .catch((err) => {
-        if (!cancelled) setPageStatus(err.response?.status === 404 ? 'not-found' : 'error')
+        if (!cancelled) setPageStatus(String(err).toLowerCase().includes('not found') ? 'not-found' : 'error')
       })
     listVisitCharges(visitId).then(r => { if (!cancelled) setCharges(r.data.data ?? []) }).catch(() => {})
     listFeeTemplates().then(r => { if (!cancelled) setTemplates(r.data ?? []) }).catch(() => {})
@@ -233,14 +233,7 @@ export default function VisitDetailPage() {
       setEditing(false)
       toast.success('Visit updated')
     } catch (err) {
-      const body = err.response?.data
-      if (err.response?.status === 422 && body?.errors) {
-        const errs = {}
-        Object.entries(body.errors).forEach(([k, msgs]) => { errs[k] = Array.isArray(msgs) ? msgs[0] : msgs })
-        setFieldErrors(errs)
-      } else {
-        setApiError(body?.message ?? 'Could not save changes — please try again.')
-      }
+      setApiError(typeof err === 'string' ? err : 'Could not save changes — please try again.')
     } finally {
       setSaving(false)
     }
@@ -352,7 +345,7 @@ export default function VisitDetailPage() {
       setVisit(data)
       toast.success('Visit completed', { description: 'Invoice recorded.', duration: 4000 })
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not complete visit — try again.')
+      toast.error(typeof err === 'string' ? err : 'Could not complete visit — try again.')
     } finally {
       setCompleting(false)
     }

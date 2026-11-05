@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { listPatientNotes, createNote, updateNote, deleteNote } from '../../services/notesService'
+import { confirmDelete } from '../../lib/swal'
 
 function fmtDate(s) {
   if (!s) return ''
@@ -74,7 +75,7 @@ export default function PatientNotesTab({ patientId, userRole }) {
   }
 
   async function handleDelete(noteId) {
-    if (!window.confirm('Delete this note?')) return
+    if (!await confirmDelete({ title: 'Delete this note?', text: 'This cannot be undone.' })) return
     try {
       await deleteNote(noteId)
       setNotes(prev => prev.filter(n => n.id !== noteId))

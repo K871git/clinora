@@ -15,7 +15,7 @@ async function exportCsv(txs, period, filter) {
   const rows = txs.map(tx => {
     const due = Math.max(0, tx.consultation_fee - tx.amount_paid)
     return [tx.patient?.name ?? '', tx.visited_at ? new Date(tx.visited_at).toLocaleDateString('en-IN') : '',
-      tx.payment_status, tx.consultation_fee.toFixed(2), tx.amount_paid.toFixed(2), due.toFixed(2)]
+      tx.payment_status, (tx.consultation_fee ?? 0).toFixed(2), (tx.amount_paid ?? 0).toFixed(2), due.toFixed(2)]
   })
   const body = [head, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
   try {

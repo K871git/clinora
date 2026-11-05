@@ -194,22 +194,7 @@ export default function PatientFormModal({ patient = null, onClose, onSaved }) {
         : await createPatient(payload)
       onSaved(data)
     } catch (err) {
-      const status = err.response?.status
-      const body   = err.response?.data
-
-      if (status === 409 && body?.duplicate) {
-        setDuplicate(body.duplicate)
-        return
-      }
-      if (status === 422 && body?.errors) {
-        const serverErrs = {}
-        Object.entries(body.errors).forEach(([k, msgs]) => {
-          serverErrs[k] = Array.isArray(msgs) ? msgs[0] : msgs
-        })
-        setErrors(serverErrs)
-        return
-      }
-      setApiError(body?.message ?? 'Something went wrong — please try again.')
+      setApiError(typeof err === 'string' ? err : 'Something went wrong — please try again.')
     } finally {
       setSubmitting(false)
     }

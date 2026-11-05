@@ -20,8 +20,8 @@ async function exportCsv(txs, period, filter) {
       tx.patient_name ?? '',
       tx.completed_at ? new Date(tx.completed_at).toLocaleDateString('en-IN') : '',
       tx.payment_status,
-      tx.total_amount.toFixed(2),
-      tx.amount_paid.toFixed(2),
+      (tx.total_amount ?? 0).toFixed(2),
+      (tx.amount_paid ?? 0).toFixed(2),
       due.toFixed(2),
     ]
   })

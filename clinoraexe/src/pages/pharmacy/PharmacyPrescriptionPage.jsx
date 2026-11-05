@@ -232,10 +232,10 @@ export default function PharmacyPrescriptionPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          const s = err.response?.status
-          if (s === 404)      setPageStatus('not-found')
-          else if (s === 403) setPageStatus('forbidden')
-          else                setPageStatus('error')
+          const s = String(err).toLowerCase()
+          if (s.includes('not found'))    setPageStatus('not-found')
+          else if (s.includes('access'))  setPageStatus('forbidden')
+          else                            setPageStatus('error')
         }
       })
 
@@ -285,13 +285,7 @@ export default function PharmacyPrescriptionPage() {
         duration: 4000,
       })
     } catch (err) {
-      const s    = err.response?.status
-      const body = err.response?.data
-      toast.error(
-        (s === 409 || s === 422)
-          ? (body?.message ?? 'This prescription is no longer pending.')
-          : 'Could not start dispensing — please try again.'
-      )
+      toast.error(typeof err === 'string' ? err : 'Could not start dispensing — please try again.')
     } finally { setDispensing(false) }
   }
 
@@ -338,13 +332,7 @@ export default function PharmacyPrescriptionPage() {
         duration: 4000,
       })
     } catch (err) {
-      const s    = err.response?.status
-      const body = err.response?.data
-      toast.error(
-        (s === 409 || s === 422)
-          ? (body?.message ?? 'This prescription is no longer active.')
-          : 'Could not complete — check your connection and try again.'
-      )
+      toast.error(typeof err === 'string' ? err : 'Could not complete — please try again.')
     } finally { setCompleting(false) }
   }
 

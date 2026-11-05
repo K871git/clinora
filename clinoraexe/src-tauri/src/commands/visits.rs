@@ -35,7 +35,7 @@ fn visit_row_to_json(r: &sqlx::mysql::MySqlRow) -> Value {
         "status": r.get::<String, _>("status"),
         "invoiced_at": r.get::<Option<String>, _>("invoiced_at"),
         "payment_status":  r.get::<String, _>("payment_status"),
-        "amount_paid":     r.get::<f64, _>("amount_paid"),
+        "amount_paid":     r.get::<Option<f64>, _>("amount_paid").unwrap_or(0.0),
         "payment_notes":   r.get::<Option<String>, _>("payment_notes"),
         "payment_method":  r.get::<Option<String>, _>("payment_method"),
         "followup_date": r.get::<Option<String>, _>("followup_date"),

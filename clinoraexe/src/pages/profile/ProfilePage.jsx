@@ -85,11 +85,7 @@ export default function ProfilePage() {
       setAllSaved(true)
       setTimeout(() => setAllSaved(false), 5000)
     } catch (err) {
-      if (err.response?.status === 422) {
-        const errs = err.response.data.errors ?? {}
-        setInfoErrors(p => ({ ...p, ...errs }))
-        setPersErrors(p => ({ ...p, ...errs }))
-      }
+      setInfoErrors({ _api: [typeof err === 'string' ? err : 'Could not save — please try again.'] })
     } finally {
       setAllSaving(false)
     }
@@ -112,8 +108,7 @@ export default function ProfilePage() {
       setPwd({ current_password: '', password: '', password_confirmation: '' })
       setTimeout(() => setPwdSaved(false), 5000)
     } catch (err) {
-      if (err.response?.status === 422) setPwdErrors(err.response.data.errors ?? {})
-      else setPwdErrors({ current_password: [typeof err === 'string' ? err : 'Password update failed. Please try again.'] })
+      setPwdErrors({ current_password: [typeof err === 'string' ? err : 'Password update failed. Please try again.'] })
     } finally {
       setPwdSaving(false)
     }

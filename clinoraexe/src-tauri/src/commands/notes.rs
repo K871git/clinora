@@ -149,10 +149,10 @@ pub async fn update_note(
     let session = get_session(&state)?;
 
     sqlx::query(
-        "UPDATE notes SET title = ?, body = ?, tags = ?, updated_at = NOW()
+        "UPDATE notes SET title = COALESCE(?, title), body = ?, tags = ?, updated_at = NOW()
          WHERE id = ? AND clinic_id = ? AND user_id = ?"
     )
-    .bind(title.unwrap_or_default())
+    .bind(title)
     .bind(&body)
     .bind(&tags)
     .bind(id)
@@ -277,10 +277,15 @@ pub async fn delete_note_attachment(
         .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
         .unwrap_or_default();
 
-    list.retain(|f| f != &filename);
+    let safe_name: String = filename
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+        .collect();
+
+    list.retain(|f| f != &safe_name);
 
     if let Ok(dir) = note_attach_dir(note_id) {
-        let _ = std::fs::remove_file(dir.join(&filename));
+        let _ = std::fs::remove_file(dir.join(&safe_name));
     }
 
     sqlx::query("UPDATE notes SET attachments = ?, updated_at = NOW() WHERE id = ?")

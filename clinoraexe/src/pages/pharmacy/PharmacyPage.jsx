@@ -266,7 +266,7 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
       setRx(data)
       toast.success('Started dispensing')
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not start dispensing')
+      toast.error(typeof err === 'string' ? err : 'Could not start dispensing')
     } finally { setStarting(false) }
   }
 
@@ -287,7 +287,7 @@ function DispensePanel({ rxId, onClose, onCompleted, navigate }) {
       toast.success(`Dispensed for ${rx.patient?.name ?? 'patient'}`)
       onCompleted()
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not complete — try again.')
+      toast.error(typeof err === 'string' ? err : 'Could not complete — try again.')
     } finally { setCompleting(false) }
   }
 

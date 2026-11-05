@@ -135,7 +135,7 @@ export default function PatientDetailPage() {
         if (!cancelled) { setPatient(data); setPageStatus('done') }
       })
       .catch((err) => {
-        if (!cancelled) setPageStatus(err.response?.status === 404 ? 'not-found' : 'error')
+        if (!cancelled) setPageStatus(String(err).toLowerCase().includes('not found') ? 'not-found' : 'error')
       })
     return () => { cancelled = true }
   }, [id])

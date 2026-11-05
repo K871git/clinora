@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { listVitals, createVital, deleteVital } from '../../services/vitalSignService'
 import EmptyState from '../ui/EmptyState'
+import { confirmDelete } from '../../lib/swal'
 
 function fmtDate(s) {
   if (!s) return '—'
@@ -57,7 +58,7 @@ export default function VitalSignsTab({ patientId, visitId }) {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this vital record?')) return
+    if (!await confirmDelete({ title: 'Delete this vital record?', text: 'This cannot be undone.' })) return
     try {
       await deleteVital(id)
       setVitals(v => v.filter(x => x.id !== id))

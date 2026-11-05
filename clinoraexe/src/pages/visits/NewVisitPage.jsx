@@ -71,7 +71,7 @@ export default function NewVisitPage() {
         if (!cancelled) { setPatient(data); setPatientStatus('done') }
       })
       .catch((err) => {
-        if (!cancelled) setPatientStatus(err.response?.status === 404 ? 'not-found' : 'error')
+        if (!cancelled) setPatientStatus(String(err).toLowerCase().includes('not found') ? 'not-found' : 'error')
       })
     return () => { cancelled = true }
   }, [id])
@@ -104,14 +104,7 @@ export default function NewVisitPage() {
       if (feeVal) await saveFee(visitId, feeVal)
       navigate(`/visits/${visitId}/prescriptions/new`, { replace: true })
     } catch (err) {
-      const body = err.response?.data
-      if (err.response?.status === 422 && body?.errors) {
-        const errs = {}
-        Object.entries(body.errors).forEach(([k, msgs]) => { errs[k] = Array.isArray(msgs) ? msgs[0] : msgs })
-        setFieldErrors(errs)
-      } else {
-        setApiError(body?.message ?? 'Could not save visit — please try again.')
-      }
+      setApiError(typeof err === 'string' ? err : 'Could not save visit — please try again.')
     } finally {
       setSubmitting(false)
     }

@@ -189,10 +189,10 @@ export default function PrescriptionDetailPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          const s = err.response?.status
-          if (s === 404)      setPageStatus('not-found')
-          else if (s === 403) setPageStatus('forbidden')
-          else                setPageStatus('error')
+          const s = String(err).toLowerCase()
+          if (s.includes('not found'))    setPageStatus('not-found')
+          else if (s.includes('access'))  setPageStatus('forbidden')
+          else                            setPageStatus('error')
         }
       })
     return () => { cancelled = true }
@@ -240,9 +240,7 @@ export default function PrescriptionDetailPage() {
       })
       setPrescription(data); setEditing(false)
     } catch (err) {
-      const s = err.response?.status; const body = err.response?.data
-      if (s === 422 && body?.errors) setFieldErrors(parseServerErrors(body.errors))
-      else setApiError(body?.message ?? 'Could not save changes — please try again.')
+      setApiError(typeof err === 'string' ? err : 'Could not save changes — please try again.')
     } finally { setSaving(false) }
   }
 
@@ -256,12 +254,7 @@ export default function PrescriptionDetailPage() {
         duration: 4000,
       })
     } catch (err) {
-      const s = err.response?.status; const body = err.response?.data
-      toast.error(
-        (s === 409 || s === 422)
-          ? (body?.message ?? 'This prescription can no longer be sent.')
-          : (body?.message ?? 'Could not send — please try again.')
-      )
+      toast.error(typeof err === 'string' ? err : 'Could not send — please try again.')
     } finally { setSending(false) }
   }
 
@@ -274,7 +267,7 @@ export default function PrescriptionDetailPage() {
       toast.success('Prescription deleted')
       navigate(-1)
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not delete — please try again.')
+      toast.error(typeof err === 'string' ? err : 'Could not delete — please try again.')
       setDeleting(false)
     }
   }

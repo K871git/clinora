@@ -136,10 +136,10 @@ export default function PrintPrescriptionPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          const status = err.response?.status
-          if (status === 404)      setPageStatus('not-found')
-          else if (status === 403) setPageStatus('forbidden')
-          else                     setPageStatus('error')
+          const s = String(err).toLowerCase()
+          if (s.includes('not found'))    setPageStatus('not-found')
+          else if (s.includes('access'))  setPageStatus('forbidden')
+          else                            setPageStatus('error')
         }
       })
     return () => { cancelled = true }

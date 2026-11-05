@@ -1,5 +1,5 @@
 use crate::error::AppResult;
-use crate::state::{get_session, AppState};
+use crate::state::AppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::Row;
@@ -198,13 +198,13 @@ pub async fn get_pharmacy_prescription(id: u64, state: State<'_, AppState>) -> A
 #[tauri::command]
 pub async fn start_dispensing(id: u64, state: State<'_, AppState>) -> AppResult<Value> {
     let session = require_pharmacy(&state)?;
-    let current = sqlx::query("SELECT status FROM prescriptions WHERE id=? AND clinic_id=? AND deleted_at IS NULL")
-        .bind(id).bind(session.clinic_id).fetch_optional(&state.db).await?.ok_or("Prescription not found.")?;
-    if current.get::<String, _>("status") != "sent_to_pharmacy" {
-        return Err("Only pending prescriptions can be started.".into());
+    let updated = sqlx::query(
+        "UPDATE prescriptions SET status='dispensing', dispensed_at=NOW(), updated_at=NOW()
+         WHERE id=? AND clinic_id=? AND status='sent_to_pharmacy' AND deleted_at IS NULL"
+    ).bind(id).bind(session.clinic_id).execute(&state.db).await?;
+    if updated.rows_affected() == 0 {
+        return Err("Prescription not found or already being dispensed.".into());
     }
-    sqlx::query("UPDATE prescriptions SET status='dispensing', dispensed_at=NOW(), updated_at=NOW() WHERE id=?")
-        .bind(id).execute(&state.db).await?;
     get_pharmacy_prescription_detail(id, session.clinic_id, &state.db).await
 }
 
@@ -219,72 +219,85 @@ pub async fn complete_pharmacy_prescription(
     state: State<'_, AppState>,
 ) -> AppResult<Value> {
     let session = require_pharmacy(&state)?;
-    let current = sqlx::query("SELECT status FROM prescriptions WHERE id=? AND clinic_id=? AND deleted_at IS NULL")
-        .bind(id).bind(session.clinic_id).fetch_optional(&state.db).await?.ok_or("Prescription not found.")?;
-    let status = current.get::<String, _>("status");
-    if status != "sent_to_pharmacy" && status != "dispensing" {
-        return Err("Only pending or dispensing prescriptions can be completed.".into());
-    }
 
-    // Update prices on existing prescribed items
+    // Validate prices before opening a transaction
     for item in &items {
         if let Some(price) = item.unit_price {
             if !price.is_finite() || price < 0.0 {
                 return Err("Invalid price: must be a non-negative number.".into());
             }
-            sqlx::query("UPDATE prescription_items SET unit_price=? WHERE id=? AND prescription_id=?")
-                .bind(price).bind(item.id).bind(id).execute(&state.db).await?;
+        }
+    }
+    for item in &extra_items {
+        if !item.unit_price.is_finite() || item.unit_price < 0.0 {
+            return Err("Invalid extra item price: must be a non-negative number.".into());
         }
     }
 
-    // Insert pharmacist-added extra items (water bottle, inhaler, gadgets, etc.)
+    let mut tx = state.db.begin().await?;
+
+    // Atomic status guard — merges the check and the update to prevent TOCTOU
+    let updated = if let Some(ps) = &payment_status {
+        sqlx::query(
+            "UPDATE prescriptions SET status='completed', completed_at=NOW(), completed_by=?,
+             payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW()
+             WHERE id=? AND clinic_id=? AND status IN ('sent_to_pharmacy','dispensing') AND deleted_at IS NULL"
+        ).bind(session.id).bind(ps).bind(amount_paid.unwrap_or(0.0)).bind(&payment_notes)
+         .bind(id).bind(session.clinic_id)
+         .execute(&mut *tx).await?
+    } else {
+        sqlx::query(
+            "UPDATE prescriptions SET status='completed', completed_at=NOW(), completed_by=?, updated_at=NOW()
+             WHERE id=? AND clinic_id=? AND status IN ('sent_to_pharmacy','dispensing') AND deleted_at IS NULL"
+        ).bind(session.id).bind(id).bind(session.clinic_id)
+         .execute(&mut *tx).await?
+    };
+
+    if updated.rows_affected() == 0 {
+        return Err("Prescription not found or already completed.".into());
+    }
+
+    // Update prices on existing prescribed items
+    for item in &items {
+        if let Some(price) = item.unit_price {
+            sqlx::query("UPDATE prescription_items SET unit_price=? WHERE id=? AND prescription_id=?")
+                .bind(price).bind(item.id).bind(id).execute(&mut *tx).await?;
+        }
+    }
+
+    // Insert pharmacist-added extra items (water bottle, inhaler, etc.)
     if !extra_items.is_empty() {
         let max_sort: i64 = sqlx::query(
             "SELECT COALESCE(MAX(sort_order), 0) FROM prescription_items WHERE prescription_id=?"
-        ).bind(id).fetch_one(&state.db).await?.get(0);
+        ).bind(id).fetch_one(&mut *tx).await?.get(0);
 
         for (i, item) in extra_items.iter().enumerate() {
-            if !item.unit_price.is_finite() || item.unit_price < 0.0 {
-                return Err("Invalid extra item price: must be a non-negative number.".into());
-            }
             sqlx::query(
                 "INSERT INTO prescription_items (prescription_id, medicine_name, unit_price, sort_order, created_at, updated_at)
                  VALUES (?, ?, ?, ?, NOW(), NOW())"
             ).bind(id).bind(&item.name).bind(item.unit_price).bind(max_sort + 1 + i as i64)
-            .execute(&state.db).await?;
+            .execute(&mut *tx).await?;
         }
     }
 
-    // Mark prescription complete — include payment fields if payment_status is provided
-    if let Some(ps) = &payment_status {
-        sqlx::query(
-            "UPDATE prescriptions SET status='completed', completed_at=NOW(), completed_by=?,
-             payment_status=?, amount_paid=?, payment_notes=?, updated_at=NOW() WHERE id=?"
-        ).bind(session.id).bind(ps).bind(amount_paid.unwrap_or(0.0)).bind(&payment_notes).bind(id)
-        .execute(&state.db).await?;
-    } else {
-        sqlx::query(
-            "UPDATE prescriptions SET status='completed', completed_at=NOW(), completed_by=?, updated_at=NOW() WHERE id=?"
-        ).bind(session.id).bind(id).execute(&state.db).await?;
-    }
-
-    // Decrement medicine stock quantity for each dispensed item and log to audit
+    // Decrement medicine stock — FOR UPDATE locks the row inside the transaction
     let dispensed = sqlx::query(
         "SELECT medicine_name, dosage FROM prescription_items WHERE prescription_id=? AND deleted_at IS NULL"
-    ).bind(id).fetch_all(&state.db).await?;
+    ).bind(id).fetch_all(&mut *tx).await?;
+
     for row in &dispensed {
         let name: String = row.get("medicine_name");
         let dosage: Option<String> = row.get("dosage");
         let deduct_qty = parse_dosage_qty(dosage.as_deref());
         if let Ok(Some(med_row)) = sqlx::query(
-            "SELECT id, quantity FROM medicines WHERE clinic_id=? AND LOWER(name)=LOWER(?) AND quantity>0 LIMIT 1"
-        ).bind(session.clinic_id).bind(&name).fetch_optional(&state.db).await {
+            "SELECT id, quantity FROM medicines WHERE clinic_id=? AND LOWER(name)=LOWER(?) AND quantity>0 LIMIT 1 FOR UPDATE"
+        ).bind(session.clinic_id).bind(&name).fetch_optional(&mut *tx).await {
             let med_id: u64 = med_row.get("id");
             let old_qty: i32 = med_row.get::<u32, _>("quantity") as i32;
             let new_qty: i32 = (old_qty - deduct_qty).max(0);
             sqlx::query(
                 "UPDATE medicines SET quantity=GREATEST(0, quantity-?), updated_at=NOW() WHERE id=?"
-            ).bind(deduct_qty).bind(med_id).execute(&state.db).await?;
+            ).bind(deduct_qty).bind(med_id).execute(&mut *tx).await?;
             let _ = sqlx::query(
                 "INSERT INTO stock_audit_log
                    (clinic_id, item_type, item_id, item_name, old_qty, new_qty, change_delta, reason, prescription_id, created_at)
@@ -292,9 +305,11 @@ pub async fn complete_pharmacy_prescription(
             )
             .bind(session.clinic_id).bind(med_id).bind(&name)
             .bind(old_qty).bind(new_qty).bind(new_qty - old_qty).bind(id)
-            .execute(&state.db).await;
+            .execute(&mut *tx).await;
         }
     }
+
+    tx.commit().await?;
 
     get_pharmacy_prescription_detail(id, session.clinic_id, &state.db).await
 }
@@ -491,7 +506,7 @@ pub async fn get_pharmacy_stock_summary(state: State<'_, AppState>) -> AppResult
            CAST(COALESCE(SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date < CURDATE()), 0) AS UNSIGNED) as expired,
            CAST(COALESCE(SUM(quantity > 0 AND expiry_date IS NOT NULL AND expiry_date >= CURDATE()
                AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)), 0) AS UNSIGNED) as expiring_soon,
-           CAST(COALESCE(SUM(quantity <= reorder_level), 0) AS UNSIGNED) as low_stock
+           CAST(COALESCE(SUM(quantity > 0 AND quantity <= reorder_level), 0) AS UNSIGNED) as low_stock
          FROM medicines WHERE clinic_id=?"
     ).bind(session.clinic_id).fetch_one(&state.db).await?;
 
@@ -562,7 +577,7 @@ pub async fn get_pharmacy_live_counts(state: State<'_, AppState>) -> AppResult<V
     let row = sqlx::query(
         "SELECT
            CAST(COALESCE(SUM(status='dispensing'), 0) AS UNSIGNED) as dispensing,
-           CAST(COALESCE(SUM(status IN ('queue','pending')), 0) AS UNSIGNED) as pending,
+           CAST(COALESCE(SUM(status='sent_to_pharmacy'), 0) AS UNSIGNED) as pending,
            CAST(COALESCE(SUM(status='completed' AND DATE(completed_at)=CURDATE()), 0) AS UNSIGNED) as today_done
          FROM prescriptions WHERE clinic_id=? AND deleted_at IS NULL"
     )

@@ -120,7 +120,7 @@ export default function VisitInvoicePage() {
 
   const patientMeta = [p.age != null && `${p.age} yrs`, p.gender].filter(Boolean).join(', ')
   const invNum      = `INV-${visit.id.toString().padStart(5, '0')}`
-  const isPaid      = visit.status === 'completed'
+  const isPaid      = visit.payment_status === 'paid'
 
   return (
     <div className="inv-page">

@@ -146,7 +146,7 @@ function EditMedicineModal({ medicine, categories, medicines, onClose, onSaved }
       toast.success(`${data.name} updated`)
       onSaved(data)
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not update medicine.')
+      toast.error(typeof err === 'string' ? err : 'Could not update medicine.')
     } finally {
       setSaving(false)
     }
@@ -287,7 +287,7 @@ function ImportModal({ onClose, onDone }) {
       })
       onDone()
     } catch (err) {
-      toast.error(err.message ?? err.response?.data?.message ?? 'Import failed — check file format.')
+      toast.error(typeof err === 'string' ? err : (err?.message ?? 'Import failed — check file format.'))
     } finally {
       setLoading(false)
     }
@@ -613,7 +613,7 @@ function MedicineTab({ preFilter: initialFilter }) {
       setAddDupWarn(false)
       toast.success(`${data.name} added to stock`)
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not add medicine.')
+      toast.error(typeof err === 'string' ? err : 'Could not add medicine.')
     } finally { setAdding(false) }
   }
 

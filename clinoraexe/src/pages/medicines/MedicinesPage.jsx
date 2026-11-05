@@ -372,7 +372,7 @@ function AddMedicineModal({ onClose, onDone, categories = [], existingNames = []
       )
       onDone(results.map(r => r.data))
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not save medicines')
+      toast.error(typeof err === 'string' ? err : 'Could not save medicines')
     } finally {
       setSaving(false)
     }
@@ -688,7 +688,7 @@ function ImportModal({ onClose, onDone }) {
       })
       onDone()
     } catch (err) {
-      const msg = err.message ?? err.response?.data?.message ?? 'Import failed — check file format.'
+      const msg = typeof err === 'string' ? err : (err?.message ?? 'Import failed — check file format.')
       toast.error(msg)
     } finally {
       setLoading(false)
@@ -859,7 +859,7 @@ export default function MedicinesPage() {
       toast.success('Medicine updated')
       closeModal()
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Could not save medicine')
+      toast.error(typeof err === 'string' ? err : 'Could not save medicine')
     } finally {
       setSaving(false)
     }

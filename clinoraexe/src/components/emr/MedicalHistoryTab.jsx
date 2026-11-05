@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { listMedicalHistory, createMedicalHistory, updateMedicalHistory, deleteMedicalHistory } from '../../services/medicalHistoryService'
 import EmptyState from '../ui/EmptyState'
+import { confirmDelete } from '../../lib/swal'
 
 const TYPES = ['allergy','chronic','surgery','medication','family','other']
 const SEVERITIES = ['mild','moderate','severe']
@@ -56,7 +57,7 @@ export default function MedicalHistoryTab({ patientId }) {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Remove this record?')) return
+    if (!await confirmDelete({ title: 'Remove this record?', text: 'This cannot be undone.' })) return
     try {
       await deleteMedicalHistory(id)
       setItems(prev => prev.filter(i => i.id !== id))
