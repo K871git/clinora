@@ -267,7 +267,7 @@ pub async fn get_revenue_transactions(
         "invoiced_at": r.get::<Option<String>, _>("invoiced_at").unwrap_or_default(),
         "consultation_fee": r.get::<Option<f64>, _>("consultation_fee").unwrap_or(0.0),
         "payment_status": r.get::<String, _>("payment_status"),
-        "amount_paid": r.get::<f64, _>("amount_paid"),
+        "amount_paid": r.get::<Option<f64>, _>("amount_paid").unwrap_or(0.0),
         "patient": { "name": r.get::<String, _>("patient_name") }
     })).collect();
 

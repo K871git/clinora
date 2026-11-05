@@ -150,13 +150,9 @@ export default function QuickRxPage() {
     }).catch(() => {})
   }, [])
 
-  /* ── Detect broken/missing template URL ── */
+  /* ── tplError: backend only returns tplPath when file exists on disk ── */
   useEffect(() => {
-    if (!tplUrl) { setTplError(false); return }
     setTplError(false)
-    fetch(tplUrl, { method: 'HEAD' })
-      .then(r => { if (!r.ok) setTplError(true) })
-      .catch(() => setTplError(true))
   }, [tplUrl])
 
   /* ── Scan PDF template layout for live preview ── */
@@ -409,7 +405,7 @@ export default function QuickRxPage() {
 
       const { data: rx } = await createPrescription(visitId, {
         prescribed_at: new Date().toISOString(),
-        doctor_notes:  visitMode ? (doctorNotes.trim() || null) : null,
+        doctor_notes:  doctorNotes.trim() || null,
         items,
       })
 

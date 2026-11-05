@@ -11,11 +11,11 @@ export async function createStockItem(data) {
 }
 
 export async function updateStockItem(id, data) {
-  const result = await invoke('update_stock_item', { id, data })
+  const result = await invoke('update_stock_item', { id: Number(id), data })
   return { data: result }
 }
 
 export async function deleteStockItem(id) {
-  await invoke('delete_stock_item', { id })
+  await invoke('delete_stock_item', { id: Number(id) })
   return { data: {} }
 }

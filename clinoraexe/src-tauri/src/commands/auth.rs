@@ -113,7 +113,7 @@ pub async fn login(
 
 #[tauri::command]
 pub async fn logout(state: State<'_, AppState>) -> AppResult<()> {
-    *state.session.lock().unwrap() = None;
+    *state.session.lock().unwrap_or_else(|e| e.into_inner()) = None;
     Ok(())
 }
 

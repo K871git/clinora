@@ -245,13 +245,15 @@ pub async fn create_prescription(
         .map(parse_datetime)
         .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string());
 
+    let mut tx = state.db.begin().await?;
+
     let result = sqlx::query(
         "INSERT INTO prescriptions (clinic_id, patient_id, visit_id, doctor_id, prescribed_at, doctor_notes, status, payment_status, amount_paid, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, 'draft', 'unpaid', 0, NOW(), NOW())"
     )
     .bind(session.clinic_id).bind(patient_id).bind(visit_id).bind(session.id)
     .bind(&prescribed_at).bind(&data.doctor_notes)
-    .execute(&state.db).await?;
+    .execute(&mut *tx).await?;
 
     let prescription_id = result.last_insert_id();
 
@@ -267,8 +269,10 @@ pub async fn create_prescription(
                  .bind(&item.frequency).bind(&item.duration).bind(&item.instructions)
                  .bind(item.sort_order.unwrap_or(i as u32));
         }
-        q.execute(&state.db).await?;
+        q.execute(&mut *tx).await?;
     }
+
+    tx.commit().await?;
 
     crate::commands::audit::log_audit(
         &state.db, session.clinic_id, session.id, "create", "prescription", prescription_id, None
@@ -292,13 +296,14 @@ pub async fn get_prescription(id: u64, state: State<'_, AppState>) -> AppResult<
                 DATE_FORMAT(pr.sent_to_pharmacy_at, '%Y-%m-%dT%H:%i:%s') as sent_to_pharmacy_at,
                 DATE_FORMAT(pr.completed_at, '%Y-%m-%dT%H:%i:%s') as completed_at,
                 p.name as patient_name, p.mobile as patient_mobile,
+                p.age as patient_age, p.gender as patient_gender, p.address as patient_address,
                 u.name as doctor_name,
                 DATE_FORMAT(v.visited_at, '%Y-%m-%dT%H:%i:%s') as visited_at,
                 v.consultation_notes, v.diagnosis
          FROM prescriptions pr
          JOIN patients p ON p.id=pr.patient_id
          JOIN users u ON u.id=pr.doctor_id
-         JOIN visits v ON v.id=pr.visit_id
+         LEFT JOIN visits v ON v.id=pr.visit_id
          WHERE pr.id=? AND pr.clinic_id=? AND pr.deleted_at IS NULL"
     ).bind(id).bind(session.clinic_id).fetch_optional(&state.db).await?.ok_or("Prescription not found.")?;
 
@@ -306,18 +311,29 @@ pub async fn get_prescription(id: u64, state: State<'_, AppState>) -> AppResult<
 
     Ok(json!({
         "id": row.get::<u64, _>("id"),
-        "visit_id": row.get::<u64, _>("visit_id"),
+        "visit_id": row.get::<Option<u64>, _>("visit_id"),
         "status": row.get::<String, _>("status"),
         "prescribed_at": row.get::<Option<String>, _>("prescribed_at").unwrap_or_default(),
         "sent_to_pharmacy_at": row.get::<Option<String>, _>("sent_to_pharmacy_at"),
         "completed_at": row.get::<Option<String>, _>("completed_at"),
         "doctor_notes": row.get::<Option<String>, _>("doctor_notes"),
         "payment_status": row.get::<String, _>("payment_status"),
-        "amount_paid": row.get::<f64, _>("amount_paid"),
+        "amount_paid": row.get::<Option<f64>, _>("amount_paid").unwrap_or(0.0),
         "items": items,
-        "patient": { "name": row.get::<String, _>("patient_name"), "mobile": row.get::<Option<String>, _>("patient_mobile") },
+        "patient": {
+            "name": row.get::<String, _>("patient_name"),
+            "mobile": row.get::<Option<String>, _>("patient_mobile"),
+            "age": row.get::<Option<u32>, _>("patient_age"),
+            "gender": row.get::<Option<String>, _>("patient_gender"),
+            "address": row.get::<Option<String>, _>("patient_address")
+        },
         "doctor": { "name": row.get::<String, _>("doctor_name") },
-        "visit": { "id": row.get::<u64, _>("visit_id"), "visited_at": row.get::<Option<String>, _>("visited_at"), "consultation_notes": row.get::<Option<String>, _>("consultation_notes"), "diagnosis": row.get::<Option<String>, _>("diagnosis") }
+        "visit": {
+            "id": row.get::<Option<u64>, _>("visit_id"),
+            "visited_at": row.get::<Option<String>, _>("visited_at"),
+            "consultation_notes": row.get::<Option<String>, _>("consultation_notes"),
+            "diagnosis": row.get::<Option<String>, _>("diagnosis")
+        }
     }))
 }
 
@@ -333,13 +349,15 @@ pub async fn update_prescription(id: u64, data: PrescriptionPayload, state: Stat
 
     let prescribed_at = data.prescribed_at.as_deref().map(parse_datetime);
 
+    let mut tx = state.db.begin().await?;
+
     sqlx::query("UPDATE prescriptions SET prescribed_at=COALESCE(?,prescribed_at), doctor_notes=?, updated_at=NOW() WHERE id=?")
         .bind(prescribed_at).bind(&data.doctor_notes).bind(id)
-        .execute(&state.db).await?;
+        .execute(&mut *tx).await?;
 
-    // Soft-delete existing items to match PHP behavior
+    // Soft-delete existing items
     sqlx::query("UPDATE prescription_items SET deleted_at=NOW() WHERE prescription_id=? AND deleted_at IS NULL")
-        .bind(id).execute(&state.db).await?;
+        .bind(id).execute(&mut *tx).await?;
 
     if !data.items.is_empty() {
         let rows = data.items.iter().map(|_| "(?, ?, ?, ?, ?, ?, ?, NOW(), NOW())").collect::<Vec<_>>().join(", ");
@@ -353,8 +371,10 @@ pub async fn update_prescription(id: u64, data: PrescriptionPayload, state: Stat
                  .bind(&item.frequency).bind(&item.duration).bind(&item.instructions)
                  .bind(item.sort_order.unwrap_or(i as u32));
         }
-        q.execute(&state.db).await?;
+        q.execute(&mut *tx).await?;
     }
+
+    tx.commit().await?;
 
     crate::commands::audit::log_audit(
         &state.db, session.clinic_id, session.id, "update", "prescription", id, None

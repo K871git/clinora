@@ -398,7 +398,7 @@ pub async fn list_opd_register(
         "visited_at":           r.get::<Option<String>, _>("visited_at"),
         "consultation_notes":   r.get::<Option<String>, _>("consultation_notes"),
         "status":               r.get::<String, _>("status"),
-        "consultation_fee":     r.get::<f64, _>("consultation_fee"),
+        "consultation_fee":     r.get::<Option<f64>, _>("consultation_fee").unwrap_or(0.0),
         "payment_status":       r.get::<String, _>("payment_status"),
         "followup_date":        r.get::<Option<String>, _>("followup_date"),
         "prescription_id":      r.get::<Option<u64>, _>("prescription_id"),

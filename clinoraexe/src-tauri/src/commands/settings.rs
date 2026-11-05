@@ -130,8 +130,11 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
         if let Some(ref name) = template_name {
             if let Ok(dir) = templates_dir(session.clinic_id) {
                 let abs = dir.join(name);
-                result["prescription_template_path"] =
-                    json!(abs.to_string_lossy().replace('\\', "/"));
+                if abs.exists() {
+                    result["prescription_template_path"] =
+                        json!(abs.to_string_lossy().replace('\\', "/"));
+                }
+                // File missing on disk → leave path null so frontend falls back to default
             }
         }
     }

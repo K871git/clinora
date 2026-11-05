@@ -32,6 +32,7 @@ export default function PrescriptionSettingsPage() {
   const [logoUploading,setLogoUploading]= useState(false)
   const [saving,       setSaving]       = useState(false)
   const [savedMsg,     setSavedMsg]     = useState(false)
+  const [saveError,    setSaveError]    = useState(null)
 
   /* ── Preview modal ── */
   const [showPreview, setShowPreview] = useState(false)
@@ -77,6 +78,7 @@ export default function PrescriptionSettingsPage() {
   /* ── Save ── */
   async function handleSave() {
     setSaving(true)
+    setSaveError(null)
     try {
       await updateClinic({
         name:                form.name,
@@ -95,15 +97,21 @@ export default function PrescriptionSettingsPage() {
       })
       if (logoFile) {
         setLogoUploading(true)
-        const res = await uploadClinicLogo(logoFile)
-        setLogoUrl(res.data.url)
-        setLogoFile(null)
-        setLogoUploading(false)
+        try {
+          const res = await uploadClinicLogo(logoFile)
+          setLogoUrl(res.data.url)
+          setLogoFile(null)
+        } finally {
+          setLogoUploading(false)
+        }
       }
       setSavedMsg(true)
       setTimeout(() => setSavedMsg(false), 2500)
-    } catch { /* silent */ }
-    finally { setSaving(false) }
+    } catch (err) {
+      setSaveError(err?.message || 'Save failed. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   /* ── Remove logo ── */
@@ -319,6 +327,7 @@ export default function PrescriptionSettingsPage() {
                   {saving || logoUploading ? <><Spinner size={13} /> Saving…</> : 'Save Changes'}
                 </button>
                 {savedMsg && <span className="dpt-saved-msg">✓ Saved</span>}
+                {saveError && <span style={{ color: 'var(--clr-danger, #e53e3e)', fontSize: 13 }}>{saveError}</span>}
               </div>
             </>
           )}

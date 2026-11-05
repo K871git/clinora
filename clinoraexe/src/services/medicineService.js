@@ -1,12 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export async function searchMedicines(q = '', perPage = 15) {
-  const result = await invoke('list_medicines', { q, per_page: perPage })
+  const result = await invoke('list_medicines', { q, perPage })
   return { data: result }
 }
 
 export async function getMedicines(q = '', perPage = 500) {
-  const result = await invoke('list_medicines', { q, per_page: perPage })
+  const result = await invoke('list_medicines', { q, perPage })
   return { data: result }
 }
 
@@ -16,13 +16,12 @@ export async function createMedicine(data) {
 }
 
 export async function updateMedicine(id, data) {
-  const result = await invoke('update_medicine', { id, data })
+  const result = await invoke('update_medicine', { id: Number(id), data })
   return { data: result }
 }
 
-
 export async function deleteMedicine(id) {
-  await invoke('delete_medicine', { id })
+  await invoke('delete_medicine', { id: Number(id) })
   return { data: {} }
 }
 
