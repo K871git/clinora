@@ -24,6 +24,7 @@ const PASSWORD_HASH: &str = "043d84bd9b375185e25ed181911dc279bfbbad05b8dd92647d0
 // ── Allowed machine GUIDs ─────────────────────────────────────────────────────
 const ALLOWED_MACHINE_GUIDS: &[&str] = &[
     "ab0c747a-0e3d-4323-bfe4-6f3240846a9e", // Developer PC (Kishor)
+    "fcc3e142-0b1f-4d06-a3c4-f44714df1050", // Home PC (Kishor)
 ];
 
 fn get_machine_guid() -> Result<String, String> {
