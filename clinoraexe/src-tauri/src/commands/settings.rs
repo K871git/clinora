@@ -302,38 +302,72 @@ pub async fn delete_template(name: String, state: State<'_, AppState>) -> AppRes
     }
 
     let tpl_dir = templates_dir(cid)?;
-    std::fs::create_dir_all(&tpl_dir).ok();
+    // Reject names containing path separators or parent-dir components — the name
+    // is always a plain filename (e.g. "pad.jpg"), never a relative sub-path.
+    if name.contains('/') || name.contains('\\') || name.contains("..") {
+        return Err("Invalid template name.".into());
+    }
     let candidate = tpl_dir.join(&name);
-    if candidate.exists() {
-        let root_canon = tpl_dir.canonicalize()
-            .map_err(|_| "Templates directory unavailable.")?;
-        let safe = candidate.canonicalize()
-            .map_err(|_| "Invalid template path.")?;
-        if !safe.starts_with(&root_canon) {
-            return Err("Access denied: path is outside the templates directory.".into());
-        }
-        std::fs::remove_file(&safe).map_err(|e| e.to_string())?;
+    if candidate.is_file() {
+        std::fs::remove_file(&candidate).map_err(|e| e.to_string())?;
     }
 
     Ok(())
 }
 
+/// Resolve `.` and `..` path components lexically without touching the filesystem.
+fn lexical_normalize(p: &std::path::Path) -> std::path::PathBuf {
+    let mut out = std::path::PathBuf::new();
+    for component in p.components() {
+        match component {
+            std::path::Component::CurDir    => {}
+            std::path::Component::ParentDir => { out.pop(); }
+            c                               => out.push(c),
+        }
+    }
+    out
+}
+
 /// Verify the path is inside the prescription_templates directory (prevents path traversal).
+///
+/// Uses lexical normalisation instead of `canonicalize()`.  `canonicalize()` requires the
+/// OS to resolve the path, which fails in production Tauri builds on Windows when it hits
+/// `\\?\` extended-length prefixes or restricted directories — causing all template reads
+/// to return "File not found" even when the file is physically present.
 fn validate_template_path(path: &str) -> AppResult<std::path::PathBuf> {
     let exe_dir = std::env::current_exe()
         .map_err(|e| e.to_string())?
         .parent().ok_or("Cannot determine exe directory")?
         .to_path_buf();
     let templates_root = exe_dir.join("data").join("prescription_templates");
-    std::fs::create_dir_all(&templates_root).ok();
-    let root_canon = templates_root.canonicalize()
-        .map_err(|_| "Templates directory unavailable")?;
-    let requested = std::path::Path::new(path).canonicalize()
-        .map_err(|_| "File not found or invalid path")?;
-    if !requested.starts_with(&root_canon) {
+
+    let p = std::path::Path::new(path);
+    if !p.is_file() {
+        return Err("File not found or invalid path".into());
+    }
+
+    // Lexically resolve `.` and `..` on both sides (no filesystem access).
+    let norm_root = lexical_normalize(&templates_root);
+    let norm_req  = lexical_normalize(p);
+
+    // Stringify, lowercase for case-insensitive Windows comparison, normalise
+    // separators to `\`, and strip `\\?\` extended-length prefix so both sides match.
+    let root_s = norm_root.to_string_lossy().to_lowercase().replace('/', "\\");
+    let req_s  = norm_req .to_string_lossy().to_lowercase().replace('/', "\\");
+    let root_s = root_s.trim_start_matches(r"\\?\");
+    let req_s  = req_s .trim_start_matches(r"\\?\");
+
+    // Append separator so a name like "prescription_templates_evil" can't satisfy the check.
+    let root_prefix = if root_s.ends_with('\\') {
+        root_s.to_string()
+    } else {
+        format!("{}\\", root_s)
+    };
+
+    if !req_s.starts_with(&root_prefix) {
         return Err("Access denied: path is outside the templates directory.".into());
     }
-    Ok(requested)
+    Ok(p.to_path_buf())
 }
 
 #[tauri::command]

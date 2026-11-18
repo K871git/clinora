@@ -146,8 +146,8 @@ export default function PrintPrescriptionPage() {
     return () => { cancelled = true }
   }, [prescriptionId])
 
-  // Read template file as blob URL (works for both PDF and image templates).
-  // Using blob URLs avoids asset:// path encoding issues on Windows.
+  // Load template file. Images use data URLs (universal WebView2 support, works with
+  // tauri:// production scheme). PDFs use blob URLs — required by frame-src CSP.
   useEffect(() => {
     if (pageStatus !== 'done' || !settings) return
     const templatePath = settings.prescription_template_path
@@ -165,11 +165,17 @@ export default function PrintPrescriptionPage() {
     invoke('read_template_file', { path: templatePath })
       .then(b64 => {
         if (cancelled) return
-        const binary = atob(b64)
-        const bytes = new Uint8Array(binary.length)
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-        const mime = isPdfExt ? 'application/pdf' : `image/${ext === 'jpg' ? 'jpeg' : ext}`
-        createdUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
+        if (isPdfExt) {
+          // PDF: must use blob URL for iframe (frame-src CSP allows blob:, not data:)
+          const binary = atob(b64)
+          const bytes = new Uint8Array(binary.length)
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+          createdUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+        } else {
+          // Image: data URL works in all WebView2 contexts — blob: URLs can break
+          // when the page origin is tauri:// (production build) on some WebView2 versions
+          createdUrl = `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${b64}`
+        }
         setPdfBlobUrl(createdUrl)
       })
       .catch(() => {

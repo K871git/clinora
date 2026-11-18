@@ -161,10 +161,10 @@ function RxSort({ col, sortCol, sortDir }) {
    TEMPLATES PANEL
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Loads an image template as a blob URL to avoid asset:// path issues on Windows */
+/* Loads an image template as a data URL — works in all WebView2 contexts including
+   the tauri:// production scheme where blob: URLs can silently fail on some versions */
 function TemplateThumbnailImg({ path, label }) {
-  const [blobUrl, setBlobUrl] = useState(null)
-  const blobRef = useRef(null)
+  const [imgSrc, setImgSrc] = useState(null)
 
   useEffect(() => {
     if (!path) return
@@ -175,28 +175,20 @@ function TemplateThumbnailImg({ path, label }) {
         if (cancelled) return
         const ext = path.split('.').pop()?.toLowerCase() ?? ''
         const mime = `image/${ext === 'jpg' ? 'jpeg' : ext}`
-        const binary = atob(b64)
-        const bytes = new Uint8Array(binary.length)
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-        const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
-        blobRef.current = url
-        setBlobUrl(url)
+        setImgSrc(`data:${mime};base64,${b64}`)
       })
-      .catch(() => { if (!cancelled) setBlobUrl('error') })
+      .catch(() => { if (!cancelled) setImgSrc('error') })
 
-    return () => {
-      cancelled = true
-      if (blobRef.current) { URL.revokeObjectURL(blobRef.current); blobRef.current = null }
-    }
+    return () => { cancelled = true }
   }, [path])
 
-  if (blobUrl === 'error') {
+  if (imgSrc === 'error') {
     return <span style={{ fontSize: 10, color: 'var(--clr-text-muted)', display: 'block', textAlign: 'center', paddingTop: 20 }}>No preview</span>
   }
-  if (!blobUrl) {
+  if (!imgSrc) {
     return <span style={{ display: 'block', width: '100%', height: '100%', background: 'var(--clr-bg-subtle)', borderRadius: 4 }} />
   }
-  return <img src={blobUrl} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
+  return <img src={imgSrc} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
 }
 
 function DefaultTplThumb() {
