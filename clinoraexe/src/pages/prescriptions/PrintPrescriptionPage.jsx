@@ -118,11 +118,12 @@ export default function PrintPrescriptionPage() {
   const { prescriptionId } = useParams()
   const navigate = useNavigate()
 
-  const [prescription, setPrescription] = useState(null)
-  const [settings,     setSettings]     = useState(null)
-  const [pageStatus,   setPageStatus]   = useState('loading')
-  const [pdfBlobUrl,   setPdfBlobUrl]   = useState(null)
-  const [pdfLayout,    setPdfLayout]    = useState(null)
+  const [prescription,       setPrescription]       = useState(null)
+  const [settings,           setSettings]           = useState(null)
+  const [pageStatus,         setPageStatus]         = useState('loading')
+  const [pdfBlobUrl,         setPdfBlobUrl]         = useState(null)
+  const [pdfLayout,          setPdfLayout]          = useState(null)
+  const [templateLoadFailed, setTemplateLoadFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -157,10 +158,13 @@ export default function PrintPrescriptionPage() {
     const isImageExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext)
     if (!isPdfExt && !isImageExt) return
 
+    setTemplateLoadFailed(false)
     let createdUrl = null
+    let cancelled  = false
 
     invoke('read_template_file', { path: templatePath })
       .then(b64 => {
+        if (cancelled) return
         const binary = atob(b64)
         const bytes = new Uint8Array(binary.length)
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
@@ -168,15 +172,23 @@ export default function PrintPrescriptionPage() {
         createdUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
         setPdfBlobUrl(createdUrl)
       })
-      .catch(() => setPdfBlobUrl(null))
+      .catch(() => {
+        if (!cancelled) {
+          setPdfBlobUrl(null)
+          setTemplateLoadFailed(true)
+        }
+      })
 
     if (isPdfExt) {
       invoke('scan_template_layout', { path: templatePath })
-        .then(layout => setPdfLayout(layout))
-        .catch(() => setPdfLayout(null))
+        .then(layout => { if (!cancelled) setPdfLayout(layout) })
+        .catch(() => { if (!cancelled) setPdfLayout(null) })
     }
 
-    return () => { if (createdUrl) URL.revokeObjectURL(createdUrl) }
+    return () => {
+      cancelled = true
+      if (createdUrl) URL.revokeObjectURL(createdUrl)
+    }
   }, [pageStatus, settings])
 
   /* ── Loading / error ── */
@@ -263,12 +275,24 @@ export default function PrintPrescriptionPage() {
   )
 
   /* ══════════════════════════════════════════════════════════════════
-     MODE A — No custom template: use default HTML/CSS template
+     MODE A — No custom template, OR template file failed to load:
+              use the default HTML/CSS template
      ══════════════════════════════════════════════════════════════════ */
-  if (!hasTemplate) {
+  if (!hasTemplate || templateLoadFailed) {
     return (
       <div className="print-page">
         {toolbar}
+        {/* Warn on screen (hidden at print) when the active template couldn't be read */}
+        {templateLoadFailed && (
+          <div className="print-no-template-warn print-hide">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Template file could not be loaded — printing with the default layout. Re-upload your template if the issue persists.
+          </div>
+        )}
+        {noTemplateWarn}
         <DefaultPrescriptionTemplate
           clinic={{
             name:          clinic.name,
@@ -289,6 +313,16 @@ export default function PrintPrescriptionPage() {
           prescription={prescription}
           lang={lang}
         />
+      </div>
+    )
+  }
+
+  /* ── PDF template: show spinner while blob URL is loading ── */
+  if (isPdf && !pdfBlobUrl) {
+    return (
+      <div className="print-page" style={{ justifyContent: 'center' }}>
+        {toolbar}
+        <Spinner size={28} />
       </div>
     )
   }

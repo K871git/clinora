@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { useSessionState } from '../../hooks/useSessionState'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -159,6 +160,44 @@ function RxSort({ col, sortCol, sortDir }) {
 /* ══════════════════════════════════════════════════════════════════════
    TEMPLATES PANEL
    ══════════════════════════════════════════════════════════════════════ */
+
+/* Loads an image template as a blob URL to avoid asset:// path issues on Windows */
+function TemplateThumbnailImg({ path, label }) {
+  const [blobUrl, setBlobUrl] = useState(null)
+  const blobRef = useRef(null)
+
+  useEffect(() => {
+    if (!path) return
+    let cancelled = false
+
+    invoke('read_template_file', { path })
+      .then(b64 => {
+        if (cancelled) return
+        const ext = path.split('.').pop()?.toLowerCase() ?? ''
+        const mime = `image/${ext === 'jpg' ? 'jpeg' : ext}`
+        const binary = atob(b64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+        const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
+        blobRef.current = url
+        setBlobUrl(url)
+      })
+      .catch(() => { if (!cancelled) setBlobUrl('error') })
+
+    return () => {
+      cancelled = true
+      if (blobRef.current) { URL.revokeObjectURL(blobRef.current); blobRef.current = null }
+    }
+  }, [path])
+
+  if (blobUrl === 'error') {
+    return <span style={{ fontSize: 10, color: 'var(--clr-text-muted)', display: 'block', textAlign: 'center', paddingTop: 20 }}>No preview</span>
+  }
+  if (!blobUrl) {
+    return <span style={{ display: 'block', width: '100%', height: '100%', background: 'var(--clr-bg-subtle)', borderRadius: 4 }} />
+  }
+  return <img src={blobUrl} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
+}
 
 function DefaultTplThumb() {
   return (
@@ -361,7 +400,7 @@ function TemplatesPanel() {
             <div key={tpl.name} className={`tpl-card${tpl.is_active ? ' is-active' : ''}`}>
               <div className="tpl-thumb">
                 {tpl.type === 'image' ? (
-                  <img src={tpl.url} alt={tpl.label} loading="lazy" />
+                  <TemplateThumbnailImg path={tpl.path} label={tpl.label} />
                 ) : (
                   <div className="tpl-pdf-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">

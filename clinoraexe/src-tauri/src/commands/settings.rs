@@ -128,13 +128,15 @@ pub async fn get_settings(state: State<'_, AppState>) -> AppResult<Value> {
         let template_name = s.get::<Option<String>, _>("prescription_template");
         result["prescription_template"] = json!(&template_name);
         if let Some(ref name) = template_name {
-            if let Ok(dir) = templates_dir(session.clinic_id) {
-                let abs = dir.join(name);
-                if abs.exists() {
-                    result["prescription_template_path"] =
-                        json!(abs.to_string_lossy().replace('\\', "/"));
+            if !name.trim().is_empty() {
+                if let Ok(dir) = templates_dir(session.clinic_id) {
+                    let abs = dir.join(name);
+                    if abs.is_file() {
+                        result["prescription_template_path"] =
+                            json!(abs.to_string_lossy().replace('\\', "/"));
+                    }
+                    // File missing on disk → leave path null so frontend falls back to default
                 }
-                // File missing on disk → leave path null so frontend falls back to default
             }
         }
     }
@@ -491,17 +493,20 @@ pub async fn set_active_template(name: String, state: State<'_, AppState>) -> Ap
     let count: i64 = sqlx::query("SELECT COUNT(*) FROM clinic_settings WHERE clinic_id=?")
         .bind(cid).fetch_one(&state.db).await?.get(0);
 
+    // Store NULL when activating the default template (empty string = "clear template")
+    let name_opt: Option<&str> = if name.trim().is_empty() { None } else { Some(name.as_str()) };
+
     if count == 0 {
         sqlx::query(
             "INSERT INTO clinic_settings (clinic_id, show_doctor_contact, show_clinic_contact, prescription_template, created_at, updated_at)
              VALUES (?, 1, 1, ?, NOW(), NOW())"
-        ).bind(cid).bind(&name).execute(&state.db).await?;
+        ).bind(cid).bind(name_opt).execute(&state.db).await?;
     } else {
         sqlx::query("UPDATE clinic_settings SET prescription_template=?, updated_at=NOW() WHERE clinic_id=?")
-            .bind(&name).bind(cid).execute(&state.db).await?;
+            .bind(name_opt).bind(cid).execute(&state.db).await?;
     }
 
-    Ok(json!({ "prescription_template": name }))
+    Ok(json!({ "prescription_template": name_opt }))
 }
 
 #[tauri::command]
